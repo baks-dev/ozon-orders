@@ -29,7 +29,7 @@
   },
   "autoload": {
     "psr-4": {
-      "BaksDev\\Ozon\\": ""
+      "BaksDev\\Ozon\\Orders\\": ""
     }
   },
   "config": {
