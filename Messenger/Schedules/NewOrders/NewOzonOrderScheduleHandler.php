@@ -35,6 +35,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderHandler;
 use BaksDev\Orders\Order\UseCase\Admin\Status\OrderStatusHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersNewRequest;
+use BaksDev\Ozon\Orders\UseCase\New\OzonMarketOrderDTO;
 use BaksDev\Yandex\Market\Orders\Api\GetYaMarketOrdersNewRequest;
 use BaksDev\Yandex\Market\Orders\UseCase\New\YandexMarketOrderDTO;
 use BaksDev\Yandex\Market\Orders\UseCase\New\YandexMarketOrderHandler;
@@ -51,8 +52,6 @@ final class NewOzonOrderScheduleHandler
 
     public function __construct(
         private readonly GetOzonOrdersNewRequest $getOzonOrdersNewRequest,
-        private readonly YandexMarketOrderHandler $yandexMarketOrderHandler,
-        private readonly YaMarketTokenExtraCompanyInterface $tokenExtraCompany,
         LoggerInterface $ozonOrdersLogger,
     ) {
         $this->logger = $ozonOrdersLogger;
@@ -60,58 +59,28 @@ final class NewOzonOrderScheduleHandler
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
-        // TODO:
-        return;
-
-        /**
-         * Получаем список НОВЫХ сборочных заданий по основному идентификатору компании
-         */
-
+        /** Получаем список НОВЫХ сборочных заданий по основному идентификатору компании */
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
             ->findAll();
 
-        if($orders->valid())
+
+        if($orders->valid() === false)
         {
-            $this->ordersCreate($orders);
+            return;
         }
 
-        /**
-         * Получаем заказы по дополнительным идентификаторам
+        /** Добавляем новые заказы
+         *
          */
-
-        $extra = $this->tokenExtraCompany->profile($message->getProfile())->execute();
-
-        if($extra !== false)
-        {
-            foreach($extra as $company)
-            {
-                $orders = $this->yandexMarketNewOrdersRequest
-                    ->setExtraCompany($company['company'])
-                    ->findAll();
-
-                if($orders->valid())
-                {
-                    $this->ordersCreate($orders);
-                }
-            }
-        }
-    }
-
-    private function ordersCreate(Generator $orders): void
-    {
-        /** @var YandexMarketOrderDTO $order */
         foreach($orders as $order)
         {
-            $handle = $this->yandexMarketOrderHandler->handle($order);
+            dump($order);
 
-            if($handle instanceof Order)
-            {
-                $this->logger->info(
-                    sprintf('Добавили новый заказ %s', $order->getNumber()),
-                    [self::class.':'.__LINE__]
-                );
-            }
+            $this->logger->info(
+                sprintf('Добавили новый заказ %s', $order->getNumber()),
+                [self::class.':'.__LINE__]
+            );
         }
     }
 }

@@ -33,14 +33,13 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DomainException;
+use Generator;
 
 /**
  * Информация о заказах
  */
 final class GetOzonOrdersNewRequest extends Ozon
 {
-    private int $page = 1;
-
     private ?DateTimeImmutable $fromDate = null;
 
     /**
@@ -51,33 +50,30 @@ final class GetOzonOrdersNewRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_GetFbsPostingListV3
      *
      */
-    public function findAll(?DateInterval $interval = null)
+    public function findAll(?DateInterval $interval = null): Generator|bool
     {
-        $dateTime = new DateTimeImmutable();
+        $dateTimeNow = new DateTimeImmutable();
 
         if(!$this->fromDate)
         {
             // Новые заказы за последние 5 минут (планировщик на каждую минуту)
-            $this->fromDate = $dateTime->sub($interval ?? DateInterval::createFromDateString('5 minutes'));
+            $this->fromDate = $dateTimeNow->sub($interval ?? DateInterval::createFromDateString('5 minutes'));
 
             /** В 3 часа ночи получаем заказы за сутки */
-            $currentHour = $dateTime->format('H');
-            $currentMinute = $dateTime->format('i');
+            $currentHour = $dateTimeNow->format('H');
+            $currentMinute = $dateTimeNow->format('i');
 
             if($currentHour === '03' && $currentMinute >= '00' && $currentMinute <= '05')
             {
-                $this->fromDate = $dateTime->sub(DateInterval::createFromDateString('1 days'));
+                $this->fromDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 days'));
             }
         }
 
         $data['dir'] = 'DESC'; // сортировка
         $data['limit'] = 1000; // Количество значений в ответе
-
-        //  фильтр по времени сборки
         $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::ATOM); // Дата начала периода ('2023-11-03T11:47:39.878Z')
-        $data['filter']['to'] = $dateTime->format(DateTimeInterface::ATOM);   // Дата конца периода ('2023-11-03T11:47:39.878Z')
+        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::ATOM);   // Дата конца периода ('2023-11-03T11:47:39.878Z')
         $data['filter']['status'] = 'awaiting_packaging'; // Статус отправления
-
 
         /*$data["with"] = [
             "analytics_data" => true, // Добавить в ответ данные аналитики.
@@ -88,13 +84,12 @@ final class GetOzonOrdersNewRequest extends Ozon
 
         $response = $this->TokenHttpClient()
             ->request(
-                'GET',
+                'POST',
                 '/v3/posting/fbs/list',
-                ['json' => [$data]],
+                ['json' => $data],
             );
 
         $content = $response->toArray(false);
-
 
         if($response->getStatusCode() !== 200)
         {
@@ -106,7 +101,7 @@ final class GetOzonOrdersNewRequest extends Ozon
             return false;
         }
 
-        foreach($content['postings'] as $order)
+        foreach($content['result']['postings'] as $order)
         {
             yield new OzonMarketOrderDTO($order, $this->getProfile());
         }

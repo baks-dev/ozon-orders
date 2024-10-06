@@ -38,6 +38,9 @@ use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCanceled;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCompleted;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusUnpaid;
+use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
+use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
+use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
 use BaksDev\Reference\Money\Type\Money;
@@ -92,23 +95,19 @@ final class OzonMarketOrderDTO implements OrderEventInterface
     private ?array $buyer;
 
 
-    public function __construct(array $order, UserProfileUid $profile, ?array $buyer = null)
+    public function __construct(array $order, UserProfileUid $profile)
     {
-
-        // TODO:
-        return;
-
         /** Постоянная величина */
         $NewOrderInvariable = new Invariable\NewOrderInvariable();
-        $NewOrderInvariable->setCreated(new DateTimeImmutable($order['in_process_at']));
+        $NewOrderInvariable->setCreated(new DateTimeImmutable($order['in_process_at'])); // Дата и время начала обработки отправления.
         $NewOrderInvariable->setProfile($profile);
-        $NewOrderInvariable->setNumber('O-'.$order['posting_number']); // помечаем заказ префиксом Y
+        $NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O
         $this->invariable = $NewOrderInvariable;
 
 
         /** @deprecated переносится в Invariable */
-        $this->number = 'O-'.$order['posting_number']; // помечаем заказ префиксом Y
-        $this->created = new DateTimeImmutable($order['in_process_at']);
+        $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом Y
+        $this->created = new DateTimeImmutable($order['in_process_at']); // Дата и время начала обработки отправления.
 
 
         /** Определяем статус заказа */
@@ -123,12 +122,19 @@ final class OzonMarketOrderDTO implements OrderEventInterface
         $this->status = new OrderStatus($yandexStatus);
 
 
+        /** Присваиваем, если имееется информация о покупателе */
+        if(!empty($order['addressee']))
+        {
+
+        }
+
+
         $this->product = new ArrayCollection();
         $this->usr = new User\OrderUserDTO();
 
+
         /** Дата доставки */
-        $shipments = current($order['delivery']['shipments']);
-        $deliveryDate = new DateTimeImmutable($shipments['shipmentDate']);
+        $deliveryDate = new DateTimeImmutable($order['shipment_date']);
 
         $OrderDeliveryDTO = $this->usr->getDelivery();
         $OrderPaymentDTO = $this->usr->getPayment();
@@ -138,139 +144,140 @@ final class OzonMarketOrderDTO implements OrderEventInterface
         $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
 
 
-        $address = $order['delivery']['address'];
+        //$address = $order['delivery']['address'];
 
         /** Геолокация клиента */
-        $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['gps']['latitude']));
-        $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['gps']['longitude']));
+        //$OrderDeliveryDTO->setLatitude(new GpsLatitude($address['gps']['latitude']));
+        //$OrderDeliveryDTO->setLongitude(new GpsLongitude($address['gps']['longitude']));
 
 
         /** Адрес доставки клиента */
 
-        $deliveryAddress = [];
+        //        $deliveryAddress = [];
+        //
+        //        foreach($address as $key => $data)
+        //        {
+        //            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
+        //            if(
+        //                empty($data) ||
+        //                in_array($key, [
+        //                    'gps', // GPS-координаты.
+        //                    'postcode', // Почтовый индекс.
+        //                    'recipient', // Фамилия, имя и отчество получателя заказа.
+        //                    'subway', // Станция метро.
+        //                    'floor', // Этаж
+        //                    'phone', // Телефон получателя заказа.
+        //                ])
+        //            ) {
+        //                continue;
+        //            }
+        //
+        //            $deliveryAddress[] = match ($key)
+        //            {
+        //                //'street' => 'улица '.trim(str_replace('улица', '', $data)),
+        //                'house' => 'дом '.$data,
+        //                //'block' => 'корпус '.$data,
+        //                'entrance' => 'подъезд '.$data,
+        //                default => $data,
+        //            };
+        //        }
 
-        foreach($address as $key => $data)
-        {
-            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
-            if(
-                empty($data) ||
-                in_array($key, [
-                    'gps', // GPS-координаты.
-                    'postcode', // Почтовый индекс.
-                    'recipient', // Фамилия, имя и отчество получателя заказа.
-                    'subway', // Станция метро.
-                    'floor', // Этаж
-                    'phone', // Телефон получателя заказа.
-                ])
-            ) {
-                continue;
-            }
-
-            $deliveryAddress[] = match ($key)
-            {
-                //'street' => 'улица '.trim(str_replace('улица', '', $data)),
-                'house' => 'дом '.$data,
-                //'block' => 'корпус '.$data,
-                'entrance' => 'подъезд '.$data,
-                default => $data,
-            };
-        }
-
-        $OrderDeliveryDTO->setAddress(implode(', ', $deliveryAddress));
+        //$OrderDeliveryDTO->setAddress(implode(', ', $deliveryAddress));
         //dump($OrderDeliveryDTO->getAddress());
 
         // Доставка YandexMarket (FBS)
-        if($order['delivery']['deliveryPartnerType'] === 'YANDEX_MARKET')
-        {
-            /** Тип профиля FBS Yandex Market */
-            $Profile = new TypeProfileUid(TypeProfileYandexMarket::class);
+        //if($order['tpl_integration_type'] === 'ozon')
+        //{
+            /** Тип профиля FBS Озон */
+            $Profile = new TypeProfileUid(TypeProfileFbsOzon::class);
             $OrderProfileDTO?->setType($Profile);
 
             /** Способ доставки Yandex Market (FBS Yandex Market) */
-            $Delivery = new DeliveryUid(TypeDeliveryYandexMarket::class);
+            $Delivery = new DeliveryUid(TypeDeliveryFbsOzon::class);
             $OrderDeliveryDTO->setDelivery($Delivery);
 
             /** Способ оплаты FBS Yandex Market */
-            $Payment = new PaymentUid(TypePaymentYandex::class);
+            $Payment = new PaymentUid(TypePaymentFbsOzon::class);
             $OrderPaymentDTO->setPayment($Payment);
-        }
+        //}
 
-        // Доставка Магазином (DBS)
-        if($order['delivery']['deliveryPartnerType'] === 'SHOP')
-        {
-            /** Тип профиля DBS Yandex Market */
-            $Profile = new TypeProfileUid(TypeProfileDbsYaMarket::class);
-            $OrderProfileDTO?->setType($Profile);
 
-            /** Способ доставки Магазином (DBS Yandex Market) */
-            $Delivery = new DeliveryUid(TypeDeliveryDbsYaMarket::class);
-            $OrderDeliveryDTO->setDelivery($Delivery);
-
-            /** Способ оплаты DBS Yandex Market  */
-            $Payment = new PaymentUid(TypePaymentDbsYaMarket::class);
-            $OrderPaymentDTO->setPayment($Payment);
-        }
+        //        // Доставка Магазином (DBS)
+        //        if($order['delivery']['deliveryPartnerType'] === 'SHOP')
+        //        {
+        //            /** Тип профиля DBS Yandex Market */
+        //            $Profile = new TypeProfileUid(TypeProfileDbsYaMarket::class);
+        //            $OrderProfileDTO?->setType($Profile);
+        //
+        //            /** Способ доставки Магазином (DBS Yandex Market) */
+        //            $Delivery = new DeliveryUid(TypeDeliveryDbsYaMarket::class);
+        //            $OrderDeliveryDTO->setDelivery($Delivery);
+        //
+        //            /** Способ оплаты DBS Yandex Market  */
+        //            $Payment = new PaymentUid(TypePaymentDbsYaMarket::class);
+        //            $OrderPaymentDTO->setPayment($Payment);
+        //        }
 
         /** Информация о покупателе */
-        $this->buyer = empty($buyer) ? null : $buyer;
+        //$this->buyer = empty($buyer) ? null : $buyer;
 
         $deliveryComment = [];
+        $deliveryComment[] = $order['delivery_method']['tpl_provider'];
 
-        foreach($address as $key => $data)
-        {
-            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
-            if(
-                empty($data) ||
-                !in_array($key, [
-                    //'postcode', // Почтовый индекс.
-                    'recipient', // Фамилия, имя и отчество получателя заказа.
-                    'subway', // Станция метро.
-                    'apartment', // Квартира или офис.
-                    'floor', // Этаж
-                    'phone', // Телефон получателя заказа.
-                ])
-            ) {
-                continue;
-            }
 
-            $deliveryComment[] = match ($key)
-            {
-                //'postcode' => 'инд. '.$data,
-                'recipient' => 'получатель '.$data,
-                'phone' => 'тел. '.$data,
-                'subway' => 'ст.метро '.$data,
-                'apartment' => 'кв. '.$data,
-                'floor' => 'этаж '.$data,
-                default => $data,
-            };
-        }
+        //        foreach($address as $key => $data)
+        //        {
+        //            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
+        //            if(
+        //                empty($data) ||
+        //                !in_array($key, [
+        //                    //'postcode', // Почтовый индекс.
+        //                    'recipient', // Фамилия, имя и отчество получателя заказа.
+        //                    'subway', // Станция метро.
+        //                    'apartment', // Квартира или офис.
+        //                    'floor', // Этаж
+        //                    'phone', // Телефон получателя заказа.
+        //                ])
+        //            ) {
+        //                continue;
+        //            }
+        //
+        //            $deliveryComment[] = match ($key)
+        //            {
+        //                //'postcode' => 'инд. '.$data,
+        //                'recipient' => 'получатель '.$data,
+        //                'phone' => 'тел. '.$data,
+        //                'subway' => 'ст.метро '.$data,
+        //                'apartment' => 'кв. '.$data,
+        //                'floor' => 'этаж '.$data,
+        //                default => $data,
+        //            };
+        //        }
 
-        isset($order['notes']) ? $deliveryComment[] = $order['notes'] : false;
+        //  isset($order['notes']) ? $deliveryComment[] = $order['notes'] : false;
 
         /** Комментарий покупателя */
         $this->comment = implode(', ', $deliveryComment);
         //dd($this->comment);
 
         /** Продукция */
-        foreach($order['items'] as $item)
+        foreach($order['products'] as $item)
         {
-            $NewOrderProductDTO = new Products\NewOrderProductDTO($item['offerId']);
+            $NewOrderProductDTO = new Products\NewOrderProductDTO($item['offer_id']);
 
             $NewOrderPriceDTO = $NewOrderProductDTO->getPrice();
 
-            $Money = new Money($item['priceBeforeDiscount']); // Стоимость товара в валюте магазина до применения скидок.
-            $Currency = new Currency($order['currency']);
+            $Money = new Money($item['price']); // Стоимость товара в валюте магазина до применения скидок.
+            $Currency = new Currency($item['currency_code']);
 
             $NewOrderPriceDTO->setPrice($Money);
             $NewOrderPriceDTO->setCurrency($Currency);
-            $NewOrderPriceDTO->setTotal($item['count']);
+            $NewOrderPriceDTO->setTotal($item['quantity']);
 
             $this->addProduct($NewOrderProductDTO);
 
         }
-
     }
-
 
     /** @see OrderEvent */
     public function getEvent(): ?OrderEventUid
