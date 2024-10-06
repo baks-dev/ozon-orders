@@ -1,0 +1,42 @@
+ozon:
+
+  fbs:
+
+    name: 'Ozon'
+    desc: 'Ozon user'
+
+    section:
+      contact:
+        name: 'Contact details'
+        desc: 'Data for communication between store managers and customers.'
+
+        field:
+
+          name:
+            name: 'Contact person'
+            desc: 'User name'
+
+
+  dbs:
+
+    name: 'DBS Ozon'
+    desc: 'DBS Ozon user'
+
+    section:
+      contact:
+        name: 'Contact details'
+        desc: 'Data for communication between store managers and customers.'
+
+        field:
+
+          name:
+            name: 'Recipient'
+            desc: 'User name'
+
+          email:
+            name: 'Contact Email'
+            desc: 'Contact email for communication'
+
+          phone:
+            name: 'Contact phone'
+            desc: 'Contact telephone number'

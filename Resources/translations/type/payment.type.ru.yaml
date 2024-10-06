@@ -1,0 +1,9 @@
+ozon:
+  fbs:
+    name: 'Ozon'
+    desc: 'Оплата FBS Ozon'
+
+  dbs:
+    name: 'DBS Ozon'
+    desc: 'Оплата DBS Ozon'
+

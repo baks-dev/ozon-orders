@@ -1,0 +1,17 @@
+ozon:
+  fbs:
+    name: 'Ozon warehouse'
+    desc: 'Ozon courier delivery'
+
+    address:
+      name: 'Ozon pick-up point address'
+      desc: 'Address of the Ozon order pick-up point selected by the client'
+
+
+  dbs:
+    name: 'Delivery to Ozon client'
+    desc: 'Delivery to Ozon client'
+
+    address:
+      name: 'Client address'
+      desc: 'Delivery address of the order to the Ozon client'

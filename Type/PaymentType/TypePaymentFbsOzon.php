@@ -1,17 +1,17 @@
 <?php
 /*
- *  Copyright 2023.  Baks.dev <admin@baks.dev>
- *  
+ *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,17 +23,35 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders;
+namespace BaksDev\Ozon\Orders\Type\PaymentType;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use BaksDev\Payment\Type\Id\Choice\Collection\TypePaymentInterface;
+use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
-/** Индекс сортировки 450 */
-class BaksDevOzonOrdersBundle extends AbstractBundle
+#[AutoconfigureTag('baks.payment.type')]
+final class TypePaymentFbsOzon implements TypePaymentInterface
 {
-    public const NAMESPACE = __NAMESPACE__.'\\';
+    public const string TYPE = '995ffbe7-aca3-73f8-aa0e-8134f2261ce7';
 
-    public const PATH = __DIR__.DIRECTORY_SEPARATOR;
+    /** Сортировка */
+    public static function priority(): int
+    {
+        return 451;
+    }
 
+    public function __toString(): string
+    {
+        return self::TYPE;
+    }
+
+    /** Возвращает значение (value) */
+    public function getValue(): string
+    {
+        return self::TYPE;
+    }
+
+    public static function equals(mixed $uid): bool
+    {
+        return self::TYPE === (string) $uid;
+    }
 }
