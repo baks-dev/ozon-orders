@@ -57,7 +57,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /** @see OrderEvent */
-final class OzonMarketOrderDTO implements OrderEventInterface
+final class NewOzonOrderDTO implements OrderEventInterface
 {
     /** Идентификатор события */
     #[Assert\Uuid]
@@ -91,22 +91,20 @@ final class OzonMarketOrderDTO implements OrderEventInterface
     /** Комментарий к заказу */
     private ?string $comment = null;
 
-    /** Информация о покупателе */
-    private ?array $buyer;
-
-
     public function __construct(array $order, UserProfileUid $profile)
     {
         /** Постоянная величина */
         $NewOrderInvariable = new Invariable\NewOrderInvariable();
         $NewOrderInvariable->setCreated(new DateTimeImmutable($order['in_process_at'])); // Дата и время начала обработки отправления.
         $NewOrderInvariable->setProfile($profile);
-        $NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O
+        $NewOrderInvariable->setNumber('O-'.$order['posting_number']); // помечаем заказ префиксом O
+        //$NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O (без единицы в конце)
         $this->invariable = $NewOrderInvariable;
 
 
         /** @deprecated переносится в Invariable */
-        $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом Y
+        $this->number = 'O-'.$order['posting_number']; // помечаем заказ префиксом O
+        // $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом O (без единицы в конце)
         $this->created = new DateTimeImmutable($order['in_process_at']); // Дата и время начала обработки отправления.
 
 
@@ -120,7 +118,6 @@ final class OzonMarketOrderDTO implements OrderEventInterface
 
 
         $this->status = new OrderStatus($yandexStatus);
-
 
         /** Присваиваем, если имееется информация о покупателе */
         if(!empty($order['addressee']))
@@ -185,9 +182,9 @@ final class OzonMarketOrderDTO implements OrderEventInterface
         //$OrderDeliveryDTO->setAddress(implode(', ', $deliveryAddress));
         //dump($OrderDeliveryDTO->getAddress());
 
-        // Доставка YandexMarket (FBS)
-        //if($order['tpl_integration_type'] === 'ozon')
-        //{
+        // Доставка Озон FBS
+        if($order['tpl_integration_type'] === 'ozon')
+        {
             /** Тип профиля FBS Озон */
             $Profile = new TypeProfileUid(TypeProfileFbsOzon::class);
             $OrderProfileDTO?->setType($Profile);
@@ -199,7 +196,10 @@ final class OzonMarketOrderDTO implements OrderEventInterface
             /** Способ оплаты FBS Yandex Market */
             $Payment = new PaymentUid(TypePaymentFbsOzon::class);
             $OrderPaymentDTO->setPayment($Payment);
-        //}
+
+            /** Комментарий покупателя */
+            $this->comment = str_replace(' самостоятельно', '', $order['delivery_method']['name']);
+        }
 
 
         //        // Доставка Магазином (DBS)
@@ -221,8 +221,8 @@ final class OzonMarketOrderDTO implements OrderEventInterface
         /** Информация о покупателе */
         //$this->buyer = empty($buyer) ? null : $buyer;
 
-        $deliveryComment = [];
-        $deliveryComment[] = $order['delivery_method']['tpl_provider'];
+        //        $deliveryComment = [];
+        //        $deliveryComment[] = $order['delivery_method']['tpl_provider'];
 
 
         //        foreach($address as $key => $data)
@@ -256,8 +256,6 @@ final class OzonMarketOrderDTO implements OrderEventInterface
 
         //  isset($order['notes']) ? $deliveryComment[] = $order['notes'] : false;
 
-        /** Комментарий покупателя */
-        $this->comment = implode(', ', $deliveryComment);
         //dd($this->comment);
 
         /** Продукция */
@@ -366,14 +364,6 @@ final class OzonMarketOrderDTO implements OrderEventInterface
     }
 
     /**
-     * Buyer
-     */
-    public function getBuyer(): ?array
-    {
-        return $this->buyer;
-    }
-
-    /**
      * Invariable
      */
     public function getInvariable(): Invariable\NewOrderInvariable
@@ -394,5 +384,4 @@ final class OzonMarketOrderDTO implements OrderEventInterface
         $this->profile = $profile;
         return $this;
     }
-
 }

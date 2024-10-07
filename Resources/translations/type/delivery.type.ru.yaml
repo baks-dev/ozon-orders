@@ -1,12 +1,7 @@
 ozon:
   fbs:
-    name: 'Склад Ozon'
+    name: 'Ozon'
     desc: 'Курьерская доставка Ozon'
-
-    address:
-      name: 'Адрес ПВЗ Ozon'
-      desc: 'Адрес пункта выдачи заказов Ozon выбранный клиентом'
-
 
   dbs:
     name: 'Доставка клиенту Ozon'

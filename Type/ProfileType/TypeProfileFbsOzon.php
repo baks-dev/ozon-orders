@@ -31,7 +31,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 #[AutoconfigureTag('baks.users.profile.type')]
 final class TypeProfileFbsOzon implements TypeProfileInterface
 {
-    public const string TYPE = 'b919c525-28db-7ac8-a0e0-62c8de76039d';
+    public const string TYPE = 'c024b3d2-1866-72c3-83e9-922f8678bf23';
 
     /** Сортировка */
     public static function priority(): int

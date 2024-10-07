@@ -33,34 +33,13 @@ use BaksDev\Users\User\Type\Id\UserUid;
 final class NewOzonOrdersScheduleMessage
 {
     /**
-     * Идентификатор пользователя
-     */
-    private UserUid $usr;
-
-    /**
      * Идентификатор профиля
      */
     private UserProfileUid $profile;
 
 
-    public function __construct(
-        User|UserUid|string $user,
-        UserProfile|UserProfileUid|string $profile
-    ) {
-
-        if($user instanceof User)
-        {
-            $user = $user->getId();
-        }
-
-        if(is_string($user))
-        {
-            $user = new UserUid($user);
-        }
-
-        $this->usr = $user;
-
-
+    public function __construct(UserProfile|UserProfileUid|string $profile)
+    {
         if($profile instanceof UserProfile)
         {
             $profile = $profile->getId();
@@ -80,13 +59,5 @@ final class NewOzonOrdersScheduleMessage
     public function getProfile(): UserProfileUid
     {
         return $this->profile;
-    }
-
-    /**
-     * Usr
-     */
-    public function getUser(): UserUid
-    {
-        return $this->usr;
     }
 }

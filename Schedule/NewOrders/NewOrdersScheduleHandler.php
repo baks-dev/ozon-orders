@@ -57,7 +57,7 @@ final readonly class NewOrdersScheduleHandler
                 if($User)
                 {
                     $this->messageDispatch->dispatch(
-                        message: new NewOzonOrdersScheduleMessage($User->getId(), $profile),
+                        message: new NewOzonOrdersScheduleMessage($profile),
                         transport: (string) $profile,
                     );
                 }

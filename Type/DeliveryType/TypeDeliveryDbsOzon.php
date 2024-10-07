@@ -31,7 +31,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 #[AutoconfigureTag('baks.delivery.type')]
 final class TypeDeliveryDbsOzon implements TypeDeliveryInterface
 {
-    public const string TYPE = 'c016d75a-258f-7aa6-a7fd-6a5bea7c0c0e';
+    public const string TYPE = '0f5ac982-b0ad-7644-89ec-a6a8710ed1b2';
 
     /** Сортировка */
     public static function priority(): int

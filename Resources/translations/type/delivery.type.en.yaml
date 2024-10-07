@@ -1,6 +1,6 @@
 ozon:
   fbs:
-    name: 'Ozon warehouse'
+    name: 'Ozon'
     desc: 'Ozon courier delivery'
 
     address:

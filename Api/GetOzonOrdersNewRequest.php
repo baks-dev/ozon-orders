@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
-use BaksDev\Ozon\Orders\UseCase\New\OzonMarketOrderDTO;
+use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Yandex\Market\Api\YandexMarket;
 use BaksDev\Yandex\Market\Orders\UseCase\New\YandexMarketOrderDTO;
 use DateInterval;
@@ -74,6 +74,7 @@ final class GetOzonOrdersNewRequest extends Ozon
         $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::ATOM); // Дата начала периода ('2023-11-03T11:47:39.878Z')
         $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::ATOM);   // Дата конца периода ('2023-11-03T11:47:39.878Z')
         $data['filter']['status'] = 'awaiting_packaging'; // Статус отправления
+        //$data['filter']['status'] = 'awaiting_deliver'; // Статус отправления
 
         /*$data["with"] = [
             "analytics_data" => true, // Добавить в ответ данные аналитики.
@@ -103,7 +104,7 @@ final class GetOzonOrdersNewRequest extends Ozon
 
         foreach($content['result']['postings'] as $order)
         {
-            yield new OzonMarketOrderDTO($order, $this->getProfile());
+            yield new NewOzonOrderDTO($order, $this->getProfile());
         }
     }
 }

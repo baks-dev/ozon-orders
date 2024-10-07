@@ -103,25 +103,24 @@ class UpgradeDeliveryTypeFbsOzonCommand extends Command
                 $DeliveryTrans->setDescription($desc);
             }
 
-
-            /**
-             * Создаем пользовательское поле с адресом доставки
-             */
-            $DeliveryFieldDTO = new DeliveryFieldDTO();
-            $DeliveryFieldDTO->setSort(100);
-            $DeliveryFieldDTO->setType(new InputField('address_field'));
-
-            /** @var DeliveryFieldTransDTO $DeliveryFieldTrans */
-            foreach($DeliveryFieldDTO->getTranslate() as $DeliveryFieldTrans)
-            {
-                $name = $this->translator->trans('ozon.fbs.address.name', domain: 'delivery.type', locale: $DeliveryFieldTrans->getLocal()->getLocalValue());
-                $desc = $this->translator->trans('ozon.fbs.address.desc', domain: 'delivery.type', locale: $DeliveryFieldTrans->getLocal()->getLocalValue());
-
-                $DeliveryFieldTrans->setName($name);
-                $DeliveryFieldTrans->setDescription($desc);
-            }
-
-            $DeliveryDTO->addField($DeliveryFieldDTO);
+//            /**
+            //             * Создаем пользовательское поле с адресом доставки
+            //             */
+            //            $DeliveryFieldDTO = new DeliveryFieldDTO();
+            //            $DeliveryFieldDTO->setSort(100);
+            //            $DeliveryFieldDTO->setType(new InputField('address_field'));
+            //
+            //            /** @var DeliveryFieldTransDTO $DeliveryFieldTrans */
+            //            foreach($DeliveryFieldDTO->getTranslate() as $DeliveryFieldTrans)
+            //            {
+            //                $name = $this->translator->trans('ozon.fbs.address.name', domain: 'delivery.type', locale: $DeliveryFieldTrans->getLocal()->getLocalValue());
+            //                $desc = $this->translator->trans('ozon.fbs.address.desc', domain: 'delivery.type', locale: $DeliveryFieldTrans->getLocal()->getLocalValue());
+            //
+            //                $DeliveryFieldTrans->setName($name);
+            //                $DeliveryFieldTrans->setDescription($desc);
+            //            }
+            //
+            //            $DeliveryDTO->addField($DeliveryFieldDTO);
 
             $handle = $this->deliveryHandler->handle($DeliveryDTO);
 
