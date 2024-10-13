@@ -68,7 +68,7 @@ final class NewOzonOrderScheduleHandler
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
 
-        /** Получаем список НОВЫХ сборочных заданий по основному идентификатору компании */
+        /** Получаем список НОВЫХ сборочных заданий */
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
             ->findAll();
@@ -80,7 +80,7 @@ final class NewOzonOrderScheduleHandler
 
         $Deduplicator = $this->deduplicator
             ->namespace('ozon-orders')
-            ->expiresAfter(DateInterval::createFromDateString('10 minutes'));
+            ->expiresAfter(DateInterval::createFromDateString('1 days'));
 
         /**
          * Добавляем новые заказы
