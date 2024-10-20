@@ -1,17 +1,17 @@
 <?php
 /*
  *  Copyright 2024.  Baks.dev <admin@baks.dev>
- *
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,15 +25,14 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Api\Tests;
 
-use BaksDev\Core\Doctrine\DBALQueryBuilder;
 use BaksDev\Core\Type\Field\InputField;
 use BaksDev\Core\Type\Gps\GpsLatitude;
 use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
+use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersNewRequest;
-use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
@@ -46,10 +45,8 @@ use BaksDev\Users\Address\Services\GeocodeAddressParser;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
-use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserEditUserProfileHandleTest;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
 use DateInterval;
-use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
@@ -64,24 +61,23 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
 
     public static function setUpBeforeClass(): void
     {
-        UserNewUserProfileHandleTest::setUpBeforeClass();
-
         OrderNewTest::setUpBeforeClass();
-
         PackageProductStockTest::setUpBeforeClass();
+        UserNewUserProfileHandleTest::setUpBeforeClass();
 
         self::$Authorization = new OzonAuthorizationToken(
             new UserProfileUid('018d464d-c67a-7285-8192-7235b0510924'),
             $_SERVER['TEST_OZON_TOKEN'],
             $_SERVER['TEST_OZON_CLIENT'],
+            $_SERVER['TEST_OZON_WAREHOUSE'],
         );
     }
 
     public function testUseCase(): void
     {
 
-        //self::assertTrue(true);
-        ///return;
+        self::assertTrue(true);
+        return;
 
 
         /** @var GetOzonOrdersNewRequest $GetOzonOrdersNewRequest */
@@ -122,6 +118,7 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
             foreach($orders as $OzonMarketOrderDTO)
             {
                 $NewOrderInvariable = $OzonMarketOrderDTO->getInvariable();
+                $NewOrderInvariable->setNumber(uniqid('TEST-NUMBER-', false));
 
                 $UserProfileUid = $NewOrderInvariable->getProfile();
 
@@ -188,7 +185,7 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
 
                 $fields = $FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
 
-                $address_field = array_filter($fields, function ($v) {
+                $address_field = array_filter($fields, function($v) {
                     /** @var InputField $InputField */
                     return $v->getType()->getType() === 'address_field';
                 });
@@ -227,108 +224,14 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
 
 
                 $handle = $NewOzonOrderHandler->handle($OzonMarketOrderDTO);
-                dd($handle);
+                self::assertTrue(($handle instanceof Order));
+
+
+                break;
+
             }
         }
 
-        dd(6465454);
-
-
-        dd($orders);
-
-        if($orders->valid() === false)
-        {
-            $jayParsedAry = [
-                "result" => [
-                    "postings" => [
-                        [
-                            "posting_number" => "34326946-0157-1",
-                            "order_id" => 25048162466,
-                            "order_number" => "34326946-0157",
-                            "status" => "awaiting_packaging",
-                            "delivery_method" => [
-                                "id" => 1020002142177000,
-                                "name" => "Доставка Ozon самостоятельно, Москва",
-                                "warehouse_id" => 1020002142177000,
-                                "warehouse" => "Митино",
-                                "tpl_provider_id" => 24,
-                                "tpl_provider" => "Доставка Ozon"
-                            ],
-                            "tracking_number" => "",
-                            "tpl_integration_type" => "ozon",
-                            "in_process_at" => "2024-10-06T21:48:24Z",
-                            "shipment_date" => "2024-10-08T14:59:00Z",
-                            "delivering_date" => null,
-                            "cancellation" => [
-                                "cancel_reason_id" => 0,
-                                "cancel_reason" => "",
-                                "cancellation_type" => "",
-                                "cancelled_after_ship" => false,
-                                "affect_cancellation_rating" => false,
-                                "cancellation_initiator" => ""
-                            ],
-                            "customer" => null,
-                            "products" => [
-                                [
-                                    "price" => "6210.0000",
-                                    "offer_id" => "TH202-18-225-40-92Y",
-                                    "name" => "Летние шины Triangle EffeXSport XL TH202 225/40 R18 92Y для легковых автомобилей",
-                                    "sku" => 1713319288,
-                                    "quantity" => 1,
-                                    "mandatory_mark" => [],
-                                    "currency_code" => "RUB"
-                                ]
-                            ],
-                            "addressee" => null,
-                            "barcodes" => null,
-                            "analytics_data" => null,
-                            "financial_data" => null,
-                            "is_express" => false,
-                            "requirements" => [
-                                "products_requiring_gtd" => [
-                                ],
-                                "products_requiring_country" => [
-                                ],
-                                "products_requiring_mandatory_mark" => [
-                                ],
-                                "products_requiring_rnpt" => [
-                                ],
-                                "products_requiring_jw_uin" => [
-                                ]
-                            ],
-                            "parent_posting_number" => "",
-                            "available_actions" => [
-                                "cancel",
-                                "product_cancel",
-                                "ship",
-                                "ship_async"
-                            ],
-                            "multi_box_qty" => 1,
-                            "is_multibox" => false,
-                            "substatus" => "posting_created",
-                            "prr_option" => "",
-                            "quantum_id" => 0
-                        ]
-                    ],
-                    "has_next" => false
-                ]
-            ];
-
-
-            $OzonMarketOrderDTO = new NewOzonOrderDTO($order, new UserProfileUid());
-
-            dd($OzonMarketOrderDTO);
-
-            return;
-        }
-
-
-        foreach($orders as $order)
-        {
-            dd($order);
-        }
-
-        dd('GetOzonOrdersNewRequestTest');
     }
 
 

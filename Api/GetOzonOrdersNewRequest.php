@@ -1,17 +1,17 @@
 <?php
 /*
  *  Copyright 2024.  Baks.dev <admin@baks.dev>
- *
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,12 +27,9 @@ namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
-use BaksDev\Yandex\Market\Api\YandexMarket;
-use BaksDev\Yandex\Market\Orders\UseCase\New\YandexMarketOrderDTO;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use DomainException;
 use Generator;
 
 /**
@@ -71,17 +68,9 @@ final class GetOzonOrdersNewRequest extends Ozon
 
         $data['dir'] = 'DESC'; // сортировка
         $data['limit'] = 1000; // Количество значений в ответе
-        $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::ATOM); // Дата начала периода ('2023-11-03T11:47:39.878Z')
-        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::ATOM);   // Дата конца периода ('2023-11-03T11:47:39.878Z')
+        $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::W3C); // Дата начала периода (Y-m-d\TH:i:sP)
+        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);   // Дата конца периода (Y-m-d\TH:i:sP)
         $data['filter']['status'] = 'awaiting_packaging'; // Статус отправления
-        //$data['filter']['status'] = 'awaiting_deliver'; // Статус отправления
-
-        /*$data["with"] = [
-            "analytics_data" => true, // Добавить в ответ данные аналитики.
-            "barcodes" => true, // Добавить в ответ штрихкоды отправления.
-            "financial_data" => true, // Добавить в ответ данные аналитики.
-            "translit" => true // Выполнить транслитерацию возвращаемых значений.
-        ];*/
 
         $response = $this->TokenHttpClient()
             ->request(
