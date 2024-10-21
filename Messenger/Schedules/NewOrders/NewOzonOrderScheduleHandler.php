@@ -61,7 +61,8 @@ final class NewOzonOrderScheduleHandler
         private readonly FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
         private readonly DeduplicatorInterface $deduplicator,
         LoggerInterface $ozonOrdersLogger,
-    ) {
+    )
+    {
         $this->logger = $ozonOrdersLogger;
     }
 
@@ -71,7 +72,7 @@ final class NewOzonOrderScheduleHandler
         /** Получаем список НОВЫХ сборочных заданий */
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
-            ->findAll();
+            ->findAll($message->getInterval());
 
         if($orders->valid() === false)
         {

@@ -53,16 +53,19 @@ final class GetOzonOrdersNewRequest extends Ozon
 
         if(!$this->fromDate)
         {
-            // Новые заказы за последние 5 минут (планировщик на каждую минуту)
-            $this->fromDate = $dateTimeNow->sub($interval ?? DateInterval::createFromDateString('5 minutes'));
+            // Новые заказы за последние 15 минут (планировщик на каждую минуту)
+            $this->fromDate = $dateTimeNow->sub($interval ?? DateInterval::createFromDateString('15 minutes'));
 
-            /** В 3 часа ночи получаем заказы за сутки */
+            /**
+             * В 3 часа ночи получаем заказы за сутки
+             */
+
             $currentHour = $dateTimeNow->format('H');
             $currentMinute = $dateTimeNow->format('i');
 
             if($currentHour === '03' && $currentMinute >= '00' && $currentMinute <= '05')
             {
-                $this->fromDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 days'));
+                $this->fromDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 day'));
             }
         }
 
