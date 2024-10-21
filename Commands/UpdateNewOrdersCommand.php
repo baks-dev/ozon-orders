@@ -27,8 +27,8 @@ namespace BaksDev\Ozon\Orders\Commands;
 
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
+use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
-use BaksDev\Yandex\Market\Repository\AllProfileToken\AllProfileYaMarketTokenInterface;
 use DateInterval;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -46,7 +46,7 @@ class UpdateNewOrdersCommand extends Command
     private SymfonyStyle $io;
 
     public function __construct(
-        private readonly AllProfileYaMarketTokenInterface $allProfileYaMarketToken,
+        private readonly AllProfileOzonTokenInterface $allProfileYaMarketToken,
         private readonly MessageDispatchInterface $messageDispatch
 
     )
