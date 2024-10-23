@@ -28,7 +28,6 @@ namespace BaksDev\Ozon\Orders\UseCase\New\User\UserProfile;
 use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
 use BaksDev\Users\Profile\UserProfile\Entity\Event\UserProfileEventInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Event\UserProfileEventUid;
-use BaksDev\Yandex\Market\Orders\Type\ProfileType\TypeProfileFbsYandexMarket;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 

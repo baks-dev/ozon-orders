@@ -25,14 +25,11 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Commands\Upgrade\FBS;
 
-use BaksDev\Core\Type\Field\InputField;
 use BaksDev\Delivery\Entity\Delivery;
 use BaksDev\Delivery\Repository\ExistTypeDelivery\ExistTypeDeliveryInterface;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Delivery\UseCase\Admin\NewEdit\DeliveryDTO;
 use BaksDev\Delivery\UseCase\Admin\NewEdit\DeliveryHandler;
-use BaksDev\Delivery\UseCase\Admin\NewEdit\Fields\DeliveryFieldDTO;
-use BaksDev\Delivery\UseCase\Admin\NewEdit\Fields\Trans\DeliveryFieldTransDTO;
 use BaksDev\Delivery\UseCase\Admin\NewEdit\Trans\DeliveryTransDTO;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;

@@ -29,7 +29,6 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Payment\Entity\Payment;
 use BaksDev\Payment\Repository\ExistTypePayment\ExistTypePaymentInterface;
-use BaksDev\Payment\Type\Id\Choice\TypePaymentCache;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Payment\UseCase\Admin\NewEdit\PaymentDTO;
 use BaksDev\Payment\UseCase\Admin\NewEdit\PaymentHandler;
