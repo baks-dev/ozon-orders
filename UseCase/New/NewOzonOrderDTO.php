@@ -1,17 +1,17 @@
 <?php
 /*
  *  Copyright 2024.  Baks.dev <admin@baks.dev>
- *
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,12 +31,11 @@ use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\DeliveryTransport\Type\OrderStatus\OrderStatusDelivery;
 use BaksDev\Orders\Order\Entity\Event\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Event\OrderEventUid;
-
 use BaksDev\Orders\Order\Type\Status\OrderStatus;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusInterface;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCanceled;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCompleted;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusUnpaid;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
@@ -47,11 +46,11 @@ use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use BaksDev\Yandex\Market\Orders\Type\DeliveryType\TypeDeliveryDbsYaMarket;
-use BaksDev\Yandex\Market\Orders\Type\DeliveryType\TypeDeliveryYandexMarket;
+use BaksDev\Yandex\Market\Orders\Type\DeliveryType\TypeDeliveryFbsYandexMarket;
 use BaksDev\Yandex\Market\Orders\Type\PaymentType\TypePaymentDbsYaMarket;
-use BaksDev\Yandex\Market\Orders\Type\PaymentType\TypePaymentYandex;
+use BaksDev\Yandex\Market\Orders\Type\PaymentType\TypePaymentFbsYandex;
 use BaksDev\Yandex\Market\Orders\Type\ProfileType\TypeProfileDbsYaMarket;
-use BaksDev\Yandex\Market\Orders\Type\ProfileType\TypeProfileYandexMarket;
+use BaksDev\Yandex\Market\Orders\Type\ProfileType\TypeProfileFbsYandexMarket;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -332,7 +331,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     public function addProduct(Products\NewOrderProductDTO $product): void
     {
-        $filter = $this->product->filter(function (Products\NewOrderProductDTO $element) use ($product) {
+        $filter = $this->product->filter(function(Products\NewOrderProductDTO $element) use ($product) {
             return $element->getArticle() === $product->getArticle();
         });
 
