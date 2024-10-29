@@ -233,6 +233,4 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
         }
 
     }
-
-
 }

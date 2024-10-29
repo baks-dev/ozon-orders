@@ -29,8 +29,6 @@ use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
-use DateInterval;
-use Random\Randomizer;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -50,15 +48,12 @@ final readonly class NewOrdersScheduleHandler
 
         if($profiles->valid())
         {
-            $Randomizer = new Randomizer();
-
             foreach($profiles as $profile)
             {
-                $delay = sprintf('%s seconds', $Randomizer->getInt(5, 30));
 
                 $this->messageDispatch->dispatch(
                     message: new NewOzonOrdersScheduleMessage($profile),
-                    stamps: [new MessageDelay(DateInterval::createFromDateString($delay))],
+                    stamps: [new MessageDelay('5 seconds')],
                     transport: (string) $profile,
                 );
             }
