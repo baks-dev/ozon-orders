@@ -26,27 +26,30 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\DeliveryTransport\Repository\ProductParameter\ProductParameter\ProductParameterInterface;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
+use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
-use BaksDev\Ozon\Products\Api\Card\Identifier\GetOzonCardIdentifierRequest;
+use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-#[AsMessageHandler(priority: 0)]
+#[AsMessageHandler(priority: -100)]
 final class UpdateOzonOrderPackage
 {
     private LoggerInterface $logger;
 
     public function __construct(
-        #[Autowire(env: 'APP_ENV')] private readonly string $environment,
         private readonly DeduplicatorInterface $deduplicator,
         private readonly OrderEventInterface $orderEventRepository,
-        private readonly GetOzonCardIdentifierRequest $GetOzonCardIdentifierRequest,
         private readonly UpdateOzonOrdersPackageRequest $UpdateOzonOrdersPackageRequest,
+        private readonly ProductParameterInterface $ProductParameterRepository,
+        private readonly ProductConstByArticleInterface $ProductConstByArticleRepository,
+        private readonly GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
         LoggerInterface $ordersOrderLogger,
     )
     {
@@ -59,14 +62,6 @@ final class UpdateOzonOrderPackage
      */
     public function __invoke(OrderMessage $message): void
     {
-
-        return;
-
-        if($this->environment !== 'prod')
-        {
-            return;
-        }
-
         /** Дедубликатор по идентификатору заказа */
         $Deduplicator = $this->deduplicator
             ->namespace('orders-order')
@@ -93,7 +88,9 @@ final class UpdateOzonOrderPackage
             return;
         }
 
-        /** Проверяем, что номер заказа начинается с O- (Озон) */
+        /**
+         * Проверяем, что номер заказа начинается с O- (Озон)
+         */
         if(false === str_starts_with($OrderEvent->getOrderNumber(), 'O-'))
         {
             return;
@@ -125,32 +122,92 @@ final class UpdateOzonOrderPackage
         }
 
 
-        foreach($EditOrderDTO->getProduct() as $product)
+        /** @var NewOzonOrderDTO $NewOzonOrderDTO */
+        $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest->find($OrderEvent->getOrderNumber());
+
+
+        /** Общее количество в заказе */
+
+        $total = 0;
+
+        foreach($NewOzonOrderDTO->getProduct() as $totals)
+        {
+            $total += $totals->getPrice()->getTotal();
+        }
+
+        /** Разбиваем заказ на машиноместа */
+
+        $pack = $total;
+
+
+        foreach($NewOzonOrderDTO->getProduct() as $key => $OrderProductDTO)
         {
             /** Получаем идентификатор карточки Озон */
 
-            $this
-                ->GetOzonCardIdentifierRequest
-                ->profile($UserProfileUid)
-                ->article('АРТИКУЛ')
+            $ProductData = $this->ProductConstByArticleRepository
+                ->find($OrderProductDTO->getArticle());
+
+            $ProductParameter = $this->ProductParameterRepository
+                ->forProduct($ProductData->getProduct())
+                ->forOfferConst($ProductData->getOfferConst())
+                ->forVariationConst($ProductData->getVariationConst())
+                ->forModificationConst($ProductData->getModificationConst())
                 ->find();
 
-            dump($product);
+            $package = $ProductParameter['package'] ?? 1;
+
+            $products = null;
+
+            for($i = 1; $i <= $pack; $i++)
+            {
+                if($total > $package)
+                {
+                    $products[]['products'][] = [
+                        "product_id" => $OrderProductDTO->getSku(),
+                        "quantity" => $package
+                    ];
+                }
+
+                if($package >= $total)
+                {
+                    $products[]['products'][] = [
+                        "product_id" => $OrderProductDTO->getSku(),
+                        "quantity" => $total
+                    ];
+                }
+
+                $total -= $package;
+
+                if(0 >= $total)
+                {
+                    break;
+                }
+            }
         }
 
-
-        //        $this
-        //            ->UpdateOzonOrdersPackageRequest
-        //            ->profile($UserProfileUid)
-        //            ->package();
-
-
         $this->logger->info(
-            sprintf('%s: Отправили информацию о принятом в обработку заказе', $EditOrderInvariableDTO->getNumber()),
-            [self::class.':'.__LINE__]
+            sprintf('TODO: Упаковываем заказ %s', $EditOrderInvariableDTO->getNumber()),
+            [$products]
         );
 
-        $Deduplicator->save();
+        return;
+
+        $package = $this
+            ->UpdateOzonOrdersPackageRequest
+            ->profile($UserProfileUid)
+            ->products($products)
+            ->package($OrderEvent->getOrderNumber());
+
+        if($package)
+        {
+            $this->logger->info(
+                sprintf('%s: Отправили информацию о принятом в обработку заказе', $EditOrderInvariableDTO->getNumber()),
+                [self::class.':'.__LINE__]
+            );
+
+            $Deduplicator->save();
+        }
+
     }
 
 }

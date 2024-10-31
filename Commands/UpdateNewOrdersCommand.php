@@ -48,7 +48,6 @@ class UpdateNewOrdersCommand extends Command
     public function __construct(
         private readonly AllProfileOzonTokenInterface $allProfileYaMarketToken,
         private readonly MessageDispatchInterface $messageDispatch
-
     )
     {
         parent::__construct();

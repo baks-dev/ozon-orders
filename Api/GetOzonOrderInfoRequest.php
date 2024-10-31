@@ -26,52 +26,32 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
-use InvalidArgumentException;
+use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use DateTimeImmutable;
 
 /**
  * Информация о заказах
  */
-final class UpdateOzonOrdersPackageRequest extends Ozon
+final class GetOzonOrderInfoRequest extends Ozon
 {
-
-    private array|false $products = false;
-
-    public function products(array $products): self
-    {
-        $this->products = $products;
-        return $this;
-    }
-
+    private ?DateTimeImmutable $fromDate = null;
 
     /**
-     * Частичная сборка отправления
+     * Получить информацию об отправлении по идентификатору
      *
-     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_ShipFbsPostingPackage
+     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_GetFbsPostingV3
      *
      */
-    public function package(int|string $order): bool
+    public function find(string $number) // : Generator|bool
     {
-        if(false === $this->isExecuteEnvironment())
-        {
-            return true;
-        }
+        $number = str_replace('O-', '', $number);
 
-        if(empty($this->products))
-        {
-            throw new InvalidArgumentException('Invalid Argument $products');
-        }
-
-        $order = str_replace('O-', '', (string) $order);
-
-        $data = [
-            "packages" => $this->products,
-            "posting_number" => $order,
-        ];
+        $data['posting_number'] = $number;
 
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
-                '/v4/posting/fbs/ship',
+                '/v3/posting/fbs/get',
                 ['json' => $data],
             );
 
@@ -79,14 +59,15 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
-            $this->logger->critical('ozon-orders: Ошибка при упаковке заказа', [
-                self::class.':'.__LINE__,
-                $content
-            ]);
+            foreach($content['errors'] as $error)
+            {
+                $this->logger->critical($error['code'].': '.$error['message'], [self::class.':'.__LINE__]);
+            }
 
             return false;
         }
 
-        return isset($content['result']);
+        return new NewOzonOrderDTO(current($content), $this->getProfile());
+
     }
 }

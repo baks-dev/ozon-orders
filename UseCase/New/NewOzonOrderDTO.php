@@ -251,6 +251,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         foreach($order['products'] as $item)
         {
             $NewOrderProductDTO = new Products\NewOrderProductDTO($item['offer_id']);
+            $NewOrderProductDTO->setSku($item['sku']);
 
             $NewOrderPriceDTO = $NewOrderProductDTO->getPrice();
 
@@ -260,6 +261,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
             $NewOrderPriceDTO->setPrice($Money);
             $NewOrderPriceDTO->setCurrency($Currency);
             $NewOrderPriceDTO->setTotal($item['quantity']);
+
 
             $this->addProduct($NewOrderProductDTO);
 
