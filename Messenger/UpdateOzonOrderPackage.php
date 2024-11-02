@@ -85,6 +85,11 @@ final class UpdateOzonOrderPackage
 
         if(empty($OrderEvent->getOrderNumber()))
         {
+            $this->logger->warning(
+                'Невозможно определить номер заказа (возможно изменилось событие)',
+                [self::class.':'.__LINE__, 'OrderUid' => (string) $message->getId()]
+            );
+
             return;
         }
 
@@ -123,7 +128,9 @@ final class UpdateOzonOrderPackage
 
 
         /** @var NewOzonOrderDTO $NewOzonOrderDTO */
-        $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest->find($OrderEvent->getOrderNumber());
+        $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest
+            ->profile($UserProfileUid)
+            ->find($OrderEvent->getOrderNumber());
 
 
         /** Общее количество в заказе */
@@ -184,13 +191,6 @@ final class UpdateOzonOrderPackage
                 }
             }
         }
-
-        $this->logger->info(
-            sprintf('TODO: Упаковываем заказ %s', $EditOrderInvariableDTO->getNumber()),
-            [$products]
-        );
-
-        return;
 
         $package = $this
             ->UpdateOzonOrdersPackageRequest

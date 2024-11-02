@@ -10,7 +10,7 @@
 # systemctl stop baks-ozon-orders@1.service
 
 [Unit]
-Description=Symfony messenger nginx-unit %i
+Description=nginx-unit
 StartLimitBurst=5
 StartLimitIntervalSec=0
 
