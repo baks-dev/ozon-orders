@@ -50,7 +50,6 @@ final readonly class NewOrdersScheduleHandler
         {
             foreach($profiles as $profile)
             {
-
                 $this->messageDispatch->dispatch(
                     message: new NewOzonOrdersScheduleMessage($profile),
                     stamps: [new MessageDelay('5 seconds')],

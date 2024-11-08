@@ -108,16 +108,8 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
         $this->status = new OrderStatus($yandexStatus);
 
-        /** Присваиваем, если имееется информация о покупателе */
-        if(!empty($order['addressee']))
-        {
-
-        }
-
-
         $this->product = new ArrayCollection();
         $this->usr = new User\OrderUserDTO();
-
 
         /** Дата доставки */
         $deliveryDate = new DateTimeImmutable($order['shipment_date']);
@@ -128,48 +120,6 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
 
         $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
-
-
-        //$address = $order['delivery']['address'];
-
-        /** Геолокация клиента */
-        //$OrderDeliveryDTO->setLatitude(new GpsLatitude($address['gps']['latitude']));
-        //$OrderDeliveryDTO->setLongitude(new GpsLongitude($address['gps']['longitude']));
-
-
-        /** Адрес доставки клиента */
-
-        //        $deliveryAddress = [];
-        //
-        //        foreach($address as $key => $data)
-        //        {
-        //            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
-        //            if(
-        //                empty($data) ||
-        //                in_array($key, [
-        //                    'gps', // GPS-координаты.
-        //                    'postcode', // Почтовый индекс.
-        //                    'recipient', // Фамилия, имя и отчество получателя заказа.
-        //                    'subway', // Станция метро.
-        //                    'floor', // Этаж
-        //                    'phone', // Телефон получателя заказа.
-        //                ])
-        //            ) {
-        //                continue;
-        //            }
-        //
-        //            $deliveryAddress[] = match ($key)
-        //            {
-        //                //'street' => 'улица '.trim(str_replace('улица', '', $data)),
-        //                'house' => 'дом '.$data,
-        //                //'block' => 'корпус '.$data,
-        //                'entrance' => 'подъезд '.$data,
-        //                default => $data,
-        //            };
-        //        }
-
-        //$OrderDeliveryDTO->setAddress(implode(', ', $deliveryAddress));
-        //dump($OrderDeliveryDTO->getAddress());
 
         // Доставка Озон FBS
         if($order['tpl_integration_type'] === 'ozon')
@@ -187,65 +137,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
             $OrderPaymentDTO->setPayment($Payment);
 
             /** Комментарий покупателя */
-            $this->comment = str_replace(' самостоятельно', '', $order['delivery_method']['name']);
+            //$this->comment = str_replace(' самостоятельно', '', $order['delivery_method']['name']);
         }
 
-
-        //        // Доставка Магазином (DBS)
-        //        if($order['delivery']['deliveryPartnerType'] === 'SHOP')
-        //        {
-        //            /** Тип профиля DBS Yandex Market */
-        //            $Profile = new TypeProfileUid(TypeProfileDbsYaMarket::class);
-        //            $OrderProfileDTO?->setType($Profile);
-        //
-        //            /** Способ доставки Магазином (DBS Yandex Market) */
-        //            $Delivery = new DeliveryUid(TypeDeliveryDbsYaMarket::class);
-        //            $OrderDeliveryDTO->setDelivery($Delivery);
-        //
-        //            /** Способ оплаты DBS Yandex Market  */
-        //            $Payment = new PaymentUid(TypePaymentDbsYaMarket::class);
-        //            $OrderPaymentDTO->setPayment($Payment);
-        //        }
-
-        /** Информация о покупателе */
-        //$this->buyer = empty($buyer) ? null : $buyer;
-
-        //        $deliveryComment = [];
-        //        $deliveryComment[] = $order['delivery_method']['tpl_provider'];
-
-
-        //        foreach($address as $key => $data)
-        //        {
-        //            /** @see https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders#orderdeliveryaddressdto */
-        //            if(
-        //                empty($data) ||
-        //                !in_array($key, [
-        //                    //'postcode', // Почтовый индекс.
-        //                    'recipient', // Фамилия, имя и отчество получателя заказа.
-        //                    'subway', // Станция метро.
-        //                    'apartment', // Квартира или офис.
-        //                    'floor', // Этаж
-        //                    'phone', // Телефон получателя заказа.
-        //                ])
-        //            ) {
-        //                continue;
-        //            }
-        //
-        //            $deliveryComment[] = match ($key)
-        //            {
-        //                //'postcode' => 'инд. '.$data,
-        //                'recipient' => 'получатель '.$data,
-        //                'phone' => 'тел. '.$data,
-        //                'subway' => 'ст.метро '.$data,
-        //                'apartment' => 'кв. '.$data,
-        //                'floor' => 'этаж '.$data,
-        //                default => $data,
-        //            };
-        //        }
-
-        //  isset($order['notes']) ? $deliveryComment[] = $order['notes'] : false;
-
-        //dd($this->comment);
 
         /** Продукция */
         foreach($order['products'] as $item)

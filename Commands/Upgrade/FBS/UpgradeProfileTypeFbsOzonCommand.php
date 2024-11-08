@@ -25,15 +25,10 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Commands\Upgrade\FBS;
 
-use BaksDev\Core\Type\Field\InputField;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Users\Profile\TypeProfile\Entity\TypeProfile;
 use BaksDev\Users\Profile\TypeProfile\Repository\ExistTypeProfile\ExistTypeProfileInterface;
 use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
-use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\Section\Fields\SectionFieldDTO;
-use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\Section\Fields\Trans\SectionFieldTransDTO;
-use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\Section\SectionDTO;
-use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\Section\Trans\SectionTransDTO;
 use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\Trans\TransDTO;
 use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\TypeProfileDTO;
 use BaksDev\Users\Profile\TypeProfile\UseCase\Admin\NewEdit\TypeProfileHandler;
@@ -92,53 +87,6 @@ class UpgradeProfileTypeFbsOzonCommand extends Command
                 $ProfileTrans->setName($name);
                 $ProfileTrans->setDescription($desc);
             }
-
-            /**
-             * Создаем секцию Контактные данные
-             */
-            $SectionDTO = new SectionDTO();
-            $SectionDTO->setSort(100);
-
-            /** @var SectionTransDTO $SectionTrans */
-            foreach($SectionDTO->getTranslate() as $SectionTrans)
-            {
-                $name = $this->translator->trans('ozon.fbs.section.contact.name', domain: 'profile.type', locale: $SectionTrans->getLocal()->getLocalValue());
-                $desc = $this->translator->trans('ozon.fbs.section.contact.desc', domain: 'profile.type', locale: $SectionTrans->getLocal()->getLocalValue());
-
-                $SectionTrans->setName($name);
-                $SectionTrans->setDescription($desc);
-            }
-
-            $TypeProfileDTO->addSection($SectionDTO);
-
-            /* Добавляем поля для заполнения */
-
-            $fields = ['name'];
-
-            foreach($fields as $sort => $field)
-            {
-                $SectionFieldDTO = new SectionFieldDTO();
-                $SectionFieldDTO->setSort($sort);
-                $SectionFieldDTO->setPublic(true);
-                $SectionFieldDTO->setRequired(true);
-                $SectionFieldDTO->setType(new InputField('input_field'));
-
-
-                /** @var SectionFieldTransDTO $SectionFieldTrans */
-                foreach($SectionFieldDTO->getTranslate() as $SectionFieldTrans)
-                {
-                    $name = $this->translator->trans('ozon.section.contact.field.'.$field.'.name', domain: 'profile.type', locale: $SectionFieldTrans->getLocal()->getLocalValue());
-                    $desc = $this->translator->trans('ozon.section.contact.field.'.$field.'.desc', domain: 'profile.type', locale: $SectionFieldTrans->getLocal()->getLocalValue());
-
-                    $SectionFieldTrans->setName($name);
-                    $SectionFieldTrans->setDescription($desc);
-                }
-
-
-                $SectionDTO->addField($SectionFieldDTO);
-            }
-
-            $TypeProfileDTO->addSection($SectionDTO);
 
             $handle = $this->profileHandler->handle($TypeProfileDTO);
 

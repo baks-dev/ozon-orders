@@ -31,7 +31,7 @@ use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
-use BaksDev\Ozon\Orders\Api\GetOzonOrdersNewRequest;
+use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
@@ -51,7 +51,7 @@ final class NewOzonOrderScheduleHandler
     private LoggerInterface $logger;
 
     public function __construct(
-        private readonly GetOzonOrdersNewRequest $getOzonOrdersNewRequest,
+        private readonly GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
         private readonly UserProfileGpsInterface $UserProfileGpsInterface,
         private readonly GeocodeAddressParser $GeocodeAddressParser,
         private readonly UserByUserProfileInterface $UserByUserProfile,
@@ -72,7 +72,7 @@ final class NewOzonOrderScheduleHandler
         /** Получаем список НОВЫХ сборочных заданий */
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
-            ->findAll($message->getInterval());
+            ->findAllNews();
 
         if($orders->valid() === false)
         {
