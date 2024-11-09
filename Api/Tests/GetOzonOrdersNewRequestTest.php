@@ -27,6 +27,7 @@ namespace BaksDev\Ozon\Orders\Api\Tests;
 
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
@@ -58,11 +59,6 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
 
     public function testUseCase(): void
     {
-
-        self::assertTrue(true);
-        //return;
-
-
         /** @var GetOzonOrdersByStatusRequest $GetOzonOrdersNewRequest */
         $GetOzonOrdersNewRequest = self::getContainer()->get(GetOzonOrdersByStatusRequest::class);
         $GetOzonOrdersNewRequest->TokenHttpClient(self::$Authorization);
@@ -73,8 +69,8 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
 
         foreach($orders as $order)
         {
-            dd($order);
+            self::assertInstanceOf(NewOzonOrderDTO::class, $order);
+            //dd($order);
         }
-
     }
 }
