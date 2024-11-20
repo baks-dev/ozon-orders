@@ -89,7 +89,17 @@ final class NewOzonOrderScheduleHandler
          */
         foreach($orders as $OzonMarketOrderDTO)
         {
-            $Deduplicator->deduplication([$OzonMarketOrderDTO->getNumber(), self::class]);
+
+            /**
+             * Добавляем в дедубликатор заказ без его связанных отправлений
+             * может произойти ситуация, когда заказ во время деления на отправления короткое время находится в статусе НОВЫЙ
+             */
+
+            $posting = explode('-', $OzonMarketOrderDTO->getNumber());
+            array_pop($posting);
+            $number = implode("-", $posting);
+
+            $Deduplicator->deduplication([$number, self::class]);
 
             if($Deduplicator->isExecuted())
             {
