@@ -42,6 +42,7 @@ use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -82,9 +83,14 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     public function __construct(array $order, UserProfileUid $profile)
     {
+        $timezone = new DateTimeZone(date_default_timezone_get());
+
         /** Постоянная величина */
         $NewOrderInvariable = new Invariable\NewOrderInvariable();
-        $NewOrderInvariable->setCreated(new DateTimeImmutable($order['in_process_at'])); // Дата и время начала обработки отправления.
+
+        $created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
+        $NewOrderInvariable->setCreated($created); // Дата и время начала обработки отправления.
+
         $NewOrderInvariable->setProfile($profile);
         $NewOrderInvariable->setNumber('O-'.$order['posting_number']); // помечаем заказ префиксом O
         //$NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O (без единицы в конце)
@@ -94,7 +100,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         /** @deprecated переносится в Invariable */
         $this->number = 'O-'.$order['posting_number']; // помечаем заказ префиксом O
         // $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом O (без единицы в конце)
-        $this->created = new DateTimeImmutable($order['in_process_at']); // Дата и время начала обработки отправления.
+        $this->created = $created; // Дата и время начала обработки отправления.
 
 
         /** Определяем статус заказа */
@@ -111,14 +117,12 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->product = new ArrayCollection();
         $this->usr = new User\OrderUserDTO();
 
-        /** Дата доставки */
-        $deliveryDate = new DateTimeImmutable($order['shipment_date']);
-
         $OrderDeliveryDTO = $this->usr->getDelivery();
         $OrderPaymentDTO = $this->usr->getPayment();
         $OrderProfileDTO = $this->usr->getUserProfile();
 
-
+        /** Дата доставки */
+        $deliveryDate = (new DateTimeImmutable($order['tariffication']['next_tariff_starts_at']))->setTimezone($timezone);
         $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
 
         // Доставка Озон FBS
