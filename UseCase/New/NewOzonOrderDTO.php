@@ -121,9 +121,23 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $OrderPaymentDTO = $this->usr->getPayment();
         $OrderProfileDTO = $this->usr->getUserProfile();
 
-        /** Дата доставки */
-        $deliveryDate = (new DateTimeImmutable($order['tariffication']['next_tariff_starts_at']))->setTimezone($timezone);
+
+        /**
+         * Дата доставки
+         */
+
+
+        // По умолчанию дата доставки - на след. день
+        $deliveryDate = new DateTimeImmutable('+ 1 day');
+
+        if(isset($order['tariffication']['next_tariff_starts_at']))
+        {
+            /** Дата доставки */
+            $deliveryDate = (new DateTimeImmutable($order['tariffication']['next_tariff_starts_at']))->setTimezone($timezone);
+        }
+
         $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
+
 
         // Доставка Озон FBS
         if($order['tpl_integration_type'] === 'ozon')

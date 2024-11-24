@@ -69,6 +69,8 @@ class GetOzonOrdersCancelRequestTest extends KernelTestCase
 
     public function testUseCase(): void
     {
+        self::assertTrue(true);
+
         /** @var GetOzonOrdersByStatusRequest $GetOzonOrdersByStatusRequest */
         $GetOzonOrdersByStatusRequest = self::getContainer()->get(GetOzonOrdersByStatusRequest::class);
         $GetOzonOrdersByStatusRequest->TokenHttpClient(self::$Authorization);
@@ -82,6 +84,7 @@ class GetOzonOrdersCancelRequestTest extends KernelTestCase
             foreach($orders as $order)
             {
                 self::assertInstanceOf(CancelOzonOrderDTO::class, $order);
+                // dump($order);
             }
         }
     }

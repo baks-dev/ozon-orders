@@ -58,7 +58,7 @@ final class CancelOzonOrderDTO implements OrderEventInterface
 
     /** Комментарий к заказу */
     #[Assert\NotBlank]
-    private ?string $comment;
+    private readonly string $comment;
 
 
     public function __construct(array $order, UserProfile|UserProfileUid|string $profile)
@@ -77,7 +77,7 @@ final class CancelOzonOrderDTO implements OrderEventInterface
 
         $this->danger = true; // выделяем заказ
 
-        $this->number = $order['posting_number'];
+        $this->number = 'O-'.$order['posting_number'];
 
         $this->comment = sprintf('Ozon Seller: %s', $order['cancellation']['cancel_reason']);
     }
@@ -141,11 +141,5 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     public function getComment(): ?string
     {
         return $this->comment;
-    }
-
-    public function setComment(?string $comment): self
-    {
-        $this->comment = $comment;
-        return $this;
     }
 }
