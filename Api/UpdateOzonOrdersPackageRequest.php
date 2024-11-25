@@ -81,7 +81,7 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
         {
             $this->logger->critical(
                 message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
-                context: [self::class.':'.__LINE__, $content]
+                context: [self::class.':'.__LINE__, $data, $content]
             );
 
             return false;

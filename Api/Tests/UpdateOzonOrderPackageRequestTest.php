@@ -83,27 +83,28 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
         return;
 
 
-        /** @var OrderEventInterface $OrderEventRepository */
-        $OrderEventRepository = self::getContainer()->get(OrderEventInterface::class);
-        $OrderEvent = $OrderEventRepository->find('0192a497-f845-705d-b122-cbb021a8bbfb');
+        //        /** @var OrderEventInterface $OrderEventRepository */
+        //        $OrderEventRepository = self::getContainer()->get(OrderEventInterface::class);
+        //        $OrderEvent = $OrderEventRepository->find('0192a497-f845-705d-b122-cbb021a8bbfb');
+        //
+        //        if(false === $OrderEvent)
+        //        {
+        //            return;
+        //        }
+        //
+        //        $EditOrderDTO = new EditOrderDTO();
+        //        $OrderEvent->getDto($EditOrderDTO);
+        //        $OrderUserDTO = $EditOrderDTO->getUsr();
+        //
+        //        if(!$OrderUserDTO)
+        //        {
+        //            return;
+        //        }
 
-        if(false === $OrderEvent)
-        {
-            return;
-        }
+        //        $EditOrderInvariableDTO = $EditOrderDTO->getInvariable();
+        //        $number = $EditOrderInvariableDTO->getNumber();
 
-        $EditOrderDTO = new EditOrderDTO();
-        $OrderEvent->getDto($EditOrderDTO);
-        $OrderUserDTO = $EditOrderDTO->getUsr();
-
-        if(!$OrderUserDTO)
-        {
-            return;
-        }
-
-        $EditOrderInvariableDTO = $EditOrderDTO->getInvariable();
-        $number = $EditOrderInvariableDTO->getNumber();
-        $number = '80115596-0003-1';
+        $number = 'number';
 
 
         /** @var GetOzonOrderInfoRequest $GetOzonOrderInfoRequest */
@@ -130,6 +131,7 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
 
         /** Общее количество в заказе */
 
+
         $total = 0;
 
         foreach($NewOzonOrderDTO->getProduct() as $totals)
@@ -141,10 +143,9 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
         /** Разбиваем заказ на машиноместа */
 
         $pack = $total;
-
-
         $package = null;
 
+        $products = null;
 
         foreach($NewOzonOrderDTO->getProduct() as $key => $OrderProductDTO)
         {
@@ -162,9 +163,9 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
 
             $package = $ProductParameter['package'] ?? 1;
 
-            $products = null;
+            $productTotal = $OrderProductDTO->getPrice()->getTotal();
 
-            for($i = 1; $i <= $pack; $i++)
+            for($i = 1; $i <= $productTotal; $i++)
             {
                 if($total > $package)
                 {
@@ -192,7 +193,6 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
         }
 
 
-        //dd($products);
 
         $package = $UpdateOzonOrdersPackageRequest
             ->products($products)

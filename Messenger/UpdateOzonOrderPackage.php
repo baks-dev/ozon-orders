@@ -144,8 +144,7 @@ final class UpdateOzonOrderPackage
 
         /** Разбиваем заказ на машиноместа */
 
-        $pack = $total;
-
+        $products = null;
 
         foreach($NewOzonOrderDTO->getProduct() as $key => $OrderProductDTO)
         {
@@ -163,7 +162,7 @@ final class UpdateOzonOrderPackage
 
             $package = $ProductParameter['package'] ?? 1;
 
-            $products = null;
+            $pack = $OrderProductDTO->getPrice()->getTotal();
 
             for($i = 1; $i <= $pack; $i++)
             {
