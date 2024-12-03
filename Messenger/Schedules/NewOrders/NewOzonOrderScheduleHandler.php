@@ -68,10 +68,10 @@ final class NewOzonOrderScheduleHandler
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
-
         /** Получаем список НОВЫХ сборочных заданий */
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
+            ->interval($message->getInterval())
             ->findAllNews();
 
         if($orders->valid() === false)
@@ -101,7 +101,8 @@ final class NewOzonOrderScheduleHandler
 
             $Deduplicator->deduplication([$number, self::class]);
 
-            if($Deduplicator->isExecuted())
+            // Если передан интервал - не проверяем дедубликатор
+            if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
             {
                 continue;
             }

@@ -69,7 +69,8 @@ final class CancelOzonOrdersScheduleHandler
                     self::class
                 ]);
 
-            if($Deduplicator->isExecuted())
+            // Если передан интервал - не проверяем дедубликатор
+            if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
             {
                 continue;
             }

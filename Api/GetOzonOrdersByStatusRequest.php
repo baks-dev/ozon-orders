@@ -45,8 +45,14 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
     private DateInterval $interval;
 
-    public function interval(DateInterval|string $interval): self
+    public function interval(DateInterval|string|null $interval): self
     {
+        if(empty($interval))
+        {
+            $this->interval = DateInterval::createFromDateString('30 minutes');
+            return $this;
+        }
+
         if($interval instanceof DateInterval)
         {
             $this->interval = $interval;
