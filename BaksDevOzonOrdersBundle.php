@@ -30,8 +30,8 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 /** Индекс сортировки 450 */
 class BaksDevOzonOrdersBundle extends AbstractBundle
 {
-    public const NAMESPACE = __NAMESPACE__.'\\';
+    public const string NAMESPACE = __NAMESPACE__.'\\';
 
-    public const PATH = __DIR__.DIRECTORY_SEPARATOR;
+    public const string PATH = __DIR__.DIRECTORY_SEPARATOR;
 
 }
