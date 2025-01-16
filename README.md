@@ -1,6 +1,6 @@
 # BaksDev Ozon Orders
 
-[![Version](https://img.shields.io/badge/version-7.1.26-blue)](https://github.com/baks-dev/ozon-orders/releases)
+[![Version](https://img.shields.io/badge/version-7.1.27-blue)](https://github.com/baks-dev/ozon-orders/releases)
 ![php 8.3+](https://img.shields.io/badge/php-min%208.3-red.svg)
 
 Модуль заказов Ozon
