@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,6 @@ use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByAr
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
-use DateInterval;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -64,11 +63,30 @@ final class NewOzonOrderScheduleHandler
     )
     {
         $this->logger = $ozonOrdersLogger;
+        $this->deduplicator->namespace('ozon-orders');
     }
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
-        /** Получаем список НОВЫХ сборочных заданий */
+        /**
+         * Ограничиваем периодичность запросов
+         */
+
+        $DeduplicatorExec = $this->deduplicator
+            ->expiresAfter('1 minute')
+            ->deduplication([$message->getProfile(), self::class]);
+
+        if($DeduplicatorExec->isExecuted())
+        {
+            return;
+        }
+
+        $DeduplicatorExec->save();
+
+        /**
+         * Получаем список НОВЫХ сборочных заданий
+         */
+
         $orders = $this->getOzonOrdersNewRequest
             ->profile($message->getProfile())
             ->interval($message->getInterval())
@@ -80,8 +98,7 @@ final class NewOzonOrderScheduleHandler
         }
 
         $Deduplicator = $this->deduplicator
-            ->namespace('ozon-orders')
-            ->expiresAfter(DateInterval::createFromDateString('1 day'));
+            ->expiresAfter('1 day');
 
         /**
          * Добавляем новые заказы
@@ -108,7 +125,6 @@ final class NewOzonOrderScheduleHandler
             }
 
             $NewOrderInvariable = $OzonMarketOrderDTO->getInvariable();
-
             $UserProfileUid = $NewOrderInvariable->getProfile();
 
             /**
@@ -257,5 +273,7 @@ final class NewOzonOrderScheduleHandler
                 $OzonMarketOrderDTO->getNumber()
             ), [self::class.':'.__LINE__]);
         }
+
+        $DeduplicatorExec->delete();
     }
 }
