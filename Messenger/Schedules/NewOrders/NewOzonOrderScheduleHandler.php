@@ -42,27 +42,25 @@ use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserPro
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
-final class NewOzonOrderScheduleHandler
+final readonly class NewOzonOrderScheduleHandler
 {
-    private LoggerInterface $logger;
-
     public function __construct(
-        private readonly GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
-        private readonly UserProfileGpsInterface $UserProfileGpsInterface,
-        private readonly GeocodeAddressParser $GeocodeAddressParser,
-        private readonly UserByUserProfileInterface $UserByUserProfile,
-        private readonly ProductConstByArticleInterface $ProductConstByArticle,
-        private readonly CurrentDeliveryEventInterface $CurrentDeliveryEvent,
-        private readonly NewOzonOrderHandler $NewOzonOrderHandler,
-        private readonly FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
-        private readonly DeduplicatorInterface $deduplicator,
-        LoggerInterface $ozonOrdersLogger,
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
+        private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
+        private UserProfileGpsInterface $UserProfileGpsInterface,
+        private GeocodeAddressParser $GeocodeAddressParser,
+        private ProductConstByArticleInterface $ProductConstByArticle,
+        private CurrentDeliveryEventInterface $CurrentDeliveryEvent,
+        private NewOzonOrderHandler $NewOzonOrderHandler,
+        private DeduplicatorInterface $deduplicator,
+        private UserByUserProfileInterface $UserByUserProfile,
+        private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
     )
     {
-        $this->logger = $ozonOrdersLogger;
         $this->deduplicator->namespace('ozon-orders');
     }
 
@@ -97,8 +95,6 @@ final class NewOzonOrderScheduleHandler
             return;
         }
 
-        $Deduplicator = $this->deduplicator
-            ->expiresAfter('1 day');
 
         /**
          * Добавляем новые заказы
@@ -106,7 +102,6 @@ final class NewOzonOrderScheduleHandler
          */
         foreach($orders as $OzonMarketOrderDTO)
         {
-
             /**
              * Добавляем в дедубликатор заказ без его связанных отправлений
              * может произойти ситуация, когда заказ во время деления на отправления короткое время находится в статусе НОВЫЙ
@@ -116,7 +111,9 @@ final class NewOzonOrderScheduleHandler
             array_pop($posting);
             $number = implode("-", $posting);
 
-            $Deduplicator->deduplication([$number, self::class]);
+            $Deduplicator = $this->deduplicator
+                ->expiresAfter('1 day')
+                ->deduplication([$number, self::class]);
 
             // Если передан интервал - не проверяем дедубликатор
             if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
@@ -181,8 +178,8 @@ final class NewOzonOrderScheduleHandler
 
                 $OrderDeliveryDTO->setAddress($address['location']);
 
-                isset($address['latitude']) ? $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude'])) : false;
-                isset($address['longitude']) ? $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude'])) : false;
+                !isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
+                !isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
             }
             else
             {
