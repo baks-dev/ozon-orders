@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -33,22 +33,18 @@ use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderHandler;
 use DateInterval;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(priority: 0)]
-final class CancelOzonOrdersScheduleHandler
+final readonly class CancelOzonOrdersScheduleHandler
 {
-    private LoggerInterface $logger;
-
     public function __construct(
-        private readonly GetOzonOrdersByStatusRequest $GetOzonOrdersByStatusRequest,
-        private readonly CancelOzonOrderHandler $CancelOzonOrderHandler,
-        private readonly DeduplicatorInterface $deduplicator,
-        LoggerInterface $ozonOrdersOrdersLogger,
-    )
-    {
-        $this->logger = $ozonOrdersOrdersLogger;
-    }
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
+        private GetOzonOrdersByStatusRequest $GetOzonOrdersByStatusRequest,
+        private CancelOzonOrderHandler $CancelOzonOrderHandler,
+        private DeduplicatorInterface $deduplicator,
+    ) {}
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
     {

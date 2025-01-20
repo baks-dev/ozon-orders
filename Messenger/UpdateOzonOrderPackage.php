@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -36,25 +36,21 @@ use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(priority: -100)]
-final class UpdateOzonOrderPackage
+final readonly class UpdateOzonOrderPackage
 {
-    private LoggerInterface $logger;
-
     public function __construct(
-        private readonly DeduplicatorInterface $deduplicator,
-        private readonly OrderEventInterface $orderEventRepository,
-        private readonly UpdateOzonOrdersPackageRequest $UpdateOzonOrdersPackageRequest,
-        private readonly ProductParameterInterface $ProductParameterRepository,
-        private readonly ProductConstByArticleInterface $ProductConstByArticleRepository,
-        private readonly GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
-        LoggerInterface $ordersOrderLogger,
-    )
-    {
-        $this->logger = $ordersOrderLogger;
-    }
+        #[Target('ordersOrderLogger')] private LoggerInterface $logger,
+        private DeduplicatorInterface $deduplicator,
+        private OrderEventInterface $orderEventRepository,
+        private UpdateOzonOrdersPackageRequest $UpdateOzonOrdersPackageRequest,
+        private ProductParameterInterface $ProductParameterRepository,
+        private ProductConstByArticleInterface $ProductConstByArticleRepository,
+        private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
+    ) {}
 
     /**
      * Обновляем заказ Озон при отправке заказа на упаковку
