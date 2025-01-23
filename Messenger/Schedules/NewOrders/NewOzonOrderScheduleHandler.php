@@ -116,7 +116,7 @@ final readonly class NewOzonOrderScheduleHandler
                 ->deduplication([$number, self::class]);
 
             // Если передан интервал - не проверяем дедубликатор
-            if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
+            if($Deduplicator->isExecuted())
             {
                 continue;
             }
