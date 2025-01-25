@@ -100,6 +100,9 @@ final readonly class NewOzonOrderScheduleHandler
          * Добавляем новые заказы
          * @var NewOzonOrderDTO $OzonMarketOrderDTO
          */
+
+        $this->deduplicator->expiresAfter('1 day');
+
         foreach($orders as $OzonMarketOrderDTO)
         {
             /**
@@ -112,7 +115,6 @@ final readonly class NewOzonOrderScheduleHandler
             $number = implode("-", $posting);
 
             $Deduplicator = $this->deduplicator
-                ->expiresAfter('1 day')
                 ->deduplication([$number, self::class]);
 
             // Если передан интервал - не проверяем дедубликатор
