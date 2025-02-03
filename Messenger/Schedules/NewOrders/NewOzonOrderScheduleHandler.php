@@ -66,6 +66,7 @@ final readonly class NewOzonOrderScheduleHandler
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
+
         /**
          * Ограничиваем периодичность запросов
          */
@@ -96,6 +97,8 @@ final readonly class NewOzonOrderScheduleHandler
         }
 
 
+        $orders = iterator_to_array($orders);
+
         /**
          * Добавляем новые заказы
          * @var NewOzonOrderDTO $OzonMarketOrderDTO
@@ -103,22 +106,38 @@ final readonly class NewOzonOrderScheduleHandler
 
         $this->deduplicator->expiresAfter('1 day');
 
+        $Deduplicator = null;
+
+        foreach($orders as $order)
+        {
+            $posting = explode('-', $order->getNumber());
+            array_pop($posting);
+            $number = implode("-", $posting);
+
+                $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
+        }
+
+        if(is_null($Deduplicator))
+        {
+            return;
+        }
+
         foreach($orders as $OzonMarketOrderDTO)
         {
-            /**
-             * Добавляем в дедубликатор заказ без его связанных отправлений
-             * может произойти ситуация, когда заказ во время деления на отправления короткое время находится в статусе НОВЫЙ
-             */
 
             $posting = explode('-', $OzonMarketOrderDTO->getNumber());
             array_pop($posting);
             $number = implode("-", $posting);
 
-            $Deduplicator = $this->deduplicator
-                ->deduplication([$number, self::class]);
+            /**
+             * Добавляем в дедубликатор заказ без его связанных отправлений
+             * может произойти ситуация, когда заказ во время деления на отправления короткое время находится в статусе НОВЫЙ
+             */
+
+                $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
 
             // Если передан интервал - не проверяем дедубликатор
-            if($Deduplicator->isExecuted())
+            if($Deduplicator[$number]->isExecuted())
             {
                 continue;
             }
@@ -129,7 +148,7 @@ final readonly class NewOzonOrderScheduleHandler
             /**
              * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
              */
-            $User = $this->UserByUserProfile->forProfile($UserProfileUid)->findUser();
+            $User = $this->UserByUserProfile->forProfile($UserProfileUid)->find();
 
             if($User === false)
             {
@@ -261,7 +280,7 @@ final readonly class NewOzonOrderScheduleHandler
                     $OzonMarketOrderDTO->getNumber()
                 ), [self::class.':'.__LINE__]);
 
-                $Deduplicator->save();
+                $Deduplicator[$number]->save();
 
                 continue;
             }
