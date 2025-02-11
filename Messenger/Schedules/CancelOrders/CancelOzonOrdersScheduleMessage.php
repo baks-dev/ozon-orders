@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -34,23 +34,13 @@ final class CancelOzonOrdersScheduleMessage
     /**
      * Идентификатор профиля
      */
-    private UserProfileUid $profile;
+    private string $profile;
 
     private ?DateInterval $interval = null;
 
     public function __construct(UserProfile|UserProfileUid|string $profile)
     {
-        if($profile instanceof UserProfile)
-        {
-            $profile = $profile->getId();
-        }
-
-        if(is_string($profile))
-        {
-            $profile = new UserProfileUid($profile);
-        }
-
-        $this->profile = $profile;
+        $this->profile = (string) $profile;
     }
 
     /**
@@ -58,7 +48,7 @@ final class CancelOzonOrdersScheduleMessage
      */
     public function getProfile(): UserProfileUid
     {
-        return $this->profile;
+        return new UserProfileUid($this->profile);
     }
 
     /**

@@ -29,6 +29,7 @@ use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Core\Type\Gps\GpsLatitude;
 use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
+use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
@@ -36,10 +37,12 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
+use BaksDev\Users\User\Entity\User;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -104,8 +107,6 @@ final readonly class NewOzonOrderScheduleHandler
          * @var NewOzonOrderDTO $OzonMarketOrderDTO
          */
 
-        $this->deduplicator->expiresAfter('1 day');
-
         $Deduplicator = null;
 
         foreach($orders as $order)
@@ -150,7 +151,7 @@ final readonly class NewOzonOrderScheduleHandler
              */
             $User = $this->UserByUserProfile->forProfile($UserProfileUid)->find();
 
-            if($User === false)
+            if(false === ($User instanceof User))
             {
                 $this->logger->critical(sprintf(
                     'ozon-orders: Пользователь профиля %s для заказа %s не найден',
@@ -168,7 +169,7 @@ final readonly class NewOzonOrderScheduleHandler
             $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
             $DeliveryUid = $OrderDeliveryDTO->getDelivery();
 
-            if(is_null($DeliveryUid))
+            if(false === ($DeliveryUid instanceof DeliveryUid))
             {
                 $this->logger->critical(
                     'ozon-orders: Невозможно определить тип доставки  DeliveryUid',
@@ -183,7 +184,7 @@ final readonly class NewOzonOrderScheduleHandler
              */
 
             // если доставка FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
-            if($DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
+            if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
             {
                 $address = $this->UserProfileGpsInterface->findUserProfileGps($UserProfileUid);
 
@@ -258,7 +259,7 @@ final readonly class NewOzonOrderScheduleHandler
             {
                 $ProductData = $this->ProductConstByArticle->find($product->getArticle());
 
-                if(!$ProductData)
+                if(false === ($ProductData instanceof CurrentProductDTO))
                 {
                     $error = sprintf('Артикул товара %s не найден', $product->getArticle());
                     throw new InvalidArgumentException($error);
@@ -271,25 +272,25 @@ final readonly class NewOzonOrderScheduleHandler
                     ->setModification($ProductData->getModification());
             }
 
-            $handle = $this->NewOzonOrderHandler->handle($OzonMarketOrderDTO);
+            $Order = $this->NewOzonOrderHandler->handle($OzonMarketOrderDTO);
 
-            if($handle instanceof Order)
+            if(false === ($Order instanceof Order))
             {
-                $this->logger->info(sprintf(
-                    'Добавили новый заказ %s',
-                    $OzonMarketOrderDTO->getNumber()
-                ), [self::class.':'.__LINE__]);
-
-                $Deduplicator[$number]->save();
-
+                $this->logger->critical(
+                    sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $OzonMarketOrderDTO->getNumber()),
+                    [$message, self::class.':'.__LINE__]
+                );
                 continue;
             }
 
-            $this->logger->critical(sprintf(
-                'ozon-orders: Ошибка %s при добавлении нового заказа %s',
-                $handle,
-                $OzonMarketOrderDTO->getNumber()
-            ), [self::class.':'.__LINE__]);
+            $this->logger->info(
+                sprintf('Добавили новый заказ %s', $OzonMarketOrderDTO->getNumber()),
+                [$message, self::class.':'.__LINE__]
+            );
+
+            $Deduplicator[$number]->save();
+
+
         }
 
         $DeduplicatorExec->delete();
