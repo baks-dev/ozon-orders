@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ namespace BaksDev\Ozon\Orders\Api\Tests;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
@@ -65,6 +66,10 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
         /** @var GetOzonOrdersByStatusRequest $GetOzonOrdersNewRequest */
         $GetOzonOrdersNewRequest = self::getContainer()->get(GetOzonOrdersByStatusRequest::class);
         $GetOzonOrdersNewRequest->TokenHttpClient(self::$Authorization);
+
+        /** @var NewOzonOrderHandler $NewOzonOrderHandler */
+        //$NewOzonOrderHandler = self::getContainer()->get(NewOzonOrderHandler::class);
+
 
         $orders = $GetOzonOrdersNewRequest
             ->interval('5 days')

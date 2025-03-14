@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\UseCase\New;
 
+use BaksDev\Core\Type\Gps\GpsLatitude;
+use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\DeliveryTransport\Type\OrderStatus\OrderStatusDelivery;
 use BaksDev\Orders\Order\Entity\Event\OrderEventInterface;
@@ -33,8 +35,11 @@ use BaksDev\Orders\Order\Type\Status\OrderStatus;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCanceled;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
+use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
+use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
+use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
@@ -80,6 +85,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     /** Комментарий к заказу */
     private ?string $comment = null;
+
+    /** Информация о покупателе */
+    private ?array $buyer;
 
     public function __construct(array $order, UserProfileUid $profile)
     {
@@ -154,8 +162,41 @@ final class NewOzonOrderDTO implements OrderEventInterface
             $Payment = new PaymentUid(TypePaymentFbsOzon::class);
             $OrderPaymentDTO->setPayment($Payment);
 
+
+        }
+
+        // non_integrated — Озон DBS (доставка сторонней службой)
+        if($order['tpl_integration_type'] === 'non_integrated')
+        {
+            /** Тип профиля DBS Озон */
+            $Profile = new TypeProfileUid(TypeProfileDbsOzon::class);
+            $OrderProfileDTO?->setType($Profile);
+
+            /** Способ доставки Yandex Market (DBS Yandex Market) */
+            $Delivery = new DeliveryUid(TypeDeliveryDbsOzon::class);
+            $OrderDeliveryDTO->setDelivery($Delivery);
+
+            /** Способ оплаты DBS Yandex Market */
+            $Payment = new PaymentUid(TypePaymentDbsOzon::class);
+            $OrderPaymentDTO->setPayment($Payment);
+
+            /** Дата доставки */
+            $deliveryDate = new DateTimeImmutable($order['shipment_date']);
+            $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
+
+            $address = $order['customer']['address'];
+            $OrderDeliveryDTO->setAddress($address['address_tail']);
+
+            /** Геолокация клиента */
+            $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
+            $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
+
+            /** Информация о покупателе */
+            $this->buyer = empty($order['addressee']) ? null : $order['addressee'];
+
             /** Комментарий покупателя */
-            //$this->comment = str_replace(' самостоятельно', '', $order['delivery_method']['name']);
+            $this->comment = $order['customer']['address']['comment'];
+
         }
 
 
@@ -286,5 +327,13 @@ final class NewOzonOrderDTO implements OrderEventInterface
     {
         $this->profile = $profile;
         return $this;
+    }
+
+    /**
+     * Buyer
+     */
+    public function getBuyer(): ?array
+    {
+        return $this->buyer;
     }
 }

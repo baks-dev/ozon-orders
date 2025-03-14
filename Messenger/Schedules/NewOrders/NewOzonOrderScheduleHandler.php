@@ -62,10 +62,7 @@ final readonly class NewOzonOrderScheduleHandler
         private DeduplicatorInterface $deduplicator,
         private UserByUserProfileInterface $UserByUserProfile,
         private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
-    )
-    {
-        $this->deduplicator->namespace('ozon-orders');
-    }
+    ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
@@ -75,6 +72,7 @@ final readonly class NewOzonOrderScheduleHandler
          */
 
         $DeduplicatorExec = $this->deduplicator
+            ->namespace('ozon-orders')
             ->expiresAfter('1 minute')
             ->deduplication([$message->getProfile(), self::class]);
 
@@ -125,7 +123,6 @@ final readonly class NewOzonOrderScheduleHandler
 
         foreach($orders as $OzonMarketOrderDTO)
         {
-
             $posting = explode('-', $OzonMarketOrderDTO->getNumber());
             array_pop($posting);
             $number = implode("-", $posting);
