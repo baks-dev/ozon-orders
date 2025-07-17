@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -133,10 +133,12 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
-            foreach($content['errors'] as $error)
-            {
-                $this->logger->critical($error['code'].': '.$error['message'], [self::class.':'.__LINE__]);
-            }
+            $this->logger->critical(
+                sprintf('ozon-orders: Ошибка при получении  заказов со статусом %s', $this->status),
+                [
+                    'content' => $content,
+                    self::class.':'.__LINE__],
+            );
 
             return false;
         }
@@ -168,6 +170,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         $orders = $this->findAll();
 
+
         if(false === $orders)
         {
             return false;
@@ -178,6 +181,4 @@ final class GetOzonOrdersByStatusRequest extends Ozon
             yield new NewOzonOrderDTO($order, $this->getProfile());
         }
     }
-
-
 }

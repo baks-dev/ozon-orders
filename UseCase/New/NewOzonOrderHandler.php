@@ -34,7 +34,7 @@ use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\ExistsOrderNumber\ExistsOrderNumberInterface;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Users\Profile\UserProfile\Entity\UserProfile;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\UserProfileHandler;
 use Doctrine\ORM\EntityManagerInterface;
@@ -62,11 +62,11 @@ final class NewOzonOrderHandler extends AbstractHandler
             return 'Заказ не является в статусе New «Новый»';
         }
 
-        $isExists = $this->existsOrderNumber->isExists($command->getNumber());
+        $isExists = $this->existsOrderNumber->isExists($command->getInvariable()->getNumber());
 
         if($isExists)
         {
-            return 'Заказ уже добавлен';
+            return new Order();
         }
 
         /**

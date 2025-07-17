@@ -27,14 +27,19 @@ namespace BaksDev\Ozon\Orders\Messenger;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\DeliveryTransport\Repository\ProductParameter\ProductParameter\ProductParameterInterface;
+use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
+use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusPackage;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
+use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -46,9 +51,10 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class UpdatePackageOzonOrderDispatcher
 {
     public function __construct(
-        #[Target('ordersOrderLogger')] private LoggerInterface $logger,
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private DeduplicatorInterface $deduplicator,
-        private OrderEventInterface $orderEventRepository,
+        private OrderEventInterface $OrderEventRepository,
+        private CurrentOrderEventInterface $CurrentOrderEvent,
         private UpdateOzonOrdersPackageRequest $UpdateOzonOrdersPackageRequest,
         private ProductParameterInterface $ProductParameterRepository,
         private ProductConstByArticleInterface $ProductConstByArticleRepository,
@@ -62,7 +68,6 @@ final readonly class UpdatePackageOzonOrderDispatcher
             ->namespace('orders-order')
             ->deduplication([
                 (string) $message->getId(),
-                OrderStatusPackage::STATUS,
                 self::class
             ]);
 
@@ -71,28 +76,16 @@ final readonly class UpdatePackageOzonOrderDispatcher
             return;
         }
 
-        $OrderEvent = $this->orderEventRepository->find($message->getEvent());
+        $OrderEvent = $this->OrderEventRepository
+            ->find($message->getEvent());
 
-        if(false === $OrderEvent)
+        if(false === ($OrderEvent instanceof OrderEvent))
         {
-            return;
-        }
-
-        if(empty($OrderEvent->getOrderNumber()))
-        {
-            $this->logger->warning(
-                'Невозможно определить номер заказа (возможно изменилось событие)',
-                [self::class.':'.__LINE__, 'OrderUid' => (string) $message->getId()]
+            $this->logger->critical(
+                'ozon-orders: Не найдено событие OrderEvent',
+                [self::class.':'.__LINE__, var_export($message, true)],
             );
 
-            return;
-        }
-
-        /**
-         * Проверяем, что номер заказа начинается с O- (Озон)
-         */
-        if(false === str_starts_with($OrderEvent->getOrderNumber(), 'O-'))
-        {
             return;
         }
 
@@ -104,22 +97,43 @@ final readonly class UpdatePackageOzonOrderDispatcher
             return;
         }
 
+        /**
+         * Если тип доставки заказа не Ozon Fbs «Доставка службой Ozon» - завершаем обработчик
+         */
+        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
+        {
+            return;
+        }
+
+
+        /** Получаем активное событие заказа на случай, если изменилось и не возможно определить номер */
+        if(false === ($OrderEvent->getOrderProfile() instanceof UserProfileUid))
+        {
+            $OrderEvent = $this->CurrentOrderEvent
+                ->forOrder($message->getId())
+                ->find();
+
+            if(false === ($OrderEvent instanceof OrderEvent))
+            {
+                $this->logger->critical(
+                    'ozon-orders: Не найдено событие OrderEvent',
+                    [self::class.':'.__LINE__, var_export($message, true)],
+                );
+
+                return;
+            }
+        }
+
         $EditOrderDTO = new EditOrderDTO();
         $OrderEvent->getDto($EditOrderDTO);
         $OrderUserDTO = $EditOrderDTO->getUsr();
 
-        if(!$OrderUserDTO)
+        if(false === ($OrderUserDTO instanceof OrderUserDTO))
         {
             return;
         }
 
-        $EditOrderInvariableDTO = $EditOrderDTO->getInvariable();
-        $UserProfileUid = $EditOrderInvariableDTO->getProfile();
-
-        if(is_null($UserProfileUid))
-        {
-            return;
-        }
+        $UserProfileUid = $OrderEvent->getOrderProfile();
 
 
         /** @var NewOzonOrderDTO $NewOzonOrderDTO */
@@ -186,16 +200,36 @@ final readonly class UpdatePackageOzonOrderDispatcher
             }
         }
 
+        if(empty($products))
+        {
+            $this->logger->critical(
+                'ozon-orders: Ошибка при попытке разбить заказ на несколько отправлений',
+                [self::class.':'.__LINE__, 'OrderUid' => (string) $message->getId()],
+            );
+
+            return;
+        }
+
+
+        /**
+         * Присваиваем упаковкам дополнительную информацию (номер ГТД и т.п.)
+         */
+
+
+        /**
+         * Разбиваем заказ на несколько упаковок
+         */
+
         $package = $this
             ->UpdateOzonOrdersPackageRequest
             ->profile($UserProfileUid)
             ->products($products)
             ->package($OrderEvent->getOrderNumber());
 
-        if($package)
+        if(true === $package)
         {
             $this->logger->info(
-                sprintf('%s: Отправили информацию о принятом в обработку заказе', $EditOrderInvariableDTO->getNumber()),
+                sprintf('%s: Отправили информацию о принятом в обработку заказе', $OrderEvent->getOrderNumber()),
                 [self::class.':'.__LINE__]
             );
 

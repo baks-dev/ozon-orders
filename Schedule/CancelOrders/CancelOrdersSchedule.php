@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,8 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 #[AutoconfigureTag('baks.schedule')]
 final class CancelOrdersSchedule implements ScheduleInterface
 {
+    public const string INTERVAL = '1 minutes';
+
     /**
      * Возвращает класс сообщение
      */
@@ -49,6 +51,6 @@ final class CancelOrdersSchedule implements ScheduleInterface
      */
     public function getInterval(): DateInterval
     {
-        return DateInterval::createFromDateString('1 minutes');
+        return DateInterval::createFromDateString(self::INTERVAL);
     }
 }

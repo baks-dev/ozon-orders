@@ -29,6 +29,7 @@ namespace BaksDev\Ozon\Orders\Messenger\Schedules\CancelOrders;
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\Schedule\CancelOrders\CancelOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderHandler;
 use DateInterval;
@@ -48,7 +49,31 @@ final readonly class CancelOzonOrdersScheduleHandler
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
     {
-        /** Получаем список ОТМЕНЕННЫХ сборочных заданий */
+        /**
+         * Ограничиваем периодичность запросов
+         */
+
+        $DeduplicatorExec = $this->deduplicator
+            ->namespace('ozon-orders')
+            ->expiresAfter(CancelOrdersSchedule::INTERVAL)
+            ->deduplication([
+                (string) $message->getProfile(),
+                self::class,
+            ]);
+
+        if($DeduplicatorExec->isExecuted())
+        {
+            return;
+        }
+
+        /* @see строку :194 */
+        $DeduplicatorExec->save();
+
+
+        /**
+         * Получаем список ОТМЕНЕННЫХ сборочных заданий
+         */
+
         $orders = $this->GetOzonOrdersByStatusRequest
             ->profile($message->getProfile())
             ->findAllCancel();
@@ -100,5 +125,7 @@ final readonly class CancelOzonOrdersScheduleHandler
 
             $Deduplicator->save();
         }
+
+        $DeduplicatorExec->delete();
     }
 }

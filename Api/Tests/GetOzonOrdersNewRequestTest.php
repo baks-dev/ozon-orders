@@ -78,7 +78,7 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
         foreach($orders as $order)
         {
             self::assertInstanceOf(NewOzonOrderDTO::class, $order);
-            //dump($order);
+            dd($order);
         }
     }
 }

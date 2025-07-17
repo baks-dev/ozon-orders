@@ -33,6 +33,7 @@ use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
@@ -66,21 +67,24 @@ final readonly class NewOzonOrderScheduleHandler
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
-
         /**
          * Ограничиваем периодичность запросов
          */
 
         $DeduplicatorExec = $this->deduplicator
             ->namespace('ozon-orders')
-            ->expiresAfter('1 minute')
-            ->deduplication([$message->getProfile(), self::class]);
+            ->expiresAfter(NewOrdersSchedule::INTERVAL)
+            ->deduplication([
+                (string) $message->getProfile(),
+                self::class,
+            ]);
 
         if($DeduplicatorExec->isExecuted())
         {
             return;
         }
 
+        /* @see строку :194 */
         $DeduplicatorExec->save();
 
         /**
@@ -98,44 +102,37 @@ final readonly class NewOzonOrderScheduleHandler
         }
 
 
-        $orders = iterator_to_array($orders);
+
 
         /**
          * Добавляем новые заказы
          * @var NewOzonOrderDTO $OzonMarketOrderDTO
          */
+        //        $orders = iterator_to_array($orders);
 
-        $Deduplicator = null;
-
-        foreach($orders as $order)
-        {
-            $posting = explode('-', $order->getNumber());
-            array_pop($posting);
-            $number = implode("-", $posting);
-
-                $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
-        }
-
-        if(is_null($Deduplicator))
-        {
-            return;
-        }
+        //        $Deduplicator = null;
+        //
+        //        foreach($orders as $OzonMarketOrderDTO)
+        //        {
+        //            $number = $OzonMarketOrderDTO->getOrderNumber();
+        //            $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
+        //        }
+        //
+        //        if(is_null($Deduplicator))
+        //        {
+        //            return;
+        //        }
 
         foreach($orders as $OzonMarketOrderDTO)
         {
-            $posting = explode('-', $OzonMarketOrderDTO->getNumber());
-            array_pop($posting);
-            $number = implode("-", $posting);
+            /** Идентификатор заказа (для дедубликатора) */
 
-            /**
-             * Добавляем в дедубликатор заказ без его связанных отправлений
-             * может произойти ситуация, когда заказ во время деления на отправления короткое время находится в статусе НОВЫЙ
-             */
+            //$Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
+            $number = $OzonMarketOrderDTO->getOrderNumber();
+            $Deduplicator = $this->deduplicator->deduplication([$number, self::class]);
 
-                $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
-
-            // Если передан интервал - не проверяем дедубликатор
-            if($Deduplicator[$number]->isExecuted())
+            // if($Deduplicator[$number]->isExecuted())
+            if($Deduplicator->isExecuted())
             {
                 continue;
             }
@@ -221,8 +218,11 @@ final readonly class NewOzonOrderScheduleHandler
              * Присваиваем активное событие доставки
              */
 
-            $DeliveryEvent = $this->CurrentDeliveryEvent->get($OrderDeliveryDTO->getDelivery());
-            $OrderDeliveryDTO->setEvent($DeliveryEvent?->getId());
+            $DeliveryEventUid = $this->CurrentDeliveryEvent
+                ->forDelivery($OrderDeliveryDTO->getDelivery())
+                ->getId();
+
+            $OrderDeliveryDTO->setEvent($DeliveryEventUid);
 
 
             //            /**
@@ -274,18 +274,19 @@ final readonly class NewOzonOrderScheduleHandler
             if(false === ($Order instanceof Order))
             {
                 $this->logger->critical(
-                    sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $OzonMarketOrderDTO->getNumber()),
+                    sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $NewOrderInvariable->getNumber()),
                     [$message, self::class.':'.__LINE__]
                 );
                 continue;
             }
 
             $this->logger->info(
-                sprintf('Добавили новый заказ %s', $OzonMarketOrderDTO->getNumber()),
+                sprintf('Добавили новый заказ %s', $NewOrderInvariable->getNumber()),
                 [$message, self::class.':'.__LINE__]
             );
 
-            $Deduplicator[$number]->save();
+            //$Deduplicator[$number]->save();
+            $Deduplicator->save();
 
 
         }

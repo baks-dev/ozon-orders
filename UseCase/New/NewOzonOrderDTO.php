@@ -32,9 +32,9 @@ use BaksDev\DeliveryTransport\Type\OrderStatus\OrderStatusDelivery;
 use BaksDev\Orders\Order\Entity\Event\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Event\OrderEventUid;
 use BaksDev\Orders\Order\Type\Status\OrderStatus;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusInterface;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusCanceled;
-use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusNew;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCanceled;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusInterface;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
@@ -58,7 +58,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
     #[Assert\Uuid]
     private ?OrderEventUid $id = null;
 
-    /** Идентификатор заказа YandexMarket */
+    /**
+     * Идентификатор заказа Ozon (для дедубликтора)
+     */
     private string $number;
 
     /** Постоянная величина */
@@ -105,8 +107,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->invariable = $NewOrderInvariable;
 
 
-        /** @deprecated переносится в Invariable */
-        $this->number = 'O-'.$order['posting_number']; // помечаем заказ префиксом O
+        $this->number = $order['order_number']; // помечаем заказ для дедубликатора
+
+
         // $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом O (без единицы в конце)
         $this->created = $created; // Дата и время начала обработки отправления.
 
@@ -256,7 +259,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Number
      */
-    public function getNumber(): string
+    public function getOrderNumber(): string
     {
         return $this->number;
     }

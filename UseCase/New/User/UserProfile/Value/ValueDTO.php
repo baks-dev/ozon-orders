@@ -25,7 +25,7 @@ namespace BaksDev\Ozon\Orders\UseCase\New\User\UserProfile\Value;
 
 use BaksDev\Users\Profile\TypeProfile\Type\Section\Field\Id\TypeProfileSectionFieldUid;
 use BaksDev\Users\Profile\TypeProfile\Type\Section\Id\TypeProfileSectionUid;
-use BaksDev\Users\Profile\UserProfile\Entity\Value\UserProfileValueInterface;
+use BaksDev\Users\Profile\UserProfile\Entity\Event\Value\UserProfileValueInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\FieldValueForm\FieldValueFormDTO;
 use Symfony\Component\Validator\Constraints as Assert;
 
