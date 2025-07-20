@@ -135,10 +135,20 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
         $UserProfileUid = $OrderEvent->getOrderProfile();
 
+        if(false === ($UserProfileUid instanceof UserProfileUid))
+        {
+            $this->logger->critical(
+                'ozon-orders: Невозможно определить идентификатор профиля склада заказа',
+                [self::class.':'.__LINE__, var_export($message, true)],
+            );
+
+            return;
+        }
+
 
         /** @var NewOzonOrderDTO $NewOzonOrderDTO */
         $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest
-            ->profile($UserProfileUid)
+            ->forTokenIdentifier($UserProfileUid)
             ->find($OrderEvent->getOrderNumber());
 
 
@@ -215,6 +225,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
          * Присваиваем упаковкам дополнительную информацию (номер ГТД и т.п.)
          */
 
+        // TOTO ...
 
         /**
          * Разбиваем заказ на несколько упаковок
@@ -222,7 +233,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
         $package = $this
             ->UpdateOzonOrdersPackageRequest
-            ->profile($UserProfileUid)
+            ->forTokenIdentifier($UserProfileUid)
             ->products($products)
             ->package($OrderEvent->getOrderNumber());
 

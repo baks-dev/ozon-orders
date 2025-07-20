@@ -75,7 +75,7 @@ final readonly class CancelOzonOrdersScheduleHandler
          */
 
         $orders = $this->GetOzonOrdersByStatusRequest
-            ->profile($message->getProfile())
+            ->forTokenIdentifier($message->getProfile())
             ->findAllCancel();
 
         /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */

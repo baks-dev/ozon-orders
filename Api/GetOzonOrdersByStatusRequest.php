@@ -120,6 +120,12 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);   // Дата конца периода (Y-m-d\TH:i:sP)
         $data['filter']['status'] = $this->status; // Статус отправления
 
+        /** Новые заказы только согласно идентификатору склада */
+        if('awaiting_packaging' === $this->status)
+        {
+            $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
+        }
+
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
@@ -169,7 +175,6 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         $this->status = 'awaiting_packaging';
 
         $orders = $this->findAll();
-
 
         if(false === $orders)
         {

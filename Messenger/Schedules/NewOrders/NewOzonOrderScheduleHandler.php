@@ -38,6 +38,7 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
@@ -62,11 +63,24 @@ final readonly class NewOzonOrderScheduleHandler
         private NewOzonOrderHandler $NewOzonOrderHandler,
         private DeduplicatorInterface $deduplicator,
         private UserByUserProfileInterface $UserByUserProfile,
-        private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
+
+        private OzonTokensByProfileInterface $OzonTokensByProfile,
+
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
+        /** Получаем все токены профиля */
+
+        $tokensByProfile = $this->OzonTokensByProfile
+            ->findAll($message->getProfile());
+
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
+        {
+            return;
+        }
+
+
         /**
          * Ограничиваем периодичность запросов
          */
@@ -87,210 +101,220 @@ final readonly class NewOzonOrderScheduleHandler
         /* @see строку :194 */
         $DeduplicatorExec->save();
 
-        /**
-         * Получаем список НОВЫХ сборочных заданий
-         */
 
-        $orders = $this->getOzonOrdersNewRequest
-            ->profile($message->getProfile())
-            ->interval($message->getInterval())
-            ->findAllNews();
-
-        if($orders->valid() === false)
+        foreach($tokensByProfile as $OzonTokenUid)
         {
-            return;
-        }
-
-
-
-
-        /**
-         * Добавляем новые заказы
-         * @var NewOzonOrderDTO $OzonMarketOrderDTO
-         */
-        //        $orders = iterator_to_array($orders);
-
-        //        $Deduplicator = null;
-        //
-        //        foreach($orders as $OzonMarketOrderDTO)
-        //        {
-        //            $number = $OzonMarketOrderDTO->getOrderNumber();
-        //            $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
-        //        }
-        //
-        //        if(is_null($Deduplicator))
-        //        {
-        //            return;
-        //        }
-
-        foreach($orders as $OzonMarketOrderDTO)
-        {
-            /** Идентификатор заказа (для дедубликатора) */
-
-            //$Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
-            $number = $OzonMarketOrderDTO->getOrderNumber();
-            $Deduplicator = $this->deduplicator->deduplication([$number, self::class]);
-
-            // if($Deduplicator[$number]->isExecuted())
-            if($Deduplicator->isExecuted())
-            {
-                continue;
-            }
-
-            $NewOrderInvariable = $OzonMarketOrderDTO->getInvariable();
-            $UserProfileUid = $NewOrderInvariable->getProfile();
-
             /**
-             * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
+             * Получаем список НОВЫХ сборочных заданий
              */
-            $User = $this->UserByUserProfile->forProfile($UserProfileUid)->find();
 
-            if(false === ($User instanceof User))
+            $orders = $this->getOzonOrdersNewRequest
+                ->forTokenIdentifier($OzonTokenUid)
+                ->interval($message->getInterval())
+                ->findAllNews();
+
+            if($orders->valid() === false)
             {
-                $this->logger->critical(sprintf(
-                    'ozon-orders: Пользователь профиля %s для заказа %s не найден',
-                    $NewOrderInvariable->getProfile(),
-                    $NewOrderInvariable->getNumber()
-                ), [self::class.':'.__LINE__]);
-
-                continue;
-            }
-
-            $NewOrderInvariable->setUsr($User->getId());
-
-            $OrderUserDTO = $OzonMarketOrderDTO->getUsr();
-
-            $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
-            $DeliveryUid = $OrderDeliveryDTO->getDelivery();
-
-            if(false === ($DeliveryUid instanceof DeliveryUid))
-            {
-                $this->logger->critical(
-                    'ozon-orders: Невозможно определить тип доставки  DeliveryUid',
-                    [self::class.':'.__LINE__]
-                );
                 continue;
             }
 
             /**
-             * Если заказ DBS - адрес присваивается из запроса
-             * Если заказ FBS - адрес доставки сам склад, получить и присвоить
+             * Добавляем новые заказы
+             *
+             * @var NewOzonOrderDTO $OzonMarketOrderDTO
              */
+            //        $orders = iterator_to_array($orders);
 
-            // если доставка FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
-            if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
+            //        $Deduplicator = null;
+            //
+            //        foreach($orders as $OzonMarketOrderDTO)
+            //        {
+            //            $number = $OzonMarketOrderDTO->getOrderNumber();
+            //            $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
+            //        }
+            //
+            //        if(is_null($Deduplicator))
+            //        {
+            //            return;
+            //        }
+
+            foreach($orders as $OzonMarketOrderDTO)
             {
-                $address = $this->UserProfileGpsInterface->findUserProfileGps($UserProfileUid);
+                /** Идентификатор заказа (для дедубликатора) */
 
-                if(empty($address['location']))
+                //$Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
+                $number = $OzonMarketOrderDTO->getOrderNumber();
+                $Deduplicator = $this->deduplicator->deduplication([$number, self::class]);
+
+                // if($Deduplicator[$number]->isExecuted())
+                if($Deduplicator->isExecuted())
+                {
+                    continue;
+                }
+
+                $NewOrderInvariable = $OzonMarketOrderDTO->getInvariable();
+                $UserProfileUid = $NewOrderInvariable->getProfile();
+
+                /**
+                 * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
+                 */
+                $User = $this->UserByUserProfile->forProfile($UserProfileUid)->find();
+
+                if(false === ($User instanceof User))
                 {
                     $this->logger->critical(sprintf(
-                        'ozon-orders: В профиле пользователя %s не указан адрес локации',
-                        $NewOrderInvariable->getProfile()
+                        'ozon-orders: Пользователь профиля %s для заказа %s не найден',
+                        $NewOrderInvariable->getProfile(),
+                        $NewOrderInvariable->getNumber(),
                     ), [self::class.':'.__LINE__]);
 
                     continue;
                 }
 
-                $OrderDeliveryDTO->setAddress($address['location']);
+                $NewOrderInvariable->setUsr($User->getId());
 
-                !isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
-                !isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
-            }
-            else
-            {
-                // ВРЕМЕННО ПРОПУСКАЕМ ВСЕ ЗАКЗЫ КРОМЕ FBS
-                continue;
-            }
+                $OrderUserDTO = $OzonMarketOrderDTO->getUsr();
 
-            /** Определяем геолокацию, если не указана */
-            if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
-            {
-                $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
+                $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
+                $DeliveryUid = $OrderDeliveryDTO->getDelivery();
 
-                $OrderDeliveryDTO->setAddress($GeocodeAddressDTO->getAddress());
-                $OrderDeliveryDTO->setLatitude($GeocodeAddressDTO->getLatitude());
-                $OrderDeliveryDTO->setLongitude($GeocodeAddressDTO->getLongitude());
-            }
-
-
-            /**
-             * Присваиваем активное событие доставки
-             */
-
-            $DeliveryEventUid = $this->CurrentDeliveryEvent
-                ->forDelivery($OrderDeliveryDTO->getDelivery())
-                ->getId();
-
-            $OrderDeliveryDTO->setEvent($DeliveryEventUid);
-
-
-            //            /**
-            //             * Если доставка собственной службой - присваиваем адрес пользователя
-            //             * Определяем свойства доставки и присваиваем адрес
-            //             */
-            //
-            //            $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
-            //
-            //            $address_field = array_filter($fields, function ($v) {
-            //                /** @var InputField $InputField */
-            //                return $v->getType()->getType() === 'address_field';
-            //            });
-            //
-            //            $address_field = current($address_field);
-            //
-            //            if($address_field !== false)
-            //            {
-            //                $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO();
-            //                $OrderDeliveryFieldDTO->setField($address_field);
-            //                $OrderDeliveryFieldDTO->setValue($OrderDeliveryDTO->getAddress());
-            //                $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
-            //            }
-
-
-            /**
-             * Получаем события продукции
-             * @var NewOrderProductDTO $product
-             */
-            foreach($OzonMarketOrderDTO->getProduct() as $product)
-            {
-                $ProductData = $this->ProductConstByArticle->find($product->getArticle());
-
-                if(false === ($ProductData instanceof CurrentProductDTO))
+                if(false === ($DeliveryUid instanceof DeliveryUid))
                 {
-                    $error = sprintf('Артикул товара %s не найден', $product->getArticle());
-                    throw new InvalidArgumentException($error);
+                    $this->logger->critical(
+                        'ozon-orders: Невозможно определить тип доставки  DeliveryUid',
+                        [self::class.':'.__LINE__],
+                    );
+                    continue;
                 }
 
-                $product
-                    ->setProduct($ProductData->getEvent())
-                    ->setOffer($ProductData->getOffer())
-                    ->setVariation($ProductData->getVariation())
-                    ->setModification($ProductData->getModification());
-            }
+                /**
+                 * Если заказ DBS - адрес присваивается из запроса
+                 * Если заказ FBS - адрес доставки сам склад, получить и присвоить
+                 */
 
-            $Order = $this->NewOzonOrderHandler->handle($OzonMarketOrderDTO);
+                // если доставка FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
+                if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
+                {
+                    $address = $this->UserProfileGpsInterface->findUserProfileGps($UserProfileUid);
 
-            if(false === ($Order instanceof Order))
-            {
-                $this->logger->critical(
-                    sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $NewOrderInvariable->getNumber()),
-                    [$message, self::class.':'.__LINE__]
+                    if(empty($address['location']))
+                    {
+                        $this->logger->critical(sprintf(
+                            'ozon-orders: В профиле пользователя %s не указан адрес локации',
+                            $NewOrderInvariable->getProfile(),
+                        ), [self::class.':'.__LINE__]);
+
+                        continue;
+                    }
+
+                    $OrderDeliveryDTO->setAddress($address['location']);
+
+                    !isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
+                    !isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
+                }
+                else
+                {
+                    // ВРЕМЕННО ПРОПУСКАЕМ ВСЕ ЗАКЗЫ КРОМЕ FBS
+                    continue;
+                }
+
+                /** Определяем геолокацию, если не указана */
+                if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
+                {
+                    $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
+
+                    $OrderDeliveryDTO->setAddress($GeocodeAddressDTO->getAddress());
+                    $OrderDeliveryDTO->setLatitude($GeocodeAddressDTO->getLatitude());
+                    $OrderDeliveryDTO->setLongitude($GeocodeAddressDTO->getLongitude());
+                }
+
+
+                /**
+                 * Присваиваем активное событие доставки
+                 */
+
+                $DeliveryEventUid = $this->CurrentDeliveryEvent
+                    ->forDelivery($OrderDeliveryDTO->getDelivery())
+                    ->getId();
+
+                $OrderDeliveryDTO->setEvent($DeliveryEventUid);
+
+
+                //            /**
+                //             * Если доставка собственной службой - присваиваем адрес пользователя
+                //             * Определяем свойства доставки и присваиваем адрес
+                //             */
+                //
+                //            $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
+                //
+                //            $address_field = array_filter($fields, function ($v) {
+                //                /** @var InputField $InputField */
+                //                return $v->getType()->getType() === 'address_field';
+                //            });
+                //
+                //            $address_field = current($address_field);
+                //
+                //            if($address_field !== false)
+                //            {
+                //                $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO();
+                //                $OrderDeliveryFieldDTO->setField($address_field);
+                //                $OrderDeliveryFieldDTO->setValue($OrderDeliveryDTO->getAddress());
+                //                $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
+                //            }
+
+
+                /**
+                 * Получаем события продукции
+                 *
+                 * @var NewOrderProductDTO $product
+                 */
+                foreach($OzonMarketOrderDTO->getProduct() as $product)
+                {
+                    $ProductData = $this->ProductConstByArticle->find($product->getArticle());
+
+                    if(false === ($ProductData instanceof CurrentProductDTO))
+                    {
+                        $error = sprintf('Артикул товара %s не найден', $product->getArticle());
+                        throw new InvalidArgumentException($error);
+                    }
+
+                    $product
+                        ->setProduct($ProductData->getEvent())
+                        ->setOffer($ProductData->getOffer())
+                        ->setVariation($ProductData->getVariation())
+                        ->setModification($ProductData->getModification());
+                }
+
+                $Order = $this->NewOzonOrderHandler->handle($OzonMarketOrderDTO);
+
+                if(false === ($Order instanceof Order))
+                {
+                    $this->logger->critical(
+                        sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $NewOrderInvariable->getNumber()),
+                        [$message, self::class.':'.__LINE__],
+                    );
+                    continue;
+                }
+
+                $this->logger->info(
+                    sprintf('Добавили новый заказ %s', $NewOrderInvariable->getNumber()),
+                    [$message, self::class.':'.__LINE__],
                 );
-                continue;
+
+                //$Deduplicator[$number]->save();
+                $Deduplicator->save();
+
+
             }
 
-            $this->logger->info(
-                sprintf('Добавили новый заказ %s', $NewOrderInvariable->getNumber()),
-                [$message, self::class.':'.__LINE__]
-            );
-
-            //$Deduplicator[$number]->save();
-            $Deduplicator->save();
-
-
+            $DeduplicatorExec->delete();
         }
 
-        $DeduplicatorExec->delete();
+
+
+
+
+
+
     }
 }
