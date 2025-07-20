@@ -27,6 +27,7 @@ namespace BaksDev\Ozon\Orders\Api\Tests;
 
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
@@ -53,8 +54,13 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
         self::$Authorization = new OzonAuthorizationToken(
             new UserProfileUid('018d464d-c67a-7285-8192-7235b0510924'),
             $_SERVER['TEST_OZON_TOKEN'],
+            TypeProfileFbsOzon::TYPE,
             $_SERVER['TEST_OZON_CLIENT'],
             $_SERVER['TEST_OZON_WAREHOUSE'],
+            '10',
+            0,
+            false,
+            false,
         );
     }
 
