@@ -46,7 +46,7 @@ class UpdateCancelOrdersCommand extends Command
     private SymfonyStyle $io;
 
     public function __construct(
-        private readonly AllProfileOzonTokenInterface $allProfileYaMarketToken,
+        private readonly AllProfileOzonTokenInterface $AllProfileOzonToken,
         private readonly MessageDispatchInterface $messageDispatch
     )
     {
@@ -58,13 +58,18 @@ class UpdateCancelOrdersCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
 
         /** Получаем активные токены авторизации профилей Yandex Market */
-        $profiles = $this->allProfileYaMarketToken
+        $profiles = $this->AllProfileOzonToken
             ->onlyActiveToken()
             ->findAll();
 
         $profiles = iterator_to_array($profiles);
 
         $helper = $this->getHelper('question');
+
+
+        /**
+         * Интерактивная форма списка профилей
+         */
 
         $questions[] = 'Все';
 
@@ -73,54 +78,82 @@ class UpdateCancelOrdersCommand extends Command
             $questions[] = $quest->getAttr();
         }
 
+        $questions['+'] = 'Выполнить все асинхронно';
+        $questions['-'] = 'Выйти';
+
         $question = new ChoiceQuestion(
-            'Профиль пользователя',
+            'Профиль пользователя (Ctrl+C чтобы выйти)',
             $questions,
-            0
+            '0',
         );
 
-        $profileName = $helper->ask($input, $output, $question);
+        $key = $helper->ask($input, $output, $question);
 
-        if($profileName === 'Все')
+        /**
+         *  Выходим без выполненного запроса
+         */
+
+        if($key === '-' || $key === 'Выйти')
+        {
+            return Command::SUCCESS;
+        }
+
+
+        /**
+         * Выполняем все с возможностью асинхронно в очереди
+         */
+
+        if($key === '+' || $key === '0' || $key === 'Все')
         {
             /** @var UserProfileUid $profile */
             foreach($profiles as $profile)
             {
-                $this->update($profile);
+                $this->update($profile, $key === '+');
             }
+
+            $this->io->success('Заказы успешно обновлены');
+            return Command::SUCCESS;
         }
-        else
+
+
+        /**
+         * Выполняем определенный профиль
+         */
+
+        $UserProfileUid = null;
+
+        foreach($profiles as $profile)
         {
-            $UserProfileUid = null;
-
-            foreach($profiles as $profile)
+            if($profile->getAttr() === $questions[$key])
             {
-                if($profile->getAttr() === $questions[$profileName])
-                {
-                    /* Присваиваем профиль пользователя */
-                    $UserProfileUid = $profile;
-                    break;
-                }
-            }
-
-            if($UserProfileUid)
-            {
-                $this->update($UserProfileUid);
+                /* Присваиваем профиль пользователя */
+                $UserProfileUid = $profile;
+                break;
             }
         }
 
-        $this->io->success('Заказы успешно обновлены');
+        if($UserProfileUid)
+        {
+            $this->update($UserProfileUid);
 
+            $this->io->success('Заказы успешно обновлены');
+            return Command::SUCCESS;
+        }
+
+        $this->io->success('Профиль пользователя не найден');
         return Command::SUCCESS;
     }
 
-    public function update(UserProfileUid $profile): void
+    public function update(UserProfileUid $profile, bool $async = false): void
     {
         $this->io->note(sprintf('Обновляем отмененные заказы профиля %s', $profile->getAttr()));
 
         $NewOzonOrdersScheduleMessage = new CancelOzonOrdersScheduleMessage($profile);
         $NewOzonOrdersScheduleMessage->setInterval(DateInterval::createFromDateString('1 day'));
 
-        $this->messageDispatch->dispatch($NewOzonOrdersScheduleMessage);
+        $this->messageDispatch->dispatch(
+            message: $NewOzonOrdersScheduleMessage,
+            transport: $async === true ? (string) $profile : null,
+        );
     }
 }
