@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -44,4 +44,18 @@ return static function(ContainerConfigurator $configurator) {
             $PATH.'**'.DIRECTORY_SEPARATOR.'*Test.php',
         ]);
 
+    $services->load(
+        $NAMESPACE.'Type\DeliveryType\\',
+        $PATH.implode(DIRECTORY_SEPARATOR, ['Type', 'DeliveryType']),
+    );
+
+    $services->load(
+        $NAMESPACE.'Type\ProfileType\\',
+        $PATH.implode(DIRECTORY_SEPARATOR, ['Type', 'ProfileType']),
+    );
+
+    $services->load(
+        $NAMESPACE.'Type\PaymentType\\',
+        $PATH.implode(DIRECTORY_SEPARATOR, ['Type', 'PaymentType']),
+    );
 };
