@@ -27,15 +27,12 @@ namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
-use DateTimeImmutable;
 
 /**
  * Информация о заказах
  */
 final class GetOzonOrderInfoRequest extends Ozon
 {
-    private ?DateTimeImmutable $fromDate = null;
-
     /**
      * Получить информацию об отправлении по идентификатору
      *
@@ -59,10 +56,13 @@ final class GetOzonOrderInfoRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
-            foreach($content['errors'] as $error)
-            {
-                $this->logger->critical($error['code'].': '.$error['message'], [self::class.':'.__LINE__]);
-            }
+            $this->logger->warning(
+                sprintf(
+                    'ozon-orders: Ошибка %s при получении информации о заказе на складе %s',
+                    $response->getStatusCode(), $this->getWarehouse(),
+                ),
+                [self::class.':'.__LINE__, $data, $content],
+            );
 
             return false;
         }
