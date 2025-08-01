@@ -123,30 +123,14 @@ final readonly class NewOzonOrderScheduleHandler
              *
              * @var NewOzonOrderDTO $OzonMarketOrderDTO
              */
-            //        $orders = iterator_to_array($orders);
-
-            //        $Deduplicator = null;
-            //
-            //        foreach($orders as $OzonMarketOrderDTO)
-            //        {
-            //            $number = $OzonMarketOrderDTO->getOrderNumber();
-            //            $Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
-            //        }
-            //
-            //        if(is_null($Deduplicator))
-            //        {
-            //            return;
-            //        }
 
             foreach($orders as $OzonMarketOrderDTO)
             {
                 /** Идентификатор заказа (для дедубликатора) */
 
-                //$Deduplicator[$number] ?? $Deduplicator[$number] = $this->deduplicator->deduplication([$number, self::class]);
                 $number = $OzonMarketOrderDTO->getOrderNumber();
                 $Deduplicator = $this->deduplicator->deduplication([$number, self::class]);
 
-                // if($Deduplicator[$number]->isExecuted())
                 if($Deduplicator->isExecuted())
                 {
                     continue;
@@ -184,6 +168,7 @@ final readonly class NewOzonOrderScheduleHandler
                         'ozon-orders: Невозможно определить тип доставки  DeliveryUid',
                         [self::class.':'.__LINE__],
                     );
+
                     continue;
                 }
 
@@ -274,6 +259,8 @@ final readonly class NewOzonOrderScheduleHandler
 
                     if(false === ($ProductData instanceof CurrentProductDTO))
                     {
+                        $DeduplicatorExec->delete();
+
                         $error = sprintf('Артикул товара %s не найден', $product->getArticle());
                         throw new InvalidArgumentException($error);
                     }
@@ -293,6 +280,7 @@ final readonly class NewOzonOrderScheduleHandler
                         sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $NewOrderInvariable->getNumber()),
                         [$message, self::class.':'.__LINE__],
                     );
+
                     continue;
                 }
 
@@ -309,12 +297,6 @@ final readonly class NewOzonOrderScheduleHandler
 
             $DeduplicatorExec->delete();
         }
-
-
-
-
-
-
 
     }
 }

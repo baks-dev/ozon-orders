@@ -38,6 +38,7 @@ use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
@@ -59,6 +60,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
         private ProductParameterInterface $ProductParameterRepository,
         private ProductConstByArticleInterface $ProductConstByArticleRepository,
         private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
+        private OzonTokensByProfileInterface $OzonTokensByProfile,
     ) {}
 
     public function __invoke(OrderMessage $message): void
@@ -146,107 +148,122 @@ final readonly class UpdatePackageOzonOrderDispatcher
         }
 
 
-        /** @var NewOzonOrderDTO $NewOzonOrderDTO */
-        $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest
-            ->forTokenIdentifier($UserProfileUid)
-            ->find($OrderEvent->getOrderNumber());
+        /** Получаем все токены профиля */
 
+        $tokensByProfile = $this->OzonTokensByProfile
+            ->findAll($UserProfileUid);
 
-        /** Общее количество в заказе */
-
-        $total = 0;
-
-        foreach($NewOzonOrderDTO->getProduct() as $totals)
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
-            $total += $totals->getPrice()->getTotal();
-        }
-
-        /** Разбиваем заказ на машиноместа */
-
-        $products = null;
-
-        foreach($NewOzonOrderDTO->getProduct() as $key => $OrderProductDTO)
-        {
-            /** Получаем идентификатор карточки Озон */
-
-            $ProductData = $this->ProductConstByArticleRepository
-                ->find($OrderProductDTO->getArticle());
-
-            $ProductParameter = $this->ProductParameterRepository
-                ->forProduct($ProductData->getProduct())
-                ->forOfferConst($ProductData->getOfferConst())
-                ->forVariationConst($ProductData->getVariationConst())
-                ->forModificationConst($ProductData->getModificationConst())
-                ->find();
-
-            $package = $ProductParameter['package'] ?? 1;
-
-            $pack = $OrderProductDTO->getPrice()->getTotal();
-
-            for($i = 1; $i <= $pack; $i++)
-            {
-                if($total > $package)
-                {
-                    $products[]['products'][] = [
-                        "product_id" => $OrderProductDTO->getSku(),
-                        "quantity" => $package
-                    ];
-                }
-
-                if($package >= $total)
-                {
-                    $products[]['products'][] = [
-                        "product_id" => $OrderProductDTO->getSku(),
-                        "quantity" => $total
-                    ];
-                }
-
-                $total -= $package;
-
-                if(0 >= $total)
-                {
-                    break;
-                }
-            }
-        }
-
-        if(empty($products))
-        {
-            $this->logger->critical(
-                'ozon-orders: Ошибка при попытке разбить заказ на несколько отправлений',
-                [self::class.':'.__LINE__, 'OrderUid' => (string) $message->getId()],
-            );
-
             return;
         }
 
-
-        /**
-         * Присваиваем упаковкам дополнительную информацию (номер ГТД и т.п.)
-         */
-
-        // TOTO ...
-
-        /**
-         * Разбиваем заказ на несколько упаковок
-         */
-
-        $package = $this
-            ->UpdateOzonOrdersPackageRequest
-            ->forTokenIdentifier($UserProfileUid)
-            ->products($products)
-            ->package($OrderEvent->getOrderNumber());
-
-        if(true === $package)
+        foreach($tokensByProfile as $OzonTokenUid)
         {
-            $this->logger->info(
-                sprintf('%s: Отправили информацию о принятом в обработку заказе', $OrderEvent->getOrderNumber()),
-                [self::class.':'.__LINE__]
-            );
+            /** @var NewOzonOrderDTO $NewOzonOrderDTO */
+            $NewOzonOrderDTO = $this->GetOzonOrderInfoRequest
+                ->forTokenIdentifier($OzonTokenUid)
+                ->find($OrderEvent->getOrderNumber());
 
-            $Deduplicator->save();
+            /** Пропускаем если заказ у токена не найден */
+            if(false === ($NewOzonOrderDTO instanceof NewOzonOrderDTO))
+            {
+                continue;
+            }
+
+            /** Общее количество в заказе */
+
+            $total = 0;
+
+            foreach($NewOzonOrderDTO->getProduct() as $totals)
+            {
+                $total += $totals->getPrice()->getTotal();
+            }
+
+            /** Разбиваем заказ на машиноместа */
+
+            $products = null;
+
+            foreach($NewOzonOrderDTO->getProduct() as $key => $OrderProductDTO)
+            {
+                /** Получаем идентификатор карточки Озон */
+
+                $ProductData = $this->ProductConstByArticleRepository
+                    ->find($OrderProductDTO->getArticle());
+
+                $ProductParameter = $this->ProductParameterRepository
+                    ->forProduct($ProductData->getProduct())
+                    ->forOfferConst($ProductData->getOfferConst())
+                    ->forVariationConst($ProductData->getVariationConst())
+                    ->forModificationConst($ProductData->getModificationConst())
+                    ->find();
+
+                $package = $ProductParameter['package'] ?? 1;
+
+                $pack = $OrderProductDTO->getPrice()->getTotal();
+
+                for($i = 1; $i <= $pack; $i++)
+                {
+                    if($total > $package)
+                    {
+                        $products[]['products'][] = [
+                            "product_id" => $OrderProductDTO->getSku(),
+                            "quantity" => $package,
+                        ];
+                    }
+
+                    if($package >= $total)
+                    {
+                        $products[]['products'][] = [
+                            "product_id" => $OrderProductDTO->getSku(),
+                            "quantity" => $total,
+                        ];
+                    }
+
+                    $total -= $package;
+
+                    if(0 >= $total)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if(empty($products))
+            {
+                $this->logger->critical(
+                    'ozon-orders: Ошибка при попытке разбить заказ на несколько отправлений',
+                    [self::class.':'.__LINE__, 'OrderUid' => (string) $message->getId()],
+                );
+
+                continue;
+            }
+
+            /**
+             * Присваиваем упаковкам дополнительную информацию (номер ГТД и т.п.)
+             */
+
+            // TOTO ...
+
+            /**
+             * Разбиваем заказ на несколько упаковок
+             */
+
+            $package = $this
+                ->UpdateOzonOrdersPackageRequest
+                ->forTokenIdentifier($UserProfileUid)
+                ->products($products)
+                ->package($OrderEvent->getOrderNumber());
+
+            if(true === $package)
+            {
+                $this->logger->info(
+                    sprintf('%s: Отправили информацию о принятом в обработку заказе', $OrderEvent->getOrderNumber()),
+                    [self::class.':'.__LINE__],
+                );
+
+                $Deduplicator->save();
+            }
         }
-
     }
-
 }
