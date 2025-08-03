@@ -251,7 +251,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
             $package = $this
                 ->UpdateOzonOrdersPackageRequest
-                ->forTokenIdentifier($UserProfileUid)
+                ->forTokenIdentifier($OzonTokenUid)
                 ->products($products)
                 ->package($OrderEvent->getOrderNumber());
 

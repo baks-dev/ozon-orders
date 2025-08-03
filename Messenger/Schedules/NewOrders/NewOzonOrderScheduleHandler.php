@@ -63,9 +63,7 @@ final readonly class NewOzonOrderScheduleHandler
         private NewOzonOrderHandler $NewOzonOrderHandler,
         private DeduplicatorInterface $deduplicator,
         private UserByUserProfileInterface $UserByUserProfile,
-
         private OzonTokensByProfileInterface $OzonTokensByProfile,
-
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
@@ -79,7 +77,6 @@ final readonly class NewOzonOrderScheduleHandler
         {
             return;
         }
-
 
         /**
          * Ограничиваем периодичность запросов
@@ -102,10 +99,16 @@ final readonly class NewOzonOrderScheduleHandler
         $DeduplicatorExec->save();
 
 
+        $this->logger->info(
+            sprintf('%s: Получаем список НОВЫХ сборочных заданий',
+                $message->getProfile()), [self::class.':'.__LINE__],
+        );
+
+
         foreach($tokensByProfile as $OzonTokenUid)
         {
             /**
-             * Получаем список НОВЫХ сборочных заданий
+             * Получаем список НОВЫХ сборочных заданий токена
              */
 
             $orders = $this->getOzonOrdersNewRequest
@@ -156,7 +159,6 @@ final readonly class NewOzonOrderScheduleHandler
                 }
 
                 $NewOrderInvariable->setUsr($User->getId());
-
                 $OrderUserDTO = $OzonMarketOrderDTO->getUsr();
 
                 $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
@@ -291,12 +293,10 @@ final readonly class NewOzonOrderScheduleHandler
 
                 //$Deduplicator[$number]->save();
                 $Deduplicator->save();
-
-
             }
-
-            $DeduplicatorExec->delete();
         }
+
+        $DeduplicatorExec->delete();
 
     }
 }
