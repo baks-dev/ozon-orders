@@ -121,10 +121,12 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         $data['filter']['status'] = $this->status; // Статус отправления
 
         /** Новые заказы только согласно идентификатору склада */
-        if('awaiting_packaging' === $this->status)
-        {
-            $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
-        }
+        //if('awaiting_packaging' === $this->status)
+        //{
+        //    $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
+        //}
+
+        $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
 
         $response = $this->TokenHttpClient()
             ->request(

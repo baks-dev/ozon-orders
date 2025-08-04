@@ -32,6 +32,7 @@ use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\CancelOrders\CancelOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderHandler;
+use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -45,6 +46,7 @@ final readonly class CancelOzonOrdersScheduleHandler
         private GetOzonOrdersByStatusRequest $GetOzonOrdersByStatusRequest,
         private CancelOzonOrderHandler $CancelOzonOrderHandler,
         private DeduplicatorInterface $deduplicator,
+        private OzonTokensByProfileInterface $OzonTokensByProfile,
     ) {}
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
@@ -70,60 +72,73 @@ final readonly class CancelOzonOrdersScheduleHandler
         $DeduplicatorExec->save();
 
 
-        /**
-         * Получаем список ОТМЕНЕННЫХ сборочных заданий
-         */
+        /** Получаем все токены профиля */
 
-        $orders = $this->GetOzonOrdersByStatusRequest
-            ->forTokenIdentifier($message->getProfile())
-            ->findAllCancel();
+        $tokensByProfile = $this->OzonTokensByProfile
+            ->findAll($message->getProfile());
 
-        /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */
-        foreach($orders as $CancelOzonOrderDTO)
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
-            /** Индекс дедубдикации по номеру заказа */
-            $Deduplicator = $this->deduplicator
-                ->namespace('ozon-orders')
-                ->expiresAfter(DateInterval::createFromDateString('1 day'))
-                ->deduplication([
-                    $CancelOzonOrderDTO->getNumber(),
-                    self::class
-                ]);
+            return;
+        }
 
-            // Если передан интервал - не проверяем дедубликатор
-            if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
+        foreach($tokensByProfile as $OzonTokenUid)
+        {
+            /**
+             * Получаем список ОТМЕНЕННЫХ сборочных заданий
+             */
+
+            $orders = $this->GetOzonOrdersByStatusRequest
+                ->forTokenIdentifier($OzonTokenUid)
+                ->findAllCancel();
+
+            /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */
+            foreach($orders as $CancelOzonOrderDTO)
             {
-                continue;
+                /** Индекс дедубдикации по номеру заказа */
+                $Deduplicator = $this->deduplicator
+                    ->namespace('ozon-orders')
+                    ->expiresAfter(DateInterval::createFromDateString('1 day'))
+                    ->deduplication([
+                        $CancelOzonOrderDTO->getNumber(),
+                        self::class,
+                    ]);
+
+                // Если передан интервал - не проверяем дедубликатор
+                if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
+                {
+                    continue;
+                }
+
+                $handle = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
+
+                if($handle instanceof Order)
+                {
+                    $this->logger->info(
+                        sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getNumber()),
+                        [
+                            self::class.':'.__LINE__,
+                            'token' => (string) $OzonTokenUid,
+                        ],
+                    );
+
+                    continue;
+                }
+
+                if($handle !== false)
+                {
+                    $this->logger->critical(
+                        sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getNumber()),
+                        [
+                            self::class.':'.__LINE__,
+                            'handle' => $handle,
+                            'token' => (string) $OzonTokenUid,
+                        ],
+                    );
+                }
+
+                $Deduplicator->save();
             }
-
-            $handle = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
-
-            if($handle instanceof Order)
-            {
-                $this->logger->info(
-                    sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getNumber()),
-                    [
-                        self::class.':'.__LINE__,
-                        'profile' => (string) $CancelOzonOrderDTO->getProfile(),
-                    ]
-                );
-
-                continue;
-            }
-
-            if($handle !== false)
-            {
-                $this->logger->critical(
-                    sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getNumber()),
-                    [
-                        self::class.':'.__LINE__,
-                        'handle' => $handle,
-                        'profile' => (string) $CancelOzonOrderDTO->getProfile(),
-                    ]
-                );
-            }
-
-            $Deduplicator->save();
         }
 
         $DeduplicatorExec->delete();
