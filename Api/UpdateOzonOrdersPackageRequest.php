@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -79,9 +79,15 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
+            /** Если упаковка уже отправлена */
+            if($content['message'] === 'POSTING_ALREADY_SHIPPED')
+            {
+                return true;
+            }
+
             $this->logger->critical(
                 message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
-                context: [self::class.':'.__LINE__, $data, $content]
+                context: [self::class.':'.__LINE__, $data, $content],
             );
 
             return false;
