@@ -41,6 +41,7 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
+use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
 use BaksDev\Reference\Money\Type\Money;
@@ -91,7 +92,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /** Информация о покупателе */
     private ?array $buyer;
 
-    public function __construct(array $order, UserProfileUid $profile)
+    public function __construct(array $order, UserProfileUid $profile, OzonTokenUid|false $identifier = false)
     {
         $timezone = new DateTimeZone(date_default_timezone_get());
 
@@ -99,10 +100,13 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $NewOrderInvariable = new Invariable\NewOrderInvariable();
 
         $created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
-        $NewOrderInvariable->setCreated($created); // Дата и время начала обработки отправления.
+        $NewOrderInvariable
+            ->setCreated($created) // Дата и время начала обработки отправления.
+            ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
+            ->setToken($identifier) // идентификатор токена маркетплейса
+            ->setNumber('O-'.$order['posting_number']) // помечаем заказ префиксом O
+        ;
 
-        $NewOrderInvariable->setProfile($profile);
-        $NewOrderInvariable->setNumber('O-'.$order['posting_number']); // помечаем заказ префиксом O
         //$NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O (без единицы в конце)
         $this->invariable = $NewOrderInvariable;
 

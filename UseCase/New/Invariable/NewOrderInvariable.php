@@ -26,13 +26,15 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\UseCase\New\Invariable;
 
 use BaksDev\Orders\Order\Entity\Invariable\OrderInvariableInterface;
+use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use BaksDev\Users\User\Entity\User;
 use BaksDev\Users\User\Type\Id\UserUid;
 use DateTimeImmutable;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/** @see OrderInvariableDTO */
+/** @see OrderInvariable */
 final class NewOrderInvariable implements OrderInvariableInterface
 {
     /**
@@ -62,6 +64,11 @@ final class NewOrderInvariable implements OrderInvariableInterface
     #[Assert\NotBlank]
     #[Assert\Uuid]
     private ?UserProfileUid $profile = null;
+
+    /**
+     * ID токена маркетплейса
+     */
+    private Uuid|null $token = null;
 
 
     public function __construct()
@@ -128,6 +135,17 @@ final class NewOrderInvariable implements OrderInvariableInterface
     public function setNumber(?string $number): self
     {
         $this->number = $number;
+        return $this;
+    }
+
+    public function getToken(): ?Uuid
+    {
+        return $this->token;
+    }
+
+    public function setToken(Uuid|null|false $token): self
+    {
+        $this->token = $token ?: null;
         return $this;
     }
 

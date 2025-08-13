@@ -185,7 +185,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         foreach($orders as $order)
         {
-            yield new NewOzonOrderDTO($order, $this->getProfile());
+            yield new NewOzonOrderDTO($order, $this->getProfile(), $this->getIdentifier());
         }
     }
 }
