@@ -68,7 +68,7 @@ final class NewOrderInvariable implements OrderInvariableInterface
     /**
      * ID токена маркетплейса
      */
-    private Uuid|null $token = null;
+    private string|null $token = null;
 
 
     public function __construct()
@@ -138,12 +138,12 @@ final class NewOrderInvariable implements OrderInvariableInterface
         return $this;
     }
 
-    public function getToken(): ?Uuid
+    public function getToken(): ?string
     {
         return $this->token;
     }
 
-    public function setToken(Uuid|null|false $token): self
+    public function setToken(string|null|false $token): self
     {
         $this->token = $token ?: null;
         return $this;
