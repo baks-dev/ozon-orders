@@ -104,7 +104,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $NewOrderInvariable
             ->setCreated($created) // Дата и время начала обработки отправления.
             ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
-            ->setToken(new Uuid((string) $identifier)) // идентификатор токена маркетплейса
+            ->setToken((string) $identifier) // идентификатор токена маркетплейса
             ->setNumber('O-'.$order['posting_number']) // помечаем заказ префиксом O
         ;
 
