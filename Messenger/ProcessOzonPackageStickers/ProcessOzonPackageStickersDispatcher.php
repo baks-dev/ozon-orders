@@ -50,8 +50,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
 
     public function __invoke(ProcessOzonPackageStickersMessage $message): bool
     {
-
-        $cache = $this->Cache->init('ozon-package');
+        $cache = $this->Cache->init('ozon-orders');
 
         $key = md5($message->getPostingNumber());
 
@@ -68,7 +67,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
                 $this->MessageDispatch->dispatch(
                     message: $message,
                     stamps: [new MessageDelay('5 seconds')],
-                    transport: 'ozon-package',
+                    transport: 'ozon-orders',
                 );
 
                 return null;

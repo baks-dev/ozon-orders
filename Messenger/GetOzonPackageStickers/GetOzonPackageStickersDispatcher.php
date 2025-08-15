@@ -60,7 +60,7 @@ final readonly class GetOzonPackageStickersDispatcher
     public function __invoke(OrderMessage $message): void
     {
         $Deduplicator = $this->Deduplicator
-            ->namespace('ozon-package')
+            ->namespace('ozon-orders')
             ->deduplication(
                 keys: [
                     $message->getId(),
@@ -82,7 +82,7 @@ final readonly class GetOzonPackageStickersDispatcher
         if(false === ($editOrderDTO->getUsr() instanceof OrderUserDTO))
         {
             $this->Logger->critical(
-                message: 'ozon-package: Невозможно определить идентификатор профиля склада заказа',
+                message: 'ozon-orders: Невозможно определить идентификатор пользователя заказа',
                 context: [
                     self::class.':'.__LINE__,
                     var_export($orderEvent->getId(), true)
@@ -97,7 +97,7 @@ final readonly class GetOzonPackageStickersDispatcher
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
             $this->Logger->critical(
-                message: 'ozon-package: Невозможно определить идентификатор профиля склада заказа',
+                message: 'ozon-orders: Невозможно определить идентификатор профиля склада заказа',
                 context: [
                     self::class.':'.__LINE__,
                     var_export($orderEvent->getId(), true)
@@ -118,10 +118,8 @@ final readonly class GetOzonPackageStickersDispatcher
             ->forTokenIdentifier($OzonTokenUid)
             ->find($editOrderDTO->getInvariable()->getNumber());
 
-        $parentPosting = str_replace('O-', '', $editOrderDTO->getInvariable()->getNumber());
-
         /** Массив всех отправлений заказа */
-        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$parentPosting]);
+        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$editOrderDTO->getInvariable()->getNumber()]);
 
         /**
          * На каждый номер отправления бросаем сообщение для скачивания стикера OZON
@@ -137,7 +135,7 @@ final readonly class GetOzonPackageStickersDispatcher
             $this->MessageDispatch->dispatch(
                 message: $message,
                 stamps: [new MessageDelay('5 seconds')],
-                transport: 'ozon-package',
+                transport: 'ozon-orders',
             );
         }
 

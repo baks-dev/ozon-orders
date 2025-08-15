@@ -29,20 +29,28 @@ namespace BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 
 /** @see ProcessOzonPackageStickersDispatcher */
-final readonly class ProcessOzonPackageStickersMessage
+final class ProcessOzonPackageStickersMessage
 {
+    private string $token;
+
+    private string $postingNumber;
+
     public function __construct(
-        private OzonTokenUid $token,
-        private string $postingNumber,
-    ) {}
+        OzonTokenUid $token,
+        string $postingNumber
+    )
+    {
+        $this->token = (string) $token;
+        $this->postingNumber = $postingNumber;
+    }
 
     public function getToken(): OzonTokenUid
     {
-        return $this->token;
+        return new OzonTokenUid($this->token);
     }
 
     public function getPostingNumber(): string
     {
-        return sprintf('O-%s', $this->postingNumber);
+        return $this->postingNumber;
     }
 }
