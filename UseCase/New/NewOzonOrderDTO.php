@@ -101,10 +101,11 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $NewOrderInvariable = new Invariable\NewOrderInvariable();
 
         $created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
+
         $NewOrderInvariable
             ->setCreated($created) // Дата и время начала обработки отправления.
             ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
-            ->setToken((string) $identifier) // идентификатор токена маркетплейса
+            ->setToken($identifier) // идентификатор токена маркетплейса
             ->setNumber('O-'.$order['posting_number']) // помечаем заказ префиксом O
         ;
 
