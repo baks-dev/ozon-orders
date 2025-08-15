@@ -44,14 +44,11 @@ final class PrintOzonStickerRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_PostingFBSPackageLabel
      *
      */
-    public function find(array $numbers): string|false
+    public function find(string $number): string|false
     {
-        $replaceNumbers = array_map(function(string $number) {
-            return str_replace('O-', '', $number);
-        }, $numbers);
+        $number = str_replace('O-', '', $number);
 
-
-        $data['posting_number'] = $replaceNumbers;
+        $data['posting_number'] = [$number];
 
         $response = $this->TokenHttpClient()
             ->request(
