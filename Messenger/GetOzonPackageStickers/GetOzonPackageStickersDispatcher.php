@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -50,7 +49,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class GetOzonPackageStickersDispatcher
 {
     public function __construct(
-        #[Target('ozonPackageLogger')] private LoggerInterface $Logger,
+        #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
         private DeduplicatorInterface $Deduplicator,
         private MessageDispatchInterface $MessageDispatch,
         private CurrentOrderEventInterface $currentOrderEventRepository,
