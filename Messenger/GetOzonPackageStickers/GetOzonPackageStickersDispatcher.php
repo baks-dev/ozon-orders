@@ -28,8 +28,10 @@ namespace BaksDev\Ozon\Orders\Messenger\GetOzonPackageStickers;
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
+use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
@@ -52,7 +54,7 @@ final readonly class GetOzonPackageStickersDispatcher
         #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
         private DeduplicatorInterface $Deduplicator,
         private MessageDispatchInterface $MessageDispatch,
-        private CurrentOrderEventInterface $currentOrderEventRepository,
+        private CurrentOrderEventInterface $CurrentOrderEventRepository,
         private GetOzonOrderInfoRequest $getOzonOrderInfoRequest,
     ) {}
 
@@ -71,27 +73,36 @@ final readonly class GetOzonPackageStickersDispatcher
             return;
         }
 
-        $orderEvent = $this->currentOrderEventRepository
+        $OrderEvent = $this->CurrentOrderEventRepository
             ->forOrder($message->getId())
             ->find();
 
-        $editOrderDTO = new EditOrderDTO();
-        $orderEvent->getDto($editOrderDTO);
+        if(false === ($OrderEvent instanceof OrderEvent))
+        {
+            return;
+        }
 
-        if(false === ($editOrderDTO->getUsr() instanceof OrderUserDTO))
+        if(false === $OrderEvent->isStatusEquals(OrderStatusPackage::class))
+        {
+            return;
+        }
+
+        $EditOrderDTO = $OrderEvent->getDto(EditOrderDTO::class);
+
+        if(false === ($EditOrderDTO->getUsr() instanceof OrderUserDTO))
         {
             $this->Logger->critical(
                 message: 'ozon-orders: Невозможно определить идентификатор пользователя заказа',
                 context: [
                     self::class.':'.__LINE__,
-                    var_export($orderEvent->getId(), true)
+                    var_export($OrderEvent->getId(), true),
                 ],
             );
 
             return;
         }
 
-        $UserProfileUid = $orderEvent->getOrderProfile();
+        $UserProfileUid = $OrderEvent->getOrderProfile();
 
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
@@ -99,7 +110,7 @@ final readonly class GetOzonPackageStickersDispatcher
                 message: 'ozon-orders: Невозможно определить идентификатор профиля склада заказа',
                 context: [
                     self::class.':'.__LINE__,
-                    var_export($orderEvent->getId(), true)
+                    var_export($OrderEvent->getId(), true),
                 ],
             );
 
@@ -107,18 +118,19 @@ final readonly class GetOzonPackageStickersDispatcher
         }
 
         /** Токен из заказа в системе (был установлен при получении заказа из Ozon) */
-        $OzonTokenUid = new OzonTokenUid($orderEvent->getOrderTokenIdentifier());
+        $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
         /**
          * Заказ из Ozon
+         *
          * @var NewOzonOrderDTO $NewOzonOrderDTO
          */
         $NewOzonOrderDTO = $this->getOzonOrderInfoRequest
             ->forTokenIdentifier($OzonTokenUid)
-            ->find($editOrderDTO->getInvariable()->getNumber());
+            ->find($EditOrderDTO->getInvariable()->getNumber());
 
         /** Массив всех отправлений заказа */
-        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$editOrderDTO->getInvariable()->getNumber()]);
+        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$EditOrderDTO->getInvariable()->getNumber()]);
 
         /**
          * На каждый номер отправления бросаем сообщение для скачивания стикера OZON
@@ -126,13 +138,13 @@ final readonly class GetOzonPackageStickersDispatcher
 
         foreach($postings as $posting)
         {
-            $message = new ProcessOzonPackageStickersMessage(
-                $OzonTokenUid,
-                $posting,
+            $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+                token: $OzonTokenUid,
+                postingNumber: $posting,
             );
 
             $this->MessageDispatch->dispatch(
-                message: $message,
+                message: $ProcessOzonPackageStickersMessage,
                 stamps: [new MessageDelay('5 seconds')],
                 transport: 'ozon-orders',
             );

@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -55,6 +54,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
         $key = md5($message->getPostingNumber());
 
         $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|null {
+
             $item->expiresAfter(DateInterval::createFromDateString('1 second'));
 
             $ozonSticker = $this->printOzonStickerRequest
