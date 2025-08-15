@@ -51,7 +51,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class GetOzonPackageStickersDispatcher
 {
     public function __construct(
-        #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private DeduplicatorInterface $Deduplicator,
         private MessageDispatchInterface $MessageDispatch,
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
@@ -79,6 +79,11 @@ final readonly class GetOzonPackageStickersDispatcher
 
         if(false === ($OrderEvent instanceof OrderEvent))
         {
+            $this->logger->critical(
+                'megamarket-orders: Не найдено событие OrderEvent',
+                [self::class.':'.__LINE__, var_export($message, true)],
+            );
+
             return;
         }
 
@@ -91,7 +96,7 @@ final readonly class GetOzonPackageStickersDispatcher
 
         if(false === ($EditOrderDTO->getUsr() instanceof OrderUserDTO))
         {
-            $this->Logger->critical(
+            $this->logger->critical(
                 message: 'ozon-orders: Невозможно определить идентификатор пользователя заказа',
                 context: [
                     self::class.':'.__LINE__,
@@ -106,7 +111,7 @@ final readonly class GetOzonPackageStickersDispatcher
 
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
-            $this->Logger->critical(
+            $this->logger->critical(
                 message: 'ozon-orders: Невозможно определить идентификатор профиля склада заказа',
                 context: [
                     self::class.':'.__LINE__,
