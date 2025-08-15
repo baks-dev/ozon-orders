@@ -138,7 +138,7 @@ final class NewOrderInvariable implements OrderInvariableInterface
         return $this;
     }
 
-    public function getToken(): ?string
+    public function getToken(): ?Uuid
     {
         return $this->token;
     }
