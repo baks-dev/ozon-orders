@@ -33,10 +33,11 @@ use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
+use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\OrderProductDTO;
+use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPostingDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
-use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
@@ -92,6 +93,7 @@ final readonly class GetOzonPackageStickersDispatcher
             return;
         }
 
+        /** @var EditOrderDTO $EditOrderDTO */
         $EditOrderDTO = $OrderEvent->getDto(EditOrderDTO::class);
 
         if(false === ($EditOrderDTO->getUsr() instanceof OrderUserDTO))
@@ -125,36 +127,65 @@ final readonly class GetOzonPackageStickersDispatcher
         /** Токен из заказа в системе (был установлен при получении заказа из Ozon) */
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
-        /**
-         * Заказ из Ozon
-         *
-         * @var NewOzonOrderDTO $NewOzonOrderDTO
-         */
-        $NewOzonOrderDTO = $this->getOzonOrderInfoRequest
-            ->forTokenIdentifier($OzonTokenUid)
-            ->find($EditOrderDTO->getInvariable()->getNumber());
-
-        /** Массив всех отправлений заказа */
-        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$EditOrderDTO->getInvariable()->getNumber()]);
-
-        /**
-         * На каждый номер отправления бросаем сообщение для скачивания стикера OZON
-         */
-
-        foreach($postings as $posting)
+        /** @var OrderProductDTO $OrderProductDTO */
+        foreach($EditOrderDTO->getProduct() as $OrderProductDTO)
         {
-            $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
-                token: $OzonTokenUid,
-                postingNumber: $posting,
-            );
+            /**
+             *  На каждый номер отправления бросаем сообщение для скачивания стикера OZON
+             *
+             * @var OrderProductPostingDTO $OrderProductPostingDTO
+             */
+            foreach($OrderProductDTO->getPosting() as $OrderProductPostingDTO)
+            {
+                $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+                    token: $OzonTokenUid,
+                    postingNumber: $OrderProductPostingDTO->getValue(),
+                );
 
-            $this->MessageDispatch->dispatch(
-                message: $ProcessOzonPackageStickersMessage,
-                stamps: [new MessageDelay('5 seconds')],
-                transport: 'ozon-orders',
-            );
+                $this->MessageDispatch->dispatch(
+                    message: $ProcessOzonPackageStickersMessage,
+                    stamps: [new MessageDelay('5 seconds')],
+                    transport: 'ozon-orders',
+                );
+            }
         }
 
         $Deduplicator->save();
+
+        return;
+
+
+        //        /**
+        //         * Заказ из Ozon
+        //         *
+        //         * @var NewOzonOrderDTO $NewOzonOrderDTO
+        //         */
+        //        $NewOzonOrderDTO = $this->getOzonOrderInfoRequest
+        //            ->forTokenIdentifier($OzonTokenUid)
+        //            ->find($EditOrderDTO->getInvariable()->getNumber());
+        //
+        //        /** Массив всех отправлений заказа */
+        //        $postings = array_merge($NewOzonOrderDTO->getRelatedPostings(), [$EditOrderDTO->getInvariable()->getNumber()]);
+        //
+        //        /**
+        //         * На каждый номер отправления бросаем сообщение для скачивания стикера OZON
+        //         */
+        //
+        //        foreach($postings as $posting)
+        //        {
+        //            $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+        //                token: $OzonTokenUid,
+        //                postingNumber: $posting,
+        //            );
+        //
+        //            $this->MessageDispatch->dispatch(
+        //                message: $ProcessOzonPackageStickersMessage,
+        //                stamps: [new MessageDelay('5 seconds')],
+        //                transport: 'ozon-orders',
+        //            );
+        //        }
+        //
+        //        $Deduplicator->save();
+
     }
 }
