@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -31,7 +32,6 @@ use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
-use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
@@ -50,27 +50,29 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+/**
+ * Получает список НОВЫХ сборочных заданий для создания НОВЫХ заказов (на каждый Ozon токен)
+ */
 #[AsMessageHandler]
 final readonly class NewOzonOrderScheduleHandler
 {
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
-        private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
-        private UserProfileGpsInterface $UserProfileGpsInterface,
+        private DeduplicatorInterface $Deduplicator,
         private GeocodeAddressParser $GeocodeAddressParser,
-        private ProductConstByArticleInterface $ProductConstByArticle,
-        private CurrentDeliveryEventInterface $CurrentDeliveryEvent,
+        private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
+        private UserProfileGpsInterface $UserProfileGpsInterfaceRepository,
+        private ProductConstByArticleInterface $ProductConstByArticleRepository,
+        private CurrentDeliveryEventInterface $CurrentDeliveryEventRepository,
+        private UserByUserProfileInterface $UserByUserProfileRepository,
+        private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
         private NewOzonOrderHandler $NewOzonOrderHandler,
-        private DeduplicatorInterface $deduplicator,
-        private UserByUserProfileInterface $UserByUserProfile,
-        private OzonTokensByProfileInterface $OzonTokensByProfile,
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
         /** Получаем все токены профиля */
-
-        $tokensByProfile = $this->OzonTokensByProfile
+        $tokensByProfile = $this->OzonTokensByProfileRepository
             ->findAll($message->getProfile());
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
@@ -82,7 +84,7 @@ final readonly class NewOzonOrderScheduleHandler
          * Ограничиваем периодичность запросов
          */
 
-        $DeduplicatorExec = $this->deduplicator
+        $DeduplicatorExec = $this->Deduplicator
             ->namespace('ozon-orders')
             ->expiresAfter(NewOrdersSchedule::INTERVAL)
             ->deduplication([
@@ -107,6 +109,7 @@ final readonly class NewOzonOrderScheduleHandler
 
         foreach($tokensByProfile as $OzonTokenUid)
         {
+
             /**
              * Получаем список НОВЫХ сборочных заданий токена
              */
@@ -132,7 +135,7 @@ final readonly class NewOzonOrderScheduleHandler
                 /** Идентификатор заказа (для дедубликатора) */
 
                 $number = $OzonMarketOrderDTO->getOrderNumber();
-                $Deduplicator = $this->deduplicator->deduplication([$number, self::class]);
+                $Deduplicator = $this->Deduplicator->deduplication([$number, self::class]);
 
                 if($Deduplicator->isExecuted())
                 {
@@ -145,7 +148,7 @@ final readonly class NewOzonOrderScheduleHandler
                 /**
                  * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
                  */
-                $User = $this->UserByUserProfile->forProfile($UserProfileUid)->find();
+                $User = $this->UserByUserProfileRepository->forProfile($UserProfileUid)->find();
 
                 if(false === ($User instanceof User))
                 {
@@ -182,7 +185,7 @@ final readonly class NewOzonOrderScheduleHandler
                 // если доставка FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
                 if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
                 {
-                    $address = $this->UserProfileGpsInterface->findUserProfileGps($UserProfileUid);
+                    $address = $this->UserProfileGpsInterfaceRepository->findUserProfileGps($UserProfileUid);
 
                     if(empty($address['location']))
                     {
@@ -220,7 +223,7 @@ final readonly class NewOzonOrderScheduleHandler
                  * Присваиваем активное событие доставки
                  */
 
-                $DeliveryEventUid = $this->CurrentDeliveryEvent
+                $DeliveryEventUid = $this->CurrentDeliveryEventRepository
                     ->forDelivery($OrderDeliveryDTO->getDelivery())
                     ->getId();
 
@@ -257,7 +260,7 @@ final readonly class NewOzonOrderScheduleHandler
                  */
                 foreach($OzonMarketOrderDTO->getProduct() as $product)
                 {
-                    $ProductData = $this->ProductConstByArticle->find($product->getArticle());
+                    $ProductData = $this->ProductConstByArticleRepository->find($product->getArticle());
 
                     if(false === ($ProductData instanceof CurrentProductDTO))
                     {

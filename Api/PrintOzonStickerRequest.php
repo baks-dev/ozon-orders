@@ -27,36 +27,40 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
-use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 
 /**
- * Информация о заказах
+ * Напечатать этикетку
  */
-final class GetOzonOrderInfoRequest extends Ozon
+final class PrintOzonStickerRequest extends Ozon
 {
     /**
-     * Получить информацию об отправлении по идентификатору
+     * Генерирует PDF-файл с этикетками для указанных отправлений.
+     * В одном запросе можно передать не больше 20 идентификаторов. Если хотя бы для одного отправления возникнет ошибка, этикетки не будут подготовлены для всех отправлений в запросе.
      *
-     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_GetFbsPostingV3
+     * Рекомендуем запрашивать этикетки через 45–60 секунд после сборки заказа.
+     *
+     * Ошибка The next postings aren't ready означает, что этикетки ещё не готовы, повторите запрос позднее.
+     *
+     * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_PostingFBSPackageLabel
      *
      */
-    public function find(string $number): NewOzonOrderDTO|false
+    public function find(array $numbers): string|false
     {
-        $number = str_replace('O-', '', $number);
+        $replaceNumbers = array_map(function(string $number) {
+            return str_replace('O-', '', $number);
+        }, $numbers);
 
-        $data['posting_number'] = $number;
-        $data['with'] = [
-            "related_postings" => true,
-        ];
+
+        $data['posting_number'] = $replaceNumbers;
 
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
-                '/v3/posting/fbs/get',
+                '/v2/posting/fbs/package-label',
                 ['json' => $data],
             );
 
-        $content = $response->toArray(false);
+        $content = $response->getContent(false);
 
         if($response->getStatusCode() !== 200)
         {
@@ -71,7 +75,6 @@ final class GetOzonOrderInfoRequest extends Ozon
             return false;
         }
 
-        return new NewOzonOrderDTO(current($content), $this->getProfile());
-
+        return $content;
     }
 }

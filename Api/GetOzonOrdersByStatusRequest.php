@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -114,7 +115,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
             }
         }
 
-        $data['dir'] = 'DESC'; // сортировка
+        $data['dir'] = 'DESC'; // сортировка по убыванию
         $data['limit'] = 1000; // Количество значений в ответе
         $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::W3C); // Дата начала периода (Y-m-d\TH:i:sP)
         $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);   // Дата конца периода (Y-m-d\TH:i:sP)
@@ -154,7 +155,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         return $content['result']['postings'];
     }
 
-
+    /** Заказы только в статусе "отменено" */
     public function findAllCancel(): Generator|bool
     {
         $this->status = 'cancelled';
@@ -172,9 +173,29 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         }
     }
 
+    /** Заказы только в статусе "ожидает упаковки" */
     public function findAllNews(): Generator|bool
     {
         $this->status = 'awaiting_packaging';
+
+        $orders = $this->findAll();
+
+
+        if(false === $orders)
+        {
+            return false;
+        }
+
+        foreach($orders as $order)
+        {
+            yield new NewOzonOrderDTO($order, $this->getProfile(), $this->getIdentifier());
+        }
+    }
+
+    /** Поиск по переданному статусу */
+    public function findByStatus(string $status): Generator|bool
+    {
+        $this->status = $status;
 
         $orders = $this->findAll();
 

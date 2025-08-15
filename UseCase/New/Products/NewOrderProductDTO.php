@@ -1,17 +1,17 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
- *  
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -27,10 +28,12 @@ namespace BaksDev\Ozon\Orders\UseCase\New\Products;
 
 use BaksDev\Orders\Order\Entity\Products\OrderProduct;
 use BaksDev\Orders\Order\Entity\Products\OrderProductInterface;
+use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPostingDTO;
 use BaksDev\Products\Product\Type\Event\ProductEventUid;
 use BaksDev\Products\Product\Type\Offers\Id\ProductOfferUid;
 use BaksDev\Products\Product\Type\Offers\Variation\Id\ProductVariationUid;
 use BaksDev\Products\Product\Type\Offers\Variation\Modification\Id\ProductModificationUid;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /** @see OrderProduct */
@@ -65,21 +68,26 @@ final class NewOrderProductDTO implements OrderProductInterface
     #[Assert\Valid]
     private Price\NewOrderPriceDTO $price;
 
+    /**
+     * Количество разделенных отправлений одного заказа
+     *
+     * @var ArrayCollection<int, OrderProductPostingDTO> $posting
+     */
+    #[Assert\Valid]
+    private ArrayCollection $posting;
+
     public function __construct(string $article)
     {
         $this->article = $article;
         $this->price = new Price\NewOrderPriceDTO();
-
+        $this->posting = new ArrayCollection();
     }
 
-    /**
-     * Article
-     */
+    /** Артикул продукта */
     public function getArticle(): string
     {
         return $this->article;
     }
-
 
     /** Событие продукта */
     public function getProduct(): ProductEventUid
@@ -98,7 +106,6 @@ final class NewOrderProductDTO implements OrderProductInterface
 
         return $this;
     }
-
 
     /** Торговое предложение */
     public function getOffer(): ?ProductOfferUid
@@ -176,5 +183,26 @@ final class NewOrderProductDTO implements OrderProductInterface
     {
         $this->sku = $sku;
         return $this;
+    }
+
+    /**
+     * Количество разделенных отправлений одного заказа
+     *
+     * @return ArrayCollection<int, OrderProductPostingDTO>
+     */
+    public function getPosting(): ArrayCollection
+    {
+        return $this->posting;
+    }
+
+    public function addPosting(OrderProductPostingDTO $posting): self
+    {
+        $this->posting->add($posting);
+        return $this;
+    }
+
+    public function removePosting(OrderProductPostingDTO $posting): void
+    {
+        $this->posting->removeElement($posting);
     }
 }
