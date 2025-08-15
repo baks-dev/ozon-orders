@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -29,11 +30,10 @@ use BaksDev\Ozon\Api\Ozon;
 use InvalidArgumentException;
 
 /**
- * Информация о заказах
+ * Собрать заказ
  */
 final class UpdateOzonOrdersPackageRequest extends Ozon
 {
-
     private array|false $products = false;
 
     public function products(array $products): self
@@ -42,15 +42,18 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
         return $this;
     }
 
-
     /**
-     * Частичная сборка отправления
+     * Делит заказ на отправления и переводит его в статус awaiting_deliver.
      *
-     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_ShipFbsPostingPackage
+     * Каждый элемент в packages может содержать несколько элементов products или отправлений. Каждый элемент в products — это товар, включённый в данное отправление.
+     * Чтобы разделить заказ, передайте в массиве packages несколько объектов.
+     *
+     * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_ShipFbsPostingV4
      *
      */
-    public function package(int|string $order): bool
+    public function package(int|string $order): array|bool
     {
+        /** Если в тестовом окружении */
         if(false === $this->isExecuteEnvironment())
         {
             return true;
@@ -93,6 +96,6 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             return false;
         }
 
-        return isset($content['result']);
+        return true === isset($content['result']) ? $content['result'] : false;
     }
 }

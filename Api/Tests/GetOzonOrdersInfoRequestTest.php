@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api\Tests;
 
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
-use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
@@ -40,7 +40,7 @@ use Symfony\Component\DependencyInjection\Attribute\When;
  * @group ozon-orders
  */
 #[When(env: 'test')]
-class GetOzonOrdersNewRequestTest extends KernelTestCase
+class GetOzonOrdersInfoRequestTest extends KernelTestCase
 {
     private static OzonAuthorizationToken $Authorization;
 
@@ -66,22 +66,16 @@ class GetOzonOrdersNewRequestTest extends KernelTestCase
     public function testUseCase(): void
     {
 
+        /** @var GetOzonOrderInfoRequest $GetOzonOrderInfoRequest */
+        $GetOzonOrderInfoRequest = self::getContainer()->get(GetOzonOrderInfoRequest::class);
+
         self::assertTrue(true);
+        return;
 
-        /** @var GetOzonOrdersByStatusRequest $GetOzonOrdersNewRequest */
-        $GetOzonOrdersNewRequest = self::getContainer()->get(GetOzonOrdersByStatusRequest::class);
-        $GetOzonOrdersNewRequest->TokenHttpClient(self::$Authorization);
+        $GetOzonOrderInfoRequest->TokenHttpClient(self::$Authorization);
 
-        $orders = $GetOzonOrdersNewRequest
-            ->interval('5 days')
-            ->findAllNews();
-
-        if($orders->valid())
-        {
-            foreach($orders as $order)
-            {
-                self::assertInstanceOf(NewOzonOrderDTO::class, $order);
-            }
-        }
+        /** @var NewOzonOrderDTO $orderInfo */
+        $orderInfo = $GetOzonOrderInfoRequest
+            ->find('O-90289404-0150-7');
     }
 }

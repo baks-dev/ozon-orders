@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -201,7 +202,7 @@ class UpdateOzonOrderPackageRequestTest extends KernelTestCase
 
 
         $package = $UpdateOzonOrdersPackageRequest
-            ->products($products)
+            ->products([$products])
             ->package($number);
 
         dd($package);

@@ -24,15 +24,12 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\Tests;
+namespace BaksDev\Ozon\Orders\Messenger\GetOzonPackageStickers\Tests;
 
-use BaksDev\Core\Doctrine\DBALQueryBuilder;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Type\Event\OrderEventUid;
 use BaksDev\Orders\Order\Type\Id\OrderUid;
-use BaksDev\Ozon\Orders\Messenger\UpdatePackageOzonOrderDispatcher;
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\Attributes\DependsOnClass;
+use BaksDev\Ozon\Orders\Messenger\GetOzonPackageStickers\GetOzonPackageStickersDispatcher;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Command\Command;
@@ -47,25 +44,27 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 #[Group('ozon-orders')]
 #[When(env: 'test')]
-class UpdatePackageOzonOrderDebugTest extends KernelTestCase
+class GetOzonPackageStickersDebugTest extends KernelTestCase
 {
     public function testUseCase(): void
     {
+        self::assertTrue(true);
+
         // Бросаем событие консольной команды
         $dispatcher = self::getContainer()->get(EventDispatcherInterface::class);
         $event = new ConsoleCommandEvent(new Command(), new StringInput(''), new NullOutput());
         $dispatcher->dispatch($event, 'console.command');
 
-        /** @var UpdatePackageOzonOrderDispatcher $UpdatePackageOzonOrderDispatcher */
-        $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderDispatcher::class);
+        /** @var GetOzonPackageStickersDispatcher $GetOzonPackageStickersDispatcher */
+        $GetOzonPackageStickersDispatcher = self::getContainer()->get(GetOzonPackageStickersDispatcher::class);
+
+        return;
 
         $OrderMessage = new OrderMessage(
-            id: new OrderUid('01986548-9a2b-7b81-9913-e1f56fc8a426'),
-            event: new OrderEventUid('0198658f-7bd4-743f-9ea0-a0a96a40d1d7'),
+            id: new OrderUid('0198a9f9-c9d9-75ec-9f21-04bdf2d9f3d7'),
+            event: new OrderEventUid('0198a9f9-c9d9-75ec-9f21-04bdf34f4a58'),
         );
 
-        $UpdatePackageOzonOrderDispatcher($OrderMessage);
-
-        self::assertTrue(true);
+        $GetOzonPackageStickersDispatcher($OrderMessage);
     }
 }

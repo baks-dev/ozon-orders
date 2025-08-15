@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -41,6 +42,7 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
@@ -76,7 +78,10 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /** Статус заказа */
     private OrderStatus $status;
 
-    /** Коллекция продукции в заказе */
+    /**
+     * Коллекция продукции в заказе
+     * @var ArrayCollection{int, NewOrderProductDTO} $product
+     */
     #[Assert\Valid]
     private ArrayCollection $product;
 
@@ -92,6 +97,11 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     /** Информация о покупателе */
     private ?array $buyer;
+
+    /**
+     * Связанные отправления — те, на которое было разделено родительское отправление при сборке.
+     */
+    private ?array $relatedPostings = null;
 
     public function __construct(array $order, UserProfileUid $profile, OzonTokenUid|false $identifier = false)
     {
@@ -226,7 +236,12 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
 
             $this->addProduct($NewOrderProductDTO);
+        }
 
+        if(isset($order['related_postings']['related_posting_numbers']))
+        {
+            /** Дата доставки */
+            $this->relatedPostings = $order['related_postings']['related_posting_numbers'];
         }
     }
 
@@ -271,8 +286,11 @@ final class NewOzonOrderDTO implements OrderEventInterface
     }
 
 
-    /** Коллекция продукции в заказе */
-
+    /**
+     * Коллекция продукции в заказе
+     *
+     * @return  ArrayCollection{int, NewOrderProductDTO}
+     */
     public function getProduct(): ArrayCollection
     {
         return $this->product;
@@ -344,5 +362,13 @@ final class NewOzonOrderDTO implements OrderEventInterface
     public function getBuyer(): ?array
     {
         return $this->buyer;
+    }
+
+    /**
+     * Связанные отправления — те, на которое было разделено родительское отправление при сборке.
+     */
+    public function getRelatedPostings(): ?array
+    {
+        return $this->relatedPostings;
     }
 }

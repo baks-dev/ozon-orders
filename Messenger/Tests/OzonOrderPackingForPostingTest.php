@@ -26,46 +26,30 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Messenger\Tests;
 
-use BaksDev\Core\Doctrine\DBALQueryBuilder;
-use BaksDev\Orders\Order\Messenger\OrderMessage;
-use BaksDev\Orders\Order\Type\Event\OrderEventUid;
-use BaksDev\Orders\Order\Type\Id\OrderUid;
 use BaksDev\Ozon\Orders\Messenger\UpdatePackageOzonOrderDispatcher;
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\Attributes\DependsOnClass;
-use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Event\ConsoleCommandEvent;
-use Symfony\Component\Console\Input\StringInput;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\DependencyInjection\Attribute\When;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-/**
- * @group ozon-orders
- */
-#[Group('ozon-orders')]
 #[When(env: 'test')]
-class UpdatePackageOzonOrderDebugTest extends KernelTestCase
+class OzonOrderPackingForPostingTest extends KernelTestCase
 {
-    public function testUseCase(): void
+    public function testPacking(): void
     {
-        // Бросаем событие консольной команды
-        $dispatcher = self::getContainer()->get(EventDispatcherInterface::class);
-        $event = new ConsoleCommandEvent(new Command(), new StringInput(''), new NullOutput());
-        $dispatcher->dispatch($event, 'console.command');
+        self::assertTrue(true);
 
         /** @var UpdatePackageOzonOrderDispatcher $UpdatePackageOzonOrderDispatcher */
         $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderDispatcher::class);
 
-        $OrderMessage = new OrderMessage(
-            id: new OrderUid('01986548-9a2b-7b81-9913-e1f56fc8a426'),
-            event: new OrderEventUid('0198658f-7bd4-743f-9ea0-a0a96a40d1d7'),
+        $total = 2;
+        $package = 1;
+        $pack = $total;
+        $sku = 1711713592;
+
+        $postings = $UpdatePackageOzonOrderDispatcher->packing(
+            package: $package,
+            total: $total,
+            pack: $pack,
+            sku: $sku,
         );
-
-        $UpdatePackageOzonOrderDispatcher($OrderMessage);
-
-        self::assertTrue(true);
     }
 }
