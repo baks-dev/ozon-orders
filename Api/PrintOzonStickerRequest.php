@@ -56,10 +56,6 @@ final class PrintOzonStickerRequest extends Ozon
                 ['json' => $data],
             );
 
-        $content = $response->getContent(false);
-
-        $this->logger->critical(sprintf('Стикер %s', $number), $response->toArray(false));
-
         if($response->getStatusCode() !== 200)
         {
             $this->logger->warning(
@@ -67,12 +63,12 @@ final class PrintOzonStickerRequest extends Ozon
                     'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
                     $response->getStatusCode(), $this->getWarehouse(),
                 ),
-                [self::class.':'.__LINE__, $data, $response->toArray(false)],
+                [self::class.':'.__LINE__, $data],
             );
 
             return false;
         }
 
-        return $content;
+        return $response->getContent(false);
     }
 }
