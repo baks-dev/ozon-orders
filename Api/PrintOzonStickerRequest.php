@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -59,14 +58,16 @@ final class PrintOzonStickerRequest extends Ozon
 
         $content = $response->getContent(false);
 
+        $this->logger->critical(sprintf('Стикер %s', $number), $response->toArray(false));
+
         if($response->getStatusCode() !== 200)
         {
             $this->logger->warning(
                 sprintf(
-                    'ozon-orders: Ошибка %s при получении информации о заказе на складе %s',
+                    'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
                     $response->getStatusCode(), $this->getWarehouse(),
                 ),
-                [self::class.':'.__LINE__, $data, $content],
+                [self::class.':'.__LINE__, $data, $response->toArray(false)],
             );
 
             return false;

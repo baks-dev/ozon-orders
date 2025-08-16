@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -43,6 +42,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
@@ -90,20 +90,25 @@ final readonly class UpdatePackageOzonOrderDispatcher
             return;
         }
 
-        /**
-         * Завершаем обработчик:
-         * - если статус заказа не Package «Упаковка заказов»
-         * - если тип доставки заказа не Ozon Fbs «Доставка службой Ozon»
-         */
+        /** Завершаем обработчик, если статус заказа не Package «Упаковка заказов» */
+        if(false === $OrderEvent->isStatusEquals(OrderStatusPackage::class))
+        {
+            return;
+        }
 
+        /**
+         * Завершаем обработчик если тип доставки заказа
+         * - не Ozon Fbs «Доставка службой Ozon»
+         * - не Ozon Dbs «Доставка собственной службой логистики»
+         */
         if(
-            false === $OrderEvent->isStatusEquals(OrderStatusPackage::class)
-            ||
             false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE)
+            && false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE)
         )
         {
             return;
         }
+
 
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();
@@ -150,6 +155,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
         /**
          * Заказ из Ozon
+         *
          * @var NewOzonOrderDTO $NewOzonOrderDTO
          */
         $NewOzonOrderDTO = $this->getOzonOrderInfoRequest
@@ -195,7 +201,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
                     context: [
                         self::class.':'.__LINE__,
                         var_export($OrderEvent->getId(), true),
-                    ]
+                    ],
                 );
 
                 return;
@@ -211,7 +217,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
                         (string) $ProductData->getOffer(),
                         (string) $ProductData->getVariation(),
                         (string) $ProductData->getModification(),
-                        self::class
+                        self::class,
                     ]);
 
             if($DeduplicatorOrderProduct->isExecuted() === true)
@@ -236,7 +242,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
                     context: [
                         self::class.':'.__LINE__,
                         var_export($OrderEvent->getId(), true),
-                    ]
+                    ],
                 );
 
                 return;
@@ -265,7 +271,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
                     context: [
                         self::class.':'.__LINE__,
                         var_export($OrderEvent->getId(), true),
-                    ]
+                    ],
                 );
 
                 return;

@@ -35,7 +35,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * Метод пересчитывает общее количество заказов в поставке OzonSupply
+ * Метод получает стикер отправления Ozon и кеширует на сутки для печати в формате JPEG
  * prev @see GetOzonPackageStickersDispatcher
  */
 #[AsMessageHandler(priority: 0)]
@@ -50,10 +50,9 @@ final readonly class ProcessOzonPackageStickersDispatcher
     public function __invoke(ProcessOzonPackageStickersMessage $message): bool
     {
         $cache = $this->Cache->init('ozon-orders');
+        $key = $message->getPostingNumber();
 
-        $key = md5($message->getPostingNumber());
-
-        $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|null {
+        $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|false {
 
             $item->expiresAfter(DateInterval::createFromDateString('1 second'));
 
@@ -70,7 +69,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
                     transport: 'ozon-orders',
                 );
 
-                return null;
+                return false;
             }
 
             $item->expiresAfter(DateInterval::createFromDateString('1 day'));
@@ -90,6 +89,6 @@ final readonly class ProcessOzonPackageStickersDispatcher
             return $stickerJpeg;
         });
 
-        return is_string($sticker);
+        return $sticker !== false;
     }
 }
