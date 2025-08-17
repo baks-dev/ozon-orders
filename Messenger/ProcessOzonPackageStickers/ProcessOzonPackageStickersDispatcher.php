@@ -49,7 +49,8 @@ final readonly class ProcessOzonPackageStickersDispatcher
 
     public function __invoke(ProcessOzonPackageStickersMessage $message): bool
     {
-        $cache = $this->Cache->init('ozon-orders');
+        /** Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю) */
+        $cache = $this->Cache->init('order-sticker');
         $key = $message->getPostingNumber();
 
         $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|false {
