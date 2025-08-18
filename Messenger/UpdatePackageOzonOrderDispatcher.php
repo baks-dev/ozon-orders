@@ -42,6 +42,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
@@ -381,6 +382,24 @@ final readonly class UpdatePackageOzonOrderDispatcher
                 $posting->setValue($postingNumber);
 
                 $orderProductDTO->addPosting($posting);
+
+
+                /**
+                 *  На каждый номер отправления бросаем сообщение для скачивания стикера OZON
+                 *
+                 * @var OrderProductPostingDTO $OrderProductPostingDTO
+                 */
+
+                $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+                    token: $OzonTokenUid,
+                    postingNumber: $postingNumber,
+                );
+
+                $this->MessageDispatch->dispatch(
+                    message: $ProcessOzonPackageStickersMessage,
+                    stamps: [new MessageDelay('5 seconds')],
+                    transport: 'ozon-orders',
+                );
             }
 
             /**
