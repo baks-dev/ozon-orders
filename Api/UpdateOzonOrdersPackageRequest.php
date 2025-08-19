@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -45,8 +44,9 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
     /**
      * Делит заказ на отправления и переводит его в статус awaiting_deliver.
      *
-     * Каждый элемент в packages может содержать несколько элементов products или отправлений. Каждый элемент в products — это товар, включённый в данное отправление.
-     * Чтобы разделить заказ, передайте в массиве packages несколько объектов.
+     * Каждый элемент в packages может содержать несколько элементов products или отправлений. Каждый элемент в
+     * products — это товар, включённый в данное отправление. Чтобы разделить заказ, передайте в массиве packages
+     * несколько объектов.
      *
      * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_ShipFbsPostingV4
      *
@@ -84,6 +84,12 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
         {
             /** Если упаковка уже отправлена */
             if($content['message'] === 'POSTING_ALREADY_SHIPPED')
+            {
+                return true;
+            }
+
+            /** Заказ отменен */
+            if($content['message'] === 'POSTING_ALREADY_CANCELLED')
             {
                 return true;
             }
