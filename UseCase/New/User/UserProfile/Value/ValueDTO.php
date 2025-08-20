@@ -57,9 +57,10 @@ final class ValueDTO implements UserProfileValueInterface
         return $this->field;
     }
 
-    public function setField(TypeProfileSectionFieldUid $field): void
+    public function setField(TypeProfileSectionFieldUid $field): self
     {
         $this->field = $field;
+        return $this;
     }
 
     /* VALUE */
@@ -76,20 +77,22 @@ final class ValueDTO implements UserProfileValueInterface
     /**
      * @param string|null $value
      */
-    public function setValue(?string $value): void
+    public function setValue(?string $value): self
     {
         $this->value = trim($value);
+        return $this;
     }
 
 
     /* Вспомогательные методы */
 
-    public function updSection(FieldValueFormDTO $fieldValueFormDTO): void
+    public function updSection(FieldValueFormDTO $fieldValueFormDTO): self
     {
         $this->section = $fieldValueFormDTO->getSection();
         $this->sectionName = $fieldValueFormDTO->getSectionName();
         $this->sectionDescription = $fieldValueFormDTO->getSectionDescription();
         $this->type = $fieldValueFormDTO->getType();
+        return $this;
     }
 
 

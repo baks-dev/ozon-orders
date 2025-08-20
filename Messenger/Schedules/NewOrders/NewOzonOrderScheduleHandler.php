@@ -184,12 +184,10 @@ final readonly class NewOzonOrderScheduleHandler
                     continue;
                 }
 
-                /**
-                 * Если заказ DBS - адрес присваивается из запроса
-                 * Если заказ FBS - адрес доставки сам склад, получить и присвоить
-                 */
 
-                // если доставка FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
+                /**
+                 * Если заказ FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
+                 */
                 if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
                 {
                     $address = $this->UserProfileGpsInterfaceRepository->findUserProfileGps($UserProfileUid);
@@ -206,19 +204,19 @@ final readonly class NewOzonOrderScheduleHandler
 
                     $OrderDeliveryDTO->setAddress($address['location']);
 
-                    !isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
-                    !isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
+                    false === isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
+                    false === isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
                 }
 
                 /**
-                 * Если доставка собственной службой - присваиваем адрес пользователя
+                 * Если заказ DBS - адрес присваивается из запроса присваиваем адрес пользователя
                  * Определяем свойства доставки и присваиваем адрес
                  */
                 if(true === $DeliveryUid->equals(TypeDeliveryDbsOzon::TYPE))
                 {
                     $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
 
-                    $address_field = array_filter($fields, function($v) {
+                    $address_field = array_filter($fields, static function($v) {
                         /** @var InputField $InputField */
                         return $v->getType()->getType() === AddressField::TYPE;
                     });
@@ -227,9 +225,10 @@ final readonly class NewOzonOrderScheduleHandler
 
                     if($address_field !== false)
                     {
-                        $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO();
-                        $OrderDeliveryFieldDTO->setField($address_field);
-                        $OrderDeliveryFieldDTO->setValue($OrderDeliveryDTO->getAddress());
+                        $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO()
+                            ->setField($address_field)
+                            ->setValue($OrderDeliveryDTO->getAddress());
+
                         $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
                     }
                 }

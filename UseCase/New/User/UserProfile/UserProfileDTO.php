@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -64,9 +64,10 @@ final class UserProfileDTO implements UserProfileEventInterface
 
     /** Тип профиля */
 
-    public function setType(?TypeProfileUid $type): void
+    public function setType(?TypeProfileUid $type): self
     {
         $this->type = $type;
+        return $this;
     }
 
     public function getType(): ?TypeProfileUid
@@ -90,21 +91,24 @@ final class UserProfileDTO implements UserProfileEventInterface
         return $this->value;
     }
 
-    public function resetValue(): void
+    public function resetValue(): self
     {
         $this->value = new ArrayCollection();
+        return $this;
     }
 
 
-    public function addValue(Value\ValueDTO $value): void
+    public function addValue(Value\ValueDTO $value): self
     {
         $this->value->add($value);
+        return $this;
     }
 
 
-    public function removeValue(Value\ValueDTO $value): void
+    public function removeValue(Value\ValueDTO $value): self
     {
         $this->value->removeElement($value);
+        return $this;
     }
 
 }

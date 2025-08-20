@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -46,9 +46,10 @@ final class OrderDeliveryFieldDTO implements OrderDeliveryFieldInterface
         return $this->field;
     }
 
-    public function setField(DeliveryFieldUid $field): void
+    public function setField(DeliveryFieldUid $field): self
     {
         $this->field = $field;
+        return $this;
     }
 
 
@@ -59,8 +60,9 @@ final class OrderDeliveryFieldDTO implements OrderDeliveryFieldInterface
         return $this->value;
     }
 
-    public function setValue(string $value): void
+    public function setValue(string $value): self
     {
         $this->value = $value;
+        return $this;
     }
 }

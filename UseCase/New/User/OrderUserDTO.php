@@ -1,17 +1,17 @@
 <?php
 /*
- *  Copyright 2023.  Baks.dev <admin@baks.dev>
- *
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -78,10 +78,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setUsr(?UserUid $usr): void
+    public function setUsr(?UserUid $usr): self
     {
-
         $this->usr = $usr;
+        return $this;
     }
 
 
@@ -94,9 +94,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setProfile(?UserProfileEventUid $profile): void
+    public function setProfile(?UserProfileEventUid $profile): self
     {
         $this->profile = $profile;
+        return $this;
     }
 
 
@@ -113,9 +114,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setUserAccount(?UserAccount\UserAccountDTO $userAccount): void
+    public function setUserAccount(?UserAccount\UserAccountDTO $userAccount): self
     {
         $this->userAccount = $userAccount;
+        return $this;
     }
 
 
@@ -132,10 +134,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setUserProfile(?UserProfile\UserProfileDTO $userProfile): void
+    public function setUserProfile(?UserProfile\UserProfileDTO $userProfile): self
     {
-
         $this->userProfile = $userProfile;
+        return $this;
     }
 
 
@@ -147,9 +149,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setPayment(Payment\OrderPaymentDTO $payment): void
+    public function setPayment(Payment\OrderPaymentDTO $payment): self
     {
         $this->payment = $payment;
+        return $this;
     }
 
 
@@ -161,9 +164,10 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setDelivery(Delivery\OrderDeliveryDTO $delivery): void
+    public function setDelivery(Delivery\OrderDeliveryDTO $delivery): self
     {
         $this->delivery = $delivery;
+        return $this;
     }
 
 

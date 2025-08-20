@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -91,15 +91,12 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->delivery;
     }
 
-    public function setDelivery(DeliveryUid $delivery): void
+    public function setDelivery(DeliveryUid $delivery): self
     {
         $this->delivery = $delivery;
+        return $this;
     }
 
-    //    public function setDelivery(DeliveryUid $delivery): void
-    //    {
-    //        $this->delivery = $delivery;
-    //    }
 
     /** Событие способа оплаты (для расчета стоимости) */
     public function getEvent(): DeliveryEventUid
@@ -107,9 +104,10 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->event;
     }
 
-    public function setEvent(DeliveryEventUid $event): void
+    public function setEvent(DeliveryEventUid $event): self
     {
         $this->event = $event;
+        return $this;
     }
 
     /** Пользовательские поля */
@@ -118,9 +116,10 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->field;
     }
 
-    public function setField(ArrayCollection $field): void
+    public function setField(ArrayCollection $field): self
     {
         $this->field = $field;
+        return $this;
     }
 
     public function addField(Field\OrderDeliveryFieldDTO $field): void
@@ -142,9 +141,10 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->geocode;
     }
 
-    public function setGeocode(?GeocodeAddressUid $geocode): void
+    public function setGeocode(?GeocodeAddressUid $geocode): self
     {
         $this->geocode = $geocode;
+        return $this;
     }
 
     /**
@@ -155,9 +155,10 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->latitude;
     }
 
-    public function setLatitude(?GpsLatitude $latitude): void
+    public function setLatitude(?GpsLatitude $latitude): self
     {
         $this->latitude = $latitude;
+        return $this;
     }
 
 
@@ -169,9 +170,10 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         return $this->longitude;
     }
 
-    public function setLongitude(?GpsLongitude $longitude): void
+    public function setLongitude(?GpsLongitude $longitude): self
     {
         $this->longitude = $longitude;
+        return $this;
     }
 
 
@@ -202,6 +204,4 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
         $this->address = $address;
         return $this;
     }
-
-
 }

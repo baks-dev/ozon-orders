@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -80,6 +79,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     /**
      * Коллекция продукции в заказе
+     *
      * @var ArrayCollection{int, NewOrderProductDTO} $product
      */
     #[Assert\Valid]
@@ -105,30 +105,19 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     public function __construct(array $order, UserProfileUid $profile, OzonTokenUid|false $identifier = false)
     {
+        // Дата и время начала обработки отправления.
         $timezone = new DateTimeZone(date_default_timezone_get());
+        $this->created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
 
         /** Постоянная величина */
-        $NewOrderInvariable = new Invariable\NewOrderInvariable();
-
-        $created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
-
-        $NewOrderInvariable
-            ->setCreated($created) // Дата и время начала обработки отправления.
+        $this->invariable = new Invariable\NewOrderInvariable()
+            ->setCreated($this->created) // Дата и время начала обработки отправления.
             ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
             ->setToken($identifier) // идентификатор токена маркетплейса
             ->setNumber('O-'.$order['posting_number']) // помечаем заказ префиксом O
         ;
 
-        //$NewOrderInvariable->setNumber('O-'.$order['order_number']); // помечаем заказ префиксом O (без единицы в конце)
-        $this->invariable = $NewOrderInvariable;
-
-
         $this->number = $order['order_number']; // помечаем заказ для дедубликатора
-
-
-        // $this->number = 'O-'.$order['order_number']; // помечаем заказ префиксом O (без единицы в конце)
-        $this->created = $created; // Дата и время начала обработки отправления.
-
 
         /** Определяем статус заказа */
         $yandexStatus = match ($order['status'])
