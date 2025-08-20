@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -27,21 +26,26 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Core\Type\Field\InputField;
 use BaksDev\Core\Type\Gps\GpsLatitude;
 use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
+use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
+use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\Delivery\Field\OrderDeliveryFieldDTO;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
+use BaksDev\Users\Address\Type\AddressField\AddressField;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
 use BaksDev\Users\User\Entity\User;
@@ -67,6 +71,7 @@ final readonly class NewOzonOrderScheduleHandler
         private UserByUserProfileInterface $UserByUserProfileRepository,
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
         private NewOzonOrderHandler $NewOzonOrderHandler,
+        private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
@@ -135,7 +140,9 @@ final readonly class NewOzonOrderScheduleHandler
                 /** Идентификатор заказа (для дедубликатора) */
 
                 $number = $OzonMarketOrderDTO->getOrderNumber();
-                $Deduplicator = $this->Deduplicator->deduplication([$number, self::class]);
+                $Deduplicator = $this->Deduplicator
+                    ->expiresAfter('1 week')
+                    ->deduplication([$number, self::class]);
 
                 if($Deduplicator->isExecuted())
                 {
@@ -202,11 +209,31 @@ final readonly class NewOzonOrderScheduleHandler
                     !isset($address['latitude']) ?: $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
                     !isset($address['longitude']) ?: $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
                 }
-                else
+
+                /**
+                 * Если доставка собственной службой - присваиваем адрес пользователя
+                 * Определяем свойства доставки и присваиваем адрес
+                 */
+                if(true === $DeliveryUid->equals(TypeDeliveryDbsOzon::TYPE))
                 {
-                    // ВРЕМЕННО ПРОПУСКАЕМ ВСЕ ЗАКЗЫ КРОМЕ FBS
-                    continue;
+                    $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
+
+                    $address_field = array_filter($fields, function($v) {
+                        /** @var InputField $InputField */
+                        return $v->getType()->getType() === AddressField::TYPE;
+                    });
+
+                    $address_field = current($address_field);
+
+                    if($address_field !== false)
+                    {
+                        $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO();
+                        $OrderDeliveryFieldDTO->setField($address_field);
+                        $OrderDeliveryFieldDTO->setValue($OrderDeliveryDTO->getAddress());
+                        $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
+                    }
                 }
+
 
                 /** Определяем геолокацию, если не указана */
                 if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
@@ -228,29 +255,6 @@ final readonly class NewOzonOrderScheduleHandler
                     ->getId();
 
                 $OrderDeliveryDTO->setEvent($DeliveryEventUid);
-
-
-                //            /**
-                //             * Если доставка собственной службой - присваиваем адрес пользователя
-                //             * Определяем свойства доставки и присваиваем адрес
-                //             */
-                //
-                //            $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
-                //
-                //            $address_field = array_filter($fields, function ($v) {
-                //                /** @var InputField $InputField */
-                //                return $v->getType()->getType() === 'address_field';
-                //            });
-                //
-                //            $address_field = current($address_field);
-                //
-                //            if($address_field !== false)
-                //            {
-                //                $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO();
-                //                $OrderDeliveryFieldDTO->setField($address_field);
-                //                $OrderDeliveryFieldDTO->setValue($OrderDeliveryDTO->getAddress());
-                //                $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
-                //            }
 
 
                 /**

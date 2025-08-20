@@ -52,6 +52,6 @@ class NewOzonOrdersScheduleDebugTest extends KernelTestCase
 
         $NewOzonOrderScheduleHandler($NewOzonOrdersScheduleMessage);
 
-
+        self::assertTrue(true);
     }
 }

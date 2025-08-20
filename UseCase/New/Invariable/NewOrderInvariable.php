@@ -63,7 +63,7 @@ final class NewOrderInvariable implements OrderInvariableInterface
      */
     #[Assert\NotBlank]
     #[Assert\Uuid]
-    private ?UserProfileUid $profile = null;
+    private readonly UserProfileUid $profile;
 
     /**
      * ID токена маркетплейса
