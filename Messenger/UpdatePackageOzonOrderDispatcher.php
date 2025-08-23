@@ -157,7 +157,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
         /** Ozon Dbs «Доставка собственной службой логистики» - не делим заказ на отправления */
-        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE))
+        if(true === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE))
         {
             $this->UpdateOzonOrdersAwaitingDeliveryRequest
                 ->forTokenIdentifier($OzonTokenUid)

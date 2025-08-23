@@ -46,7 +46,7 @@ final class UpdateOzonOrdersAwaitingDeliveryRequest extends Ozon
 
         $order = str_replace('O-', '', (string) $order);
 
-        $data = ["posting_number" => $order];
+        $data["posting_number"] = [$order];
 
         $response = $this->TokenHttpClient()
             ->request(
