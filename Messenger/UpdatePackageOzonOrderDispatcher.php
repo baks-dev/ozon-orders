@@ -41,6 +41,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPosting
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
+use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersAwaitingDeliveryRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
@@ -72,6 +73,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
         private ProductParameterInterface $productParameterRepository,
         private ProductConstByArticleInterface $productConstByArticleRepository,
         private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
+        private UpdateOzonOrdersAwaitingDeliveryRequest $UpdateOzonOrdersAwaitingDeliveryRequest
     ) {}
 
     public function __invoke(OrderMessage $message): void
@@ -153,6 +155,16 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
         /** Токен из заказа в системе (был установлен при получении заказа из Ozon) */
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
+
+        /** Ozon Dbs «Доставка собственной службой логистики» - не делим заказ на отправления */
+        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE))
+        {
+            $this->UpdateOzonOrdersAwaitingDeliveryRequest
+                ->forTokenIdentifier($OzonTokenUid)
+                ->package($OrderEvent->getOrderNumber());
+
+            return;
+        }
 
         /**
          * Заказ из Ozon

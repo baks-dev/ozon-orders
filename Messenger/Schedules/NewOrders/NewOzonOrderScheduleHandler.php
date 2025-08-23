@@ -33,6 +33,7 @@ use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterfa
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
+use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
@@ -72,6 +73,7 @@ final readonly class NewOzonOrderScheduleHandler
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
         private NewOzonOrderHandler $NewOzonOrderHandler,
         private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
+        private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
@@ -231,6 +233,11 @@ final readonly class NewOzonOrderScheduleHandler
 
                         $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
                     }
+
+                    /** Получаем контактную информацию клиента */
+                    $OzonOrderInfo = $this->GetOzonOrderInfoRequest
+                        ->forTokenIdentifier($OzonTokenUid)
+                        ->find($NewOrderInvariable->getNumber());
                 }
 
 
