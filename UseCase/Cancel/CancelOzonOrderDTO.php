@@ -40,10 +40,6 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     #[Assert\Uuid]
     private ?OrderEventUid $id = null;
 
-    /** Идентификатор заказа YandexMarket */
-    #[Assert\NotBlank]
-    private readonly string $number;
-
     /** Ответственный */
     #[Assert\NotBlank]
     #[Assert\Uuid]
@@ -61,6 +57,15 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     private readonly string $comment;
 
 
+    /** Идентификатор заказа YandexMarket */
+    #[Assert\NotBlank]
+    private readonly string $order;
+
+    /** Идентификатор отправления YandexMarket */
+    #[Assert\NotBlank]
+    private readonly string $posting;
+
+
     public function __construct(array $order, UserProfile|UserProfileUid|string $profile)
     {
         if(is_string($profile))
@@ -75,11 +80,14 @@ final class CancelOzonOrderDTO implements OrderEventInterface
 
         $this->profile = $profile;
 
+
         $this->danger = true; // выделяем заказ
-
-        $this->number = 'O-'.$order['posting_number'];
-
         $this->comment = sprintf('Ozon Seller: %s', $order['cancellation']['cancel_reason']);
+
+        /** Идентификаторы заказа и отправления */
+        $this->order = $order['order_number'];
+        $this->posting = 'O-'.$order['posting_number'];
+
     }
 
     /** @see OrderEvent */
@@ -125,16 +133,6 @@ final class CancelOzonOrderDTO implements OrderEventInterface
         return $this->profile;
     }
 
-
-    /**
-     * Number
-     */
-    public function getNumber(): string
-    {
-        return $this->number;
-    }
-
-
     /**
      * Comment
      */
@@ -142,4 +140,17 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     {
         return $this->comment;
     }
+
+
+    public function getOrderNumber(): string
+    {
+        return $this->order;
+    }
+
+    public function getPostingNumber(): string
+    {
+        return $this->posting;
+    }
+
+
 }

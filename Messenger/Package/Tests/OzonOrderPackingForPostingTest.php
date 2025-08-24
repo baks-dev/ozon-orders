@@ -19,14 +19,13 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\Tests;
+namespace BaksDev\Ozon\Orders\Messenger\Package\Tests;
 
-use BaksDev\Ozon\Orders\Messenger\UpdatePackageOzonOrderDispatcher;
+use BaksDev\Ozon\Orders\Messenger\Package\UpdatePackageOzonOrderFbsDispatcher;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
 
@@ -37,8 +36,8 @@ class OzonOrderPackingForPostingTest extends KernelTestCase
     {
         self::assertTrue(true);
 
-        /** @var UpdatePackageOzonOrderDispatcher $UpdatePackageOzonOrderDispatcher */
-        $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderDispatcher::class);
+        /** @var UpdatePackageOzonOrderFbsDispatcher $UpdatePackageOzonOrderDispatcher */
+        $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderFbsDispatcher::class);
 
         $total = 2;
         $package = 1;

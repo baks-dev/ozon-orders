@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\UseCase\Cancel;
 
 
+use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Entity\Event\OrderEventInterface;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\CurrentOrderNumber\CurrentOrderEventByNumberInterface;
@@ -51,9 +52,9 @@ final class CancelOzonOrderHandler // extends AbstractHandler
     {
 
         /** Получаем заказ по номеру */
-        $OrderEvent = $this->currentOrderEventByNumber->find($command->getNumber());
+        $OrderEvent = $this->currentOrderEventByNumber->find($command->getPostingNumber());
 
-        if(false === $OrderEvent)
+        if(false === ($OrderEvent instanceof OrderEvent))
         {
             return false;
         }
@@ -62,8 +63,8 @@ final class CancelOzonOrderHandler // extends AbstractHandler
         $OrderEvent->getDto($EditOrderDTO);
 
         if(
-            true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class) ||
-            true === $OrderEvent->isStatusEquals(OrderStatusCompleted::class)
+            true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class)
+            || true === $OrderEvent->isDanger()
         )
         {
             return false;
@@ -76,15 +77,12 @@ final class CancelOzonOrderHandler // extends AbstractHandler
 
         $OrderEvent->getDto($command);
 
-        /**
-         * Автоматически отменяем «Новый» либо «Не оплаченный» заказ
-         */
-
         if(
-            true === $OrderEvent->isStatusEquals(OrderStatusNew::class) ||
-            true === $OrderEvent->isStatusEquals(OrderStatusUnpaid::class)
+            true === $OrderEvent->isStatusEquals(OrderStatusNew::class)
+            || true === $OrderEvent->isStatusEquals(OrderStatusUnpaid::class)
         )
         {
+            /** Автоматически отменяем «Новый» либо «Не оплаченный» заказ */
             $command->cancelOrder();
         }
 

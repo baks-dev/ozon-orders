@@ -33,7 +33,6 @@ use BaksDev\Ozon\Orders\Schedule\CancelOrders\CancelOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\Cancel\CancelOzonOrderHandler;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
-use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -82,6 +81,7 @@ final readonly class CancelOzonOrdersScheduleHandler
             return;
         }
 
+
         foreach($tokensByProfile as $OzonTokenUid)
         {
             /**
@@ -92,15 +92,16 @@ final readonly class CancelOzonOrdersScheduleHandler
                 ->forTokenIdentifier($OzonTokenUid)
                 ->findAllCancel();
 
+
             /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */
             foreach($orders as $CancelOzonOrderDTO)
             {
                 /** Индекс дедубдикации по номеру заказа */
                 $Deduplicator = $this->deduplicator
                     ->namespace('ozon-orders')
-                    ->expiresAfter(DateInterval::createFromDateString('1 day'))
+                    ->expiresAfter('1 day')
                     ->deduplication([
-                        $CancelOzonOrderDTO->getNumber(),
+                        $CancelOzonOrderDTO->getPostingNumber(),
                         self::class,
                     ]);
 
@@ -115,7 +116,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                 if($handle instanceof Order)
                 {
                     $this->logger->info(
-                        sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getNumber()),
+                        sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getPostingNumber()),
                         [
                             self::class.':'.__LINE__,
                             'token' => (string) $OzonTokenUid,
@@ -128,7 +129,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                 if($handle !== false)
                 {
                     $this->logger->critical(
-                        sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getNumber()),
+                        sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getPostingNumber()),
                         [
                             self::class.':'.__LINE__,
                             'handle' => $handle,

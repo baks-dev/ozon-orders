@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger;
+namespace BaksDev\Ozon\Orders\Messenger\Package;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Core\Messenger\MessageDelay;
@@ -41,10 +41,8 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPosting
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
-use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersAwaitingDeliveryRequest;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
-use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
@@ -60,7 +58,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Обновляем заказ Озон при отправке заказа на упаковку и разделяем заказ на машиноместо
  */
 #[AsMessageHandler(priority: 8)]
-final readonly class UpdatePackageOzonOrderDispatcher
+final readonly class UpdatePackageOzonOrderFbsDispatcher
 {
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
@@ -72,8 +70,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
         private CurrentOrderEventInterface $currentOrderEventRepository,
         private ProductParameterInterface $productParameterRepository,
         private ProductConstByArticleInterface $productConstByArticleRepository,
-        private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
-        private UpdateOzonOrdersAwaitingDeliveryRequest $UpdateOzonOrdersAwaitingDeliveryRequest
+        private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler
     ) {}
 
     public function __invoke(OrderMessage $message): void
@@ -100,14 +97,9 @@ final readonly class UpdatePackageOzonOrderDispatcher
         }
 
         /**
-         * Завершаем обработчик если тип доставки заказа
-         * - не Ozon Fbs «Доставка службой Ozon»
-         * - не Ozon Dbs «Доставка собственной службой логистики»
+         * Завершаем обработчик если тип доставки заказа не Ozon Fbs «Доставка службой Ozon»
          */
-        if(
-            false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE)
-            && false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE)
-        )
+        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
         {
             return;
         }
@@ -156,15 +148,6 @@ final readonly class UpdatePackageOzonOrderDispatcher
         /** Токен из заказа в системе (был установлен при получении заказа из Ozon) */
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
-        /** Ozon Dbs «Доставка собственной службой логистики» - не делим заказ на отправления */
-        if(true === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE))
-        {
-            $this->UpdateOzonOrdersAwaitingDeliveryRequest
-                ->forTokenIdentifier($OzonTokenUid)
-                ->package($OrderEvent->getOrderNumber());
-
-            return;
-        }
 
         /**
          * Заказ из Ozon
@@ -195,6 +178,7 @@ final readonly class UpdatePackageOzonOrderDispatcher
 
             return;
         }
+
 
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
@@ -270,9 +254,6 @@ final readonly class UpdatePackageOzonOrderDispatcher
             /** Количество одного продукта в заказе */
             $pack = $NewOrderProductDTO->getPrice()->getTotal();
 
-            /**
-             * Разбиваем продукты по отправлениям
-             */
             $products = $this->packing($package, $total, $pack, $NewOrderProductDTO->getSku());
 
             if(null === $products)

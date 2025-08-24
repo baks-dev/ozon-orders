@@ -26,17 +26,30 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
+use InvalidArgumentException;
 
-final class UpdateOzonOrdersAwaitingDeliveryRequest extends Ozon
+/**
+ * Собрать заказ
+ */
+final class UpdateOzonOrdersDeliveryRequest extends Ozon
 {
+    private array|false $products = false;
+
+    public function products(array $products): self
+    {
+        $this->products = $products;
+        return $this;
+    }
 
     /**
-     * Передать отправление к отгрузке
+     * Изменить статус на «Доставляется»
      *
-     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_MoveFbsPostingToAwaitingDelivery
+     * Перевести отправление в статус «Доставляется», если используется сторонняя служба доставки.
+     *
+     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_FbsPostingDelivering
      *
      */
-    public function package(int|string $order): array|bool
+    public function delivery(int|string $order): array|bool
     {
         /** Если в тестовом окружении */
         if(false === $this->isExecuteEnvironment())
@@ -44,14 +57,19 @@ final class UpdateOzonOrdersAwaitingDeliveryRequest extends Ozon
             return true;
         }
 
+        if(empty($this->products))
+        {
+            throw new InvalidArgumentException('Invalid Argument $products');
+        }
+
         $order = str_replace('O-', '', (string) $order);
 
-        $data["posting_number"] = [$order];
+        $data['posting_number'] = [$order];
 
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
-                '/v2/posting/fbs/awaiting-delivery',
+                '/v2/fbs/posting/delivering',
                 ['json' => $data],
             );
 
@@ -59,26 +77,14 @@ final class UpdateOzonOrdersAwaitingDeliveryRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
-            /** Если упаковка уже отправлена */
-            if($content['message'] === 'POSTING_ALREADY_SHIPPED')
-            {
-                return true;
-            }
-
-            /** Заказ отменен */
-            if($content['message'] === 'POSTING_ALREADY_CANCELLED')
-            {
-                return true;
-            }
-
             $this->logger->critical(
-                message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
+                message: sprintf('ozon-orders: Ошибка при обновлении заказа %s на статус «Доставляется»', $order),
                 context: [self::class.':'.__LINE__, $data, $content],
             );
 
             return false;
         }
 
-        return true === isset($content['result']) ? $content['result'] : false;
+        return true === isset($content['result']) && true === $content['result'];
     }
 }
