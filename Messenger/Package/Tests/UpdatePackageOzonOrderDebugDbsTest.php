@@ -29,7 +29,7 @@ use BaksDev\Core\Doctrine\DBALQueryBuilder;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Type\Event\OrderEventUid;
 use BaksDev\Orders\Order\Type\Id\OrderUid;
-use BaksDev\Ozon\Orders\Messenger\Package\UpdatePackageOzonOrderFbsDispatcher;
+use BaksDev\Ozon\Orders\Messenger\Package\UpdatePackageOzonOrderDbsDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DependsOnClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -57,15 +57,15 @@ class UpdatePackageOzonOrderDebugDbsTest extends KernelTestCase
         $event = new ConsoleCommandEvent(new Command(), new StringInput(''), new NullOutput());
         $dispatcher->dispatch($event, 'console.command');
 
-        /** @var UpdatePackageOzonOrderFbsDispatcher $UpdatePackageOzonOrderDispatcher */
-        $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderFbsDispatcher::class);
+        /** @var UpdatePackageOzonOrderDbsDispatcher $UpdatePackageOzonOrderDbsDispatcher */
+        $UpdatePackageOzonOrderDbsDispatcher = self::getContainer()->get(UpdatePackageOzonOrderDbsDispatcher::class);
 
         $OrderMessage = new OrderMessage(
             id: new OrderUid(),
             event: new OrderEventUid(),
         );
 
-        $UpdatePackageOzonOrderDispatcher($OrderMessage);
+        $UpdatePackageOzonOrderDbsDispatcher($OrderMessage);
 
         self::assertTrue(true);
     }

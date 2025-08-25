@@ -56,14 +56,14 @@ class UpdatePackageOzonOrderDebugFbsTest extends KernelTestCase
         $dispatcher->dispatch($event, 'console.command');
 
         /** @var UpdatePackageOzonOrderFbsDispatcher $UpdatePackageOzonOrderDispatcher */
-        $UpdatePackageOzonOrderDispatcher = self::getContainer()->get(UpdatePackageOzonOrderFbsDispatcher::class);
+        $UpdatePackageOzonOrderFbsDispatcher = self::getContainer()->get(UpdatePackageOzonOrderFbsDispatcher::class);
 
         $OrderMessage = new OrderMessage(
             id: new OrderUid(),
             event: new OrderEventUid(),
         );
 
-        $UpdatePackageOzonOrderDispatcher($OrderMessage);
+        $UpdatePackageOzonOrderFbsDispatcher($OrderMessage);
 
         self::assertTrue(true);
     }

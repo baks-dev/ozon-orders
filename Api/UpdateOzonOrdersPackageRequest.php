@@ -94,6 +94,12 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
                 return true;
             }
 
+            /** Заказу требуется указать Доп. информацию */
+            if($content['message'] === 'EXEMPLAR_INFO_NOT_FILLED_COMPLETELY')
+            {
+                return true;
+            }
+
             $this->logger->critical(
                 message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
                 context: [self::class.':'.__LINE__, $data, $content],

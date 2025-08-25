@@ -68,7 +68,6 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
         private GetOzonOrderInfoRequest $getOzonOrderInfoRequest,
         private OrderEventInterface $orderEventRepository,
         private CurrentOrderEventInterface $currentOrderEventRepository,
-        private ProductParameterInterface $productParameterRepository,
         private ProductConstByArticleInterface $productConstByArticleRepository,
         private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler
     ) {}
@@ -179,7 +178,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
             return;
         }
 
-        $products = null;
+        $package = null;
 
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
@@ -224,7 +223,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
             }
 
             /** Добавляем продукт для упаковки */
-            $products[] = [
+            $package[] = [
                 "product_id" => $NewOrderProductDTO->getSku(),
                 "quantity" => $NewOrderProductDTO->getPrice()->getTotal(),
             ];
@@ -262,7 +261,6 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
                 return;
             }
 
-
             /**
              * Присваиваем и сохраняем в качестве отправления номер заказа
              */
@@ -292,7 +290,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
             }
         }
 
-        if(empty($products))
+        if(empty($package))
         {
             $this->Logger->critical(
                 message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $OrderEvent->getOrderNumber()),
@@ -305,15 +303,18 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
             return;
         }
 
-        $products[]['products'] = $products;
 
-        /** Отправляем в упаковку заказ */
+        /**
+         * Отправляем в упаковку заказ
+         */
+
+        $products[]['products'] = $package;
+
         $postingPackages = $this
             ->updateOzonOrdersPackageRequest
             ->forTokenIdentifier($OzonTokenUid)
             ->products($products)
             ->package($OrderEvent->getOrderNumber());
-
 
         if(false === $postingPackages)
         {

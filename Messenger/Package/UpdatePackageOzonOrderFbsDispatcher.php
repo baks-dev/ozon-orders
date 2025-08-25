@@ -49,6 +49,7 @@ use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
+use BaksDev\Products\Product\Repository\CurrentProductIdentifier\CurrentProductIdentifierInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -70,7 +71,8 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
         private CurrentOrderEventInterface $currentOrderEventRepository,
         private ProductParameterInterface $productParameterRepository,
         private ProductConstByArticleInterface $productConstByArticleRepository,
-        private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler
+        private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
+        private CurrentProductIdentifierInterface $CurrentProductIdentifierRepository,
     ) {}
 
     public function __invoke(OrderMessage $message): void
@@ -281,11 +283,18 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
             $orderProductDTO = $EditOrderDTO->getProduct()
                 ->findFirst(function($k, OrderProductDTO $orderProductElement) use ($ProductData) {
 
+                    $CurrentProductIdentifierResult = $this->CurrentProductIdentifierRepository
+                        ->forEvent($orderProductElement->getProduct())
+                        ->forOffer($orderProductElement->getOffer())
+                        ->forVariation($orderProductElement->getVariation())
+                        ->forModification($orderProductElement->getModification())
+                        ->find();
+
                     return
-                        $orderProductElement->getProduct()->equals($ProductData->getEvent())
-                        && ((is_null($orderProductElement->getOffer()) === true && is_null($ProductData->getOffer()) === true) || $orderProductElement->getOffer()?->equals($ProductData->getOffer()))
-                        && ((is_null($orderProductElement->getVariation()) === true && is_null($ProductData->getVariation()) === true) || $orderProductElement->getVariation()?->equals($ProductData->getVariation()))
-                        && ((is_null($orderProductElement->getModification()) === true && is_null($ProductData->getModification()) === true) || $orderProductElement->getModification()?->equals($ProductData->getModification()));
+                        $CurrentProductIdentifierResult->getEvent()->equals($ProductData->getEvent())
+                        && ((is_null($CurrentProductIdentifierResult->getOfferConst()) === true && is_null($ProductData->getOfferConst()) === true) || $CurrentProductIdentifierResult->getOfferConst()->equals($ProductData->getOfferConst()))
+                        && ((is_null($CurrentProductIdentifierResult->getVariationConst()) === true && is_null($ProductData->getVariationConst()) === true) || $CurrentProductIdentifierResult->getVariationConst()->equals($ProductData->getVariationConst()))
+                        && ((is_null($CurrentProductIdentifierResult->getModificationConst()) === true && is_null($ProductData->getModificationConst()) === true) || $CurrentProductIdentifierResult->getModificationConst()->equals($ProductData->getModificationConst()));
                 });
 
             if(null === $orderProductDTO)
@@ -372,7 +381,7 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
             foreach($postingPackages as $postingNumber)
             {
                 $posting = new OrderProductPostingDTO;
-                $posting->setValue($postingNumber);
+                $posting->setNumber($postingNumber);
 
                 $orderProductDTO->addPosting($posting);
 
