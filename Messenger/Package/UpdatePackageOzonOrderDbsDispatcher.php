@@ -265,7 +265,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
              * Присваиваем и сохраняем в качестве отправления номер заказа
              */
             $posting = new OrderProductPostingDTO;
-            $posting->setValue($OrderEvent->getOrderNumber());
+            $posting->setNumber($OrderEvent->getOrderNumber());
             $orderProductDTO->addPosting($posting);
 
             $OrderProduct = $this->updateOrderProductsPostingHandler->handle($orderProductDTO);

@@ -76,7 +76,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
             $item->expiresAfter(DateInterval::createFromDateString('1 day'));
 
             $imagick = new Imagick();
-            $imagick->setResolution(50, 50); // DPI
+            $imagick->setResolution(200, 200); // DPI
 
             /** Одна страница, если передан один номер отправления */
             $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница

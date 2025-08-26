@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -33,6 +32,7 @@ use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
+use Imagick;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
@@ -114,8 +114,8 @@ class PrintOzonStickerRequestTest extends KernelTestCase
 
         $jpegFile = $testUploadDir.DIRECTORY_SEPARATOR.'ozon-sticker.jpg';
 
-        $imagick = new \Imagick();
-        $imagick->setResolution(50, 50); // DPI
+        $imagick = new Imagick();
+        $imagick->setResolution(200, 200); // DPI
 
         /** [0] — первая страница */
         $imagick->readImage($pdfFile.'[0]'); // Чтение PDF
