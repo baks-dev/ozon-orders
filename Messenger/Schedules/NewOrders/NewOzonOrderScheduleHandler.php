@@ -31,6 +31,8 @@ use BaksDev\Core\Type\Gps\GpsLatitude;
 use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
+use BaksDev\Field\Pack\Contact\Type\ContactField;
+use BaksDev\Field\Pack\Phone\Type\PhoneField;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
@@ -42,11 +44,15 @@ use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Orders\UseCase\New\User\Delivery\Field\OrderDeliveryFieldDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\UserProfile\Value\ValueDTO;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
 use BaksDev\Users\Address\Type\AddressField\AddressField;
+use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
+use BaksDev\Users\Profile\UserProfile\Repository\FieldValueForm\FieldValueFormDTO;
+use BaksDev\Users\Profile\UserProfile\Repository\FieldValueForm\FieldValueFormInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
 use BaksDev\Users\User\Entity\User;
@@ -73,7 +79,8 @@ final readonly class NewOzonOrderScheduleHandler
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
         private NewOzonOrderHandler $NewOzonOrderHandler,
         private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
-        private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest
+        private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
+        private readonly FieldValueFormInterface $fieldValue,
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
@@ -235,9 +242,49 @@ final readonly class NewOzonOrderScheduleHandler
                     }
 
                     /** Получаем контактную информацию клиента */
-                    $OzonOrderInfo = $this->GetOzonOrderInfoRequest
+                    $InfoOzonOrderDTO = $this->GetOzonOrderInfoRequest
                         ->forTokenIdentifier($OzonTokenUid)
                         ->find($NewOrderInvariable->getNumber());
+
+                    /** Профиль пользователя и Идентификатор типа профиля */
+                    $UserProfileDTO = $OzonMarketOrderDTO->getUsr()->getUserProfile();
+                    $TypeProfileUid = $UserProfileDTO?->getType();
+
+                    if($TypeProfileUid instanceof TypeProfileUid)
+                    {
+                        /** Определяем свойства клиента при доставке DBS */
+                        $profileFields = $this->fieldValue->get($TypeProfileUid);
+
+                        foreach($InfoOzonOrderDTO->getBuyer() as $buyer)
+                        {
+                            /** @var FieldValueFormDTO $profileField */
+                            foreach($profileFields as $profileField)
+                            {
+                                if(isset($buyer['name']) && $profileField->getType()->getType() === ContactField::TYPE)
+                                {
+                                    $UserProfileValueDTO = new ValueDTO();
+                                    $UserProfileValueDTO->setField($profileField->getField());
+                                    $UserProfileValueDTO->setValue($buyer['name']);
+                                    $UserProfileDTO?->addValue($UserProfileValueDTO);
+
+                                    continue;
+                                }
+
+                                if(isset($buyer['phone']) && $profileField->getType()->getType() === PhoneField::TYPE)
+                                {
+                                    $phone = PhoneField::formater($buyer['phone']);
+
+                                    $UserProfileValueDTO = new ValueDTO();
+                                    $UserProfileValueDTO->setField($profileField->getField());
+                                    $UserProfileValueDTO->setValue($phone);
+                                    $UserProfileDTO?->addValue($UserProfileValueDTO);
+
+                                    continue;
+                                }
+
+                            }
+                        }
+                    }
                 }
 
 
