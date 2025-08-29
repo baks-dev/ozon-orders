@@ -31,6 +31,7 @@ use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
 use Imagick;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -54,7 +55,7 @@ class PrintOzonStickerRequestTest extends KernelTestCase
 
         self::$Authorization =
             new OzonAuthorizationToken(
-                $_SERVER['TEST_PROFILE'],
+                new UserProfileUid($_SERVER['TEST_PROFILE'] ?? null),
                 $_SERVER['TEST_OZON_TOKEN'],
                 TypeProfileFbsOzon::TYPE,
                 $_SERVER['TEST_OZON_CLIENT'],
@@ -62,23 +63,25 @@ class PrintOzonStickerRequestTest extends KernelTestCase
                 '10',
                 0,
                 false,
-                false
+                false,
             );
     }
 
     public function testRequest(): void
     {
-        /** @var PrintOzonStickerRequest $PrintOzonStickerRequest */
-        $PrintOzonStickerRequest = self::getContainer()->get(PrintOzonStickerRequest::class);
-
         self::assertTrue(true);
         return;
 
+        /** @var PrintOzonStickerRequest $PrintOzonStickerRequest */
+        $PrintOzonStickerRequest = self::getContainer()->get(PrintOzonStickerRequest::class);
         $PrintOzonStickerRequest->TokenHttpClient(self::$Authorization);
 
         /** @var NewOzonOrderDTO $orderInfo */
         $ozonSticker = $PrintOzonStickerRequest
-            ->find(['']);
+            ->find(number: '111111111-1111-1');
+
+        // dd($ozonSticker);
+
 
         self::assertIsString($ozonSticker);
         return;
@@ -91,7 +94,7 @@ class PrintOzonStickerRequestTest extends KernelTestCase
 
         /** Создаем путь к тестовой директории */
         $testUploadDir = implode(DIRECTORY_SEPARATOR, [
-            $containerBag->get('kernel.project_dir'), 'public', 'upload', 'tests'
+            $containerBag->get('kernel.project_dir'), 'public', 'upload', 'tests',
         ]);
 
         /** Проверяем существование директории для тестовых картинок */

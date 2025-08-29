@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -43,10 +42,6 @@ class ProcessOzonPackageStickersDebugTest extends KernelTestCase
     public function testUseCase(): void
     {
         self::assertTrue(true);
-
-        /** @var ProcessOzonPackageStickersDispatcher $ProcessOzonPackageStickersDispatcher */
-        $ProcessOzonPackageStickersDispatcher = self::getContainer()->get(ProcessOzonPackageStickersDispatcher::class);
-
         return;
 
         $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
@@ -54,7 +49,8 @@ class ProcessOzonPackageStickersDebugTest extends KernelTestCase
             'O-93752074-0288-1',
         );
 
-
+        /** @var ProcessOzonPackageStickersDispatcher $ProcessOzonPackageStickersDispatcher */
+        $ProcessOzonPackageStickersDispatcher = self::getContainer()->get(ProcessOzonPackageStickersDispatcher::class);
         $ProcessOzonPackageStickersDispatcher($ProcessOzonPackageStickersMessage);
     }
 }

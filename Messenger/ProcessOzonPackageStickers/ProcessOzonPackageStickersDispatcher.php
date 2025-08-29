@@ -43,7 +43,6 @@ final readonly class ProcessOzonPackageStickersDispatcher
 {
     public function __construct(
         private AppCacheInterface $Cache,
-        private MessageDispatchInterface $MessageDispatch,
         private PrintOzonStickerRequest $printOzonStickerRequest,
     ) {}
 
@@ -61,15 +60,8 @@ final readonly class ProcessOzonPackageStickersDispatcher
                 ->forTokenIdentifier($message->getToken())
                 ->find($message->getPostingNumber());
 
-            /** Пробуем получить повторно */
             if(false === $ozonSticker)
             {
-                $this->MessageDispatch->dispatch(
-                    message: $message,
-                    stamps: [new MessageDelay('5 seconds')],
-                    transport: 'ozon-orders',
-                );
-
                 return false;
             }
 
@@ -88,6 +80,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
             $imagick->clear();
 
             return $stickerJpeg;
+
         });
 
         return $sticker !== false;
