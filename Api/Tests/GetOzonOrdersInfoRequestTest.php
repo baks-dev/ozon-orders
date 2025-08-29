@@ -52,7 +52,7 @@ class GetOzonOrdersInfoRequestTest extends KernelTestCase
 
 
         self::$Authorization = new OzonAuthorizationToken(
-            new UserProfileUid($_SERVER['TEST_PROFILE']),
+            new UserProfileUid($_SERVER['TEST_PROFILE'] ?? null),
             $_SERVER['TEST_OZON_TOKEN'],
             TypeProfileFbsOzon::TYPE,
             $_SERVER['TEST_OZON_CLIENT'],
@@ -68,7 +68,7 @@ class GetOzonOrdersInfoRequestTest extends KernelTestCase
     {
         self::assertTrue(true);
 
-        return;
+        //return;
 
         /** @var GetOzonOrderInfoRequest $GetOzonOrderInfoRequest */
         $GetOzonOrderInfoRequest = self::getContainer()->get(GetOzonOrderInfoRequest::class);
@@ -77,7 +77,7 @@ class GetOzonOrdersInfoRequestTest extends KernelTestCase
 
         /** @var NewOzonOrderDTO $orderInfo */
         $orderInfo = $GetOzonOrderInfoRequest
-            ->find('0000000-0000-0');
+            ->find('89233732-0015-1');
 
         dd($orderInfo);
     }

@@ -40,7 +40,7 @@ class NewOzonOrdersScheduleDebugTest extends KernelTestCase
     public function testUseCase(): void
     {
         self::assertTrue(true);
-        return;
+        //return;
 
         /** @var NewOzonOrderScheduleHandler $NewOzonOrderScheduleHandler */
         $NewOzonOrderScheduleHandler = self::getContainer()->get(NewOzonOrderScheduleHandler::class);

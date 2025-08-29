@@ -255,24 +255,25 @@ final readonly class NewOzonOrderScheduleHandler
                         /** Определяем свойства клиента при доставке DBS */
                         $profileFields = $this->fieldValue->get($TypeProfileUid);
 
-                        foreach($InfoOzonOrderDTO->getBuyer() as $buyer)
+                        foreach($InfoOzonOrderDTO->getBuyer() as $key => $buyer)
                         {
                             /** @var FieldValueFormDTO $profileField */
                             foreach($profileFields as $profileField)
                             {
-                                if(isset($buyer['name']) && $profileField->getType()->getType() === ContactField::TYPE)
+                                if($key === 'name' && $profileField->getType()->getType() === ContactField::TYPE)
                                 {
                                     $UserProfileValueDTO = new ValueDTO();
                                     $UserProfileValueDTO->setField($profileField->getField());
-                                    $UserProfileValueDTO->setValue($buyer['name']);
+                                    $UserProfileValueDTO->setValue($buyer);
                                     $UserProfileDTO?->addValue($UserProfileValueDTO);
 
                                     continue;
                                 }
 
-                                if(isset($buyer['phone']) && $profileField->getType()->getType() === PhoneField::TYPE)
+                                if($key === 'phone' && $profileField->getType()->getType() === PhoneField::TYPE)
                                 {
-                                    $phone = PhoneField::formater($buyer['phone']);
+                                    $phone = '+'.str_replace('+', '', $buyer);
+                                    $phone = PhoneField::formater($phone);
 
                                     $UserProfileValueDTO = new ValueDTO();
                                     $UserProfileValueDTO->setField($profileField->getField());
