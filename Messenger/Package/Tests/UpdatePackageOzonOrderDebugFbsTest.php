@@ -41,9 +41,6 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\DependencyInjection\Attribute\When;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-/**
- * @group ozon-orders
- */
 #[Group('ozon-orders')]
 #[When(env: 'test')]
 class UpdatePackageOzonOrderDebugFbsTest extends KernelTestCase

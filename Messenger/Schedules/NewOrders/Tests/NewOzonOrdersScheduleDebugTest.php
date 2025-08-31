@@ -28,12 +28,11 @@ namespace BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\Tests;
 use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrderScheduleHandler;
 use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
 
-/**
- * @group ozon-orders
- */
+#[Group('ozon-orders')]
 #[When(env: 'test')]
 class NewOzonOrdersScheduleDebugTest extends KernelTestCase
 {

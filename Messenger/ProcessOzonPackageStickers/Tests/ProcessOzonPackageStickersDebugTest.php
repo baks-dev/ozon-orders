@@ -32,9 +32,6 @@ use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
 
-/**
- * @group ozon-orders
- */
 #[Group('ozon-orders')]
 #[When(env: 'test')]
 class ProcessOzonPackageStickersDebugTest extends KernelTestCase
