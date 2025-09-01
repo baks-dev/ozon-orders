@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -59,20 +60,29 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Обновляем заказ Озон при отправке заказа на упаковку и разделяем заказ на машиноместо
  */
 #[AsMessageHandler(priority: 8)]
-final readonly class UpdatePackageOzonOrderFbsDispatcher
+final class UpdatePackageOzonOrderFbsDispatcher
 {
+    /** Общее количество продуктов в заказе  */
+    private int $total = 0;
+
+    /** Уникальные в заказе */
+    private array|null $orderProduct = null;
+
+    /** Массив отправлений для разделения в Ozon */
+    private array|null $products = null;
+
     public function __construct(
-        #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
-        private DeduplicatorInterface $Deduplicator,
-        private MessageDispatchInterface $MessageDispatch,
-        private UpdateOzonOrdersPackageRequest $updateOzonOrdersPackageRequest,
-        private GetOzonOrderInfoRequest $getOzonOrderInfoRequest,
-        private OrderEventInterface $orderEventRepository,
-        private CurrentOrderEventInterface $currentOrderEventRepository,
-        private ProductParameterInterface $productParameterRepository,
-        private ProductConstByArticleInterface $productConstByArticleRepository,
-        private UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
-        private CurrentProductIdentifierInterface $CurrentProductIdentifierRepository,
+        #[Target('ozonOrdersLogger')] private readonly LoggerInterface $Logger,
+        private readonly DeduplicatorInterface $Deduplicator,
+        private readonly MessageDispatchInterface $MessageDispatch,
+        private readonly UpdateOzonOrdersPackageRequest $updateOzonOrdersPackageRequest,
+        private readonly GetOzonOrderInfoRequest $getOzonOrderInfoRequest,
+        private readonly OrderEventInterface $orderEventRepository,
+        private readonly CurrentOrderEventInterface $currentOrderEventRepository,
+        private readonly ProductParameterInterface $productParameterRepository,
+        private readonly ProductConstByArticleInterface $productConstByArticleRepository,
+        private readonly UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
+        private readonly CurrentProductIdentifierInterface $CurrentProductIdentifierRepository,
     ) {}
 
     public function __invoke(OrderMessage $message): void
@@ -105,7 +115,6 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
         {
             return;
         }
-
 
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();
@@ -181,6 +190,22 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
             return;
         }
 
+        /**
+         * ПОДСЧЕТ ОБЗЕГО КОЛИЧЕСТВА ТОВАРОВ В ЗАКАЗЕ
+         */
+
+        /**
+         * @var NewOrderProductDTO $NewOrderProductDTO
+         */
+        foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
+        {
+            /** Общее количество продукта в заказе */
+            $this->total += $NewOrderProductDTO->getPrice()->getTotal();
+        }
+
+        /**
+         *РАЗДЕЛЕНИЕ НА УПАКОВКИ
+         */
 
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
@@ -247,32 +272,6 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
                 return;
             }
 
-            /** Общее количество продукта в заказе */
-            $total = $NewOrderProductDTO->getPrice()->getTotal();
-
-            /** Машиноместо для продукта */
-            $package = $DeliveryPackageParameters['package'] ?? 1;
-
-            /** Количество одного продукта в заказе */
-            $pack = $NewOrderProductDTO->getPrice()->getTotal();
-
-            $products = $this->packing($package, $total, $pack, $NewOrderProductDTO->getSku());
-
-            if(null === $products)
-            {
-                $this->Logger->critical(
-                    message: sprintf('ozon-orders: Ошибка при попытке разбить заказ %s на несколько отправлений',
-                        $NewOrderProductDTO->getArticle(),
-                    ),
-                    context: [
-                        self::class.':'.__LINE__,
-                        var_export($OrderEvent->getId(), true),
-                    ],
-                );
-
-                return;
-            }
-
             /**
              * Из всех продуктов в заказе в системе находим соответствие продукту из заказа Ozon
              *
@@ -312,45 +311,21 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
                 return;
             }
 
-            /** Делаем запрос на разделение */
-            $postingPackages = $this
-                ->updateOzonOrdersPackageRequest
-                ->forTokenIdentifier($OzonTokenUid)
-                ->products($products)
-                ->package($OrderEvent->getOrderNumber());
+            /** Продукт из заказа */
+            $this->orderProduct[$NewOrderProductDTO->getArticle()] = $orderProductDTO;
 
-            /**
-             * Получаем массив идентификаторов разделенных отправлений
-             */
+            /** Машиноместо для продукта */
+            $package = $DeliveryPackageParameters['package'] ?? 1;
 
-            if(false === $postingPackages)
+            /** Количество одного продукта в заказе */
+            $pack = $NewOrderProductDTO->getPrice()->getTotal();
+
+            $this->packing($package, $pack, $NewOrderProductDTO->getSku());
+
+            if(null === $this->products)
             {
                 $this->Logger->critical(
-                    message: sprintf('ozon-orders: заказ %s с продуктом арт: %s не удалось разделить на отправления',
-                        $OrderEvent->getOrderNumber(),
-                        $NewOrderProductDTO->getArticle(),
-                    ),
-                    context: [
-                        self::class.':'.__LINE__,
-                        var_export($OrderEvent->getId(), true),
-                    ],
-                );
-
-                $this->MessageDispatch->dispatch(
-                    message: $message,
-                    stamps: [new MessageDelay('3 seconds')],
-                    transport: $UserProfileUid.'-low',
-                );
-
-                return;
-            }
-
-            /** Если заказ УЖЕ БЫЛ РАЗДЕЛЕН, но в БД не сохранен */
-            if(true === $postingPackages)
-            {
-                $this->Logger->warning(
-                    message: sprintf('ozon-orders: заказ %s с продуктом арт: %s был разделен, но отправления не сохранены',
-                        $OrderEvent->getOrderNumber(),
+                    message: sprintf('ozon-orders: Ошибка при попытке разбить заказ %s на несколько отправлений',
                         $NewOrderProductDTO->getArticle(),
                     ),
                     context: [
@@ -362,28 +337,90 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
                 return;
             }
 
-            /** Если заказ успешно разделился на отправления */
-            if(true === is_array($postingPackages))
-            {
-                $this->Logger->info(
-                    message: sprintf('ozon-orders: заказ %s с продуктом арт: %s разделен на отправления: %s',
-                        $OrderEvent->getOrderNumber(),
-                        $NewOrderProductDTO->getArticle(),
-                        implode(' ', $postingPackages),
-                    ),
-                    context: [self::class.':'.__LINE__],
-                );
+        }
 
-                $DeduplicatorOrderProduct->save();
-            }
+        /**
+         * ОТПРАВКА РАЗДЕЛЕННЫХ УПАКОВОК НА OZON
+         */
 
-            /** Каждый номер отправления добавляем в коллекцию отправлений */
-            foreach($postingPackages as $postingNumber)
+        /** Делаем запрос на разделение */
+        $postings = $this
+            ->updateOzonOrdersPackageRequest
+            ->forTokenIdentifier($OzonTokenUid)
+            ->products($this->products)
+            ->package($OrderEvent->getOrderNumber());
+
+        if(false === $postings)
+        {
+            $this->Logger->critical(
+                message: sprintf('ozon-orders: заказ %s с продуктом арт: %s не удалось разделить на отправления',
+                    $OrderEvent->getOrderNumber(),
+                    $NewOrderProductDTO->getArticle(),
+                ),
+                context: [
+                    self::class.':'.__LINE__,
+                    var_export($OrderEvent->getId(), true),
+                ],
+            );
+
+            $this->MessageDispatch->dispatch(
+                message: $message,
+                stamps: [new MessageDelay('3 seconds')],
+                transport: $UserProfileUid.'-low',
+            );
+
+            return;
+        }
+
+        /** Если заказ УЖЕ БЫЛ РАЗДЕЛЕН, но в БД не сохранен */
+        if(true === $postings)
+        {
+            $this->Logger->warning(
+                message: sprintf('ozon-orders: заказ %s с продуктом арт: %s был разделен, но отправления не сохранены',
+                    $OrderEvent->getOrderNumber(),
+                    $NewOrderProductDTO->getArticle(),
+                ),
+                context: [
+                    self::class.':'.__LINE__,
+                    var_export($OrderEvent->getId(), true),
+                ],
+            );
+
+            return;
+        }
+
+        /** Если заказ успешно разделился на отправления */
+        if(true === is_array($postings))
+        {
+            $this->Logger->info(
+                message: sprintf('ozon-orders: заказ %s с продуктом арт: %s разделен на отправления: %s',
+                    $OrderEvent->getOrderNumber(),
+                    $NewOrderProductDTO->getArticle(),
+                    implode(' ', $postings),
+                ),
+                context: [self::class.':'.__LINE__],
+            );
+
+            $DeduplicatorOrderProduct->save();
+        }
+
+
+        /**
+         * СОХРАНЯЕМ НОМЕРА ОТПРАВЛЕНИЙ, ПОЛУЧЕННЫХ ИЗ OZON
+         */
+
+        /**
+         * @var OrderProductDTO $OrderProductDTO
+         */
+        foreach($this->orderProduct as $OrderProductDTO)
+        {
+
+            foreach($postings as $postingNumber)
             {
                 $posting = new OrderProductPostingDTO;
                 $posting->setNumber($postingNumber);
 
-                $orderProductDTO->addPosting($posting);
+                $OrderProductDTO->addPosting($posting);
 
 
                 /**
@@ -404,9 +441,6 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
                 );
             }
 
-            /**
-             * Сохраняем коллекцию отправлений для заказа
-             */
             $OrderProduct = $this->updateOrderProductsPostingHandler->handle($orderProductDTO);
 
             if(false === ($OrderProduct instanceof OrderProduct))
@@ -416,7 +450,7 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
                     Сохраните отправления вручную: product %s, posting_numbers: %s',
                         $OrderProduct,
                         $orderProductDTO->getOrderProductId(),
-                        implode(' ', $postingPackages),
+                        implode(' ', $postings),
                     ),
                     context: [
                         $message, self::class.':'.__LINE__,
@@ -428,44 +462,41 @@ final readonly class UpdatePackageOzonOrderFbsDispatcher
             }
 
         }
+
     }
 
     /**
      * Формирует массив с отправлениями для разделения заказа на отправления
      */
-    public function packing(int $package, int $total, int $pack, int $sku): ?array
+    public function packing(int $package, int $pack, int $sku): void
     {
-        $products = null;
-
         for($i = 1; $i <= $pack; $i++)
         {
 
-            if($total > $package)
+            if($this->total > $package)
             {
-                $products[]['products'][] = [
+                $this->products[]['products'][] = [
                     "product_id" => $sku,
                     "quantity" => $package,
                 ];
             }
 
-            if($package >= $total)
+            if($package >= $this->total)
             {
-                $products[]['products'][] = [
+                $this->products[]['products'][] = [
                     "product_id" => $sku,
-                    "quantity" => $total,
+                    "quantity" => $this->total,
                 ];
             }
 
-            $total -= $package;
+            $this->total -= $package;
 
             /** Если $total равен 0 или отрицательное значение - прерываем */
-            if(0 >= $total)
+            if(0 >= $this->total)
             {
                 break;
             }
 
         }
-
-        return $products;
     }
 }
