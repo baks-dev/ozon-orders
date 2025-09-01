@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -51,7 +52,7 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_ShipFbsPostingV4
      *
      */
-    public function package(int|string $order): array|bool
+    public function package(int|string $order): UpdateOzonOrdersPackageDTO|bool
     {
         /** Если в тестовом окружении */
         if(false === $this->isExecuteEnvironment())
@@ -108,6 +109,6 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             return false;
         }
 
-        return true === isset($content['result']) ? $content['result'] : false;
+        return true === isset($content['result']) ? new UpdateOzonOrdersPackageDTO($content) : false;
     }
 }
