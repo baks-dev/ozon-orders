@@ -204,7 +204,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
         }
 
         /**
-         *РАЗДЕЛЕНИЕ НА УПАКОВКИ
+         * РАЗДЕЛЕНИЕ НА УПАКОВКИ
          */
 
         /**
@@ -441,7 +441,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
                 );
             }
 
-            $OrderProduct = $this->updateOrderProductsPostingHandler->handle($orderProductDTO);
+            $OrderProduct = $this->updateOrderProductsPostingHandler->handle($OrderProductDTO);
 
             if(false === ($OrderProduct instanceof OrderProduct))
             {
@@ -449,7 +449,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
                     message: sprintf('ozon-orders: Ошибка %s при сохранении коллекции отправлений.
                     Сохраните отправления вручную: product %s, posting_numbers: %s',
                         $OrderProduct,
-                        $orderProductDTO->getOrderProductId(),
+                        $OrderProductDTO->getOrderProductId(),
                         implode(' ', $postings),
                     ),
                     context: [
