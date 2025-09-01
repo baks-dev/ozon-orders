@@ -42,6 +42,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPosting
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
+use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageDTO;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
@@ -65,11 +66,14 @@ final class UpdatePackageOzonOrderFbsDispatcher
     /** Общее количество продуктов в заказе  */
     private int $total = 0;
 
-    /** Уникальные в заказе */
-    private array|null $orderProduct = null;
-
     /** Массив отправлений для разделения в Ozon */
     private array|null $products = null;
+
+    /** Уникальные в заказе */
+    private array|null $orderProducts = null;
+
+    /** Продукты для добавления отправлений */
+    private array|null $postingProducts = null;
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private readonly LoggerInterface $Logger,
@@ -311,8 +315,14 @@ final class UpdatePackageOzonOrderFbsDispatcher
                 return;
             }
 
+            /** Идентификатор на каждый продукт в заказе */
+            $orderProductId = (string) $orderProductDTO->getOrderProductId();
+
             /** Продукт из заказа */
-            $this->orderProduct[$NewOrderProductDTO->getArticle()] = $orderProductDTO;
+            $this->orderProducts[$orderProductId] = $orderProductDTO;
+
+            /** Продукт для отправлений */
+            $this->postingProducts[$orderProductId] = $NewOrderProductDTO->getSku();
 
             /** Машиноместо для продукта */
             $package = $DeliveryPackageParameters['package'] ?? 1;
@@ -343,7 +353,10 @@ final class UpdatePackageOzonOrderFbsDispatcher
          * ОТПРАВКА РАЗДЕЛЕННЫХ УПАКОВОК НА OZON
          */
 
-        /** Делаем запрос на разделение */
+        /**
+         * Делаем запрос на разделение
+         * @var $postings UpdateOzonOrdersPackageDTO|false
+         */
         $postings = $this
             ->updateOzonOrdersPackageRequest
             ->forTokenIdentifier($OzonTokenUid)
@@ -390,15 +403,18 @@ final class UpdatePackageOzonOrderFbsDispatcher
         }
 
         /** Если заказ успешно разделился на отправления */
-        if(true === is_array($postings))
+        if(true === ($postings instanceof UpdateOzonOrdersPackageDTO))
         {
             $this->Logger->info(
                 message: sprintf('ozon-orders: заказ %s с продуктом арт: %s разделен на отправления: %s',
                     $OrderEvent->getOrderNumber(),
                     $NewOrderProductDTO->getArticle(),
-                    implode(' ', $postings),
+                    implode(' ', $postings->getResult()),
                 ),
-                context: [self::class.':'.__LINE__],
+                context: [
+                    self::class.':'.__LINE__,
+                    var_export($postings, true)
+                ],
             );
 
             $DeduplicatorOrderProduct->save();
@@ -412,16 +428,45 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /**
          * @var OrderProductDTO $OrderProductDTO
          */
-        foreach($this->orderProduct as $OrderProductDTO)
+        foreach($this->orderProducts as $OrderProductDTO)
         {
 
-            foreach($postings as $postingNumber)
+            /** SKU по номеру продукта из заказа */
+            $orderSku = $this->postingProducts[(string) $OrderProductDTO->getOrderProductId()];
+
+            /** Отправления для конкретного продукта */
+            $postingsForOrder = array_filter($postings->getAdditionalData(),
+                function(array $posting) use ($orderSku) {
+
+                    $product = current($posting['products']);
+
+                    return $product['sku'] === $orderSku;
+                });
+
+            if(true === empty($postingsForOrder))
             {
+                $this->Logger->critical(
+                    message: sprintf(
+                        'ozon-orders: Дополнительная информация об отправлениях не получена: SKU - %s, orderProduct - %s.',
+                        $orderSku,
+                        $OrderProductDTO->getOrderProductId(),
+                    ),
+                    context: [
+                        $message, self::class.':'.__LINE__,
+                        var_export($postings, true),
+                    ],
+                );
+            }
+
+            /** Сохраняем для продукта его отправления */
+            foreach($postingsForOrder as $postingInfo)
+            {
+                $postingNumber = $postingInfo['posting_number'];
+
                 $posting = new OrderProductPostingDTO;
                 $posting->setNumber($postingNumber);
 
                 $OrderProductDTO->addPosting($posting);
-
 
                 /**
                  *  На каждый номер отправления бросаем сообщение для скачивания стикера OZON
@@ -450,7 +495,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
                     Сохраните отправления вручную: product %s, posting_numbers: %s',
                         $OrderProduct,
                         $OrderProductDTO->getOrderProductId(),
-                        implode(' ', $postings),
+                        implode(' ', $postings->getResult()),
                     ),
                     context: [
                         $message, self::class.':'.__LINE__,
@@ -460,7 +505,6 @@ final class UpdatePackageOzonOrderFbsDispatcher
 
                 return;
             }
-
         }
 
     }
