@@ -28,19 +28,8 @@ namespace BaksDev\Ozon\Orders\Api;
 use BaksDev\Ozon\Api\Ozon;
 use InvalidArgumentException;
 
-/**
- * Собрать заказ
- */
 final class UpdateOzonOrdersDeliveryRequest extends Ozon
 {
-    private array|false $products = false;
-
-    public function products(array $products): self
-    {
-        $this->products = $products;
-        return $this;
-    }
-
     /**
      * Изменить статус на «Доставляется»
      *

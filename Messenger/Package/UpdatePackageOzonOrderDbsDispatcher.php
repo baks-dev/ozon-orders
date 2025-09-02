@@ -41,7 +41,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPosting
 use BaksDev\Orders\Order\UseCase\Admin\Edit\User\OrderUserDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
-use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
