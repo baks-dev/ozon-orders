@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
-use InvalidArgumentException;
 
 final class UpdateOzonOrdersDeliveryRequest extends Ozon
 {
@@ -44,11 +43,6 @@ final class UpdateOzonOrdersDeliveryRequest extends Ozon
         if(false === $this->isExecuteEnvironment())
         {
             return true;
-        }
-
-        if(empty($this->products))
-        {
-            throw new InvalidArgumentException('Invalid Argument $products');
         }
 
         $order = str_replace('O-', '', (string) $order);
