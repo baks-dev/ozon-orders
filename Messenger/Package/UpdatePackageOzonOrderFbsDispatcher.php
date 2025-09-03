@@ -430,13 +430,12 @@ final class UpdatePackageOzonOrderFbsDispatcher
          */
         foreach($this->orderProducts as $OrderProductDTO)
         {
-
             /** SKU по номеру продукта из заказа */
             $orderSku = $this->postingProducts[(string) $OrderProductDTO->getOrderProductId()];
 
             /** Отправления для конкретного продукта */
             $postingsForOrder = array_filter($postings->getAdditionalData(),
-                function(array $posting) use ($orderSku) {
+                static function(array $posting) use ($orderSku) {
 
                     $product = current($posting['products']);
 
@@ -452,10 +451,14 @@ final class UpdatePackageOzonOrderFbsDispatcher
                         $OrderProductDTO->getOrderProductId(),
                     ),
                     context: [
-                        $message, self::class.':'.__LINE__,
-                        var_export($postings, true),
+                        $postings->getAdditionalData(),
+                        $this->postingProducts,
+                        (string) $OrderProductDTO->getOrderProductId(),
+                        self::class.':'.__LINE__,
                     ],
                 );
+
+                continue;
             }
 
             /** Сохраняем для продукта его отправления */
