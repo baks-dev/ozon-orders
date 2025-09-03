@@ -69,7 +69,9 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
         $data = [
             "packages" => $this->products,
             "posting_number" => $order,
+            "with" => ['additional_data' => true],
         ];
+
 
         $response = $this->TokenHttpClient()
             ->request(
