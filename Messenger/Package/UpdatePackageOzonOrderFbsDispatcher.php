@@ -63,16 +63,16 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class UpdatePackageOzonOrderFbsDispatcher
 {
     /** Общее количество продуктов в заказе  */
-    private int $total = 0;
+    private int $total;
 
     /** Массив отправлений для разделения в Ozon */
-    private array|null $products = null;
+    private array|null $products;
 
     /** Уникальные в заказе */
-    private array|null $orderProducts = null;
+    private array|null $orderProducts;
 
     /** Продукты для добавления отправлений */
-    private array|null $postingProducts = null;
+    private array|null $postingProducts;
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private readonly LoggerInterface $Logger,
@@ -200,6 +200,9 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
          */
+
+        $this->total = 0;
+
         foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
         {
             /** Общее количество продукта в заказе */
@@ -213,6 +216,11 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
          */
+
+        $this->products = null;
+        $this->orderProducts = null;
+        $this->postingProducts = null;
+
         foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
         {
             /** Получаем идентификатор карточки в системе */
@@ -362,6 +370,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
             ->forTokenIdentifier($OzonTokenUid)
             ->products($this->products)
             ->package($OrderEvent->getOrderNumber());
+
 
         if(false === $postings)
         {
