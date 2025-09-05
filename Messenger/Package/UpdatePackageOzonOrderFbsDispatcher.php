@@ -53,6 +53,7 @@ use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByAr
 use BaksDev\Products\Product\Repository\CurrentProductIdentifier\CurrentProductIdentifierInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -60,6 +61,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Обновляем заказ Озон при отправке заказа на упаковку и разделяем заказ на машиноместо
  */
 #[AsMessageHandler(priority: 8)]
+#[Autoconfigure(shared: false)]
 final class UpdatePackageOzonOrderFbsDispatcher
 {
     /** Общее количество продуктов в заказе  */

@@ -67,7 +67,7 @@ final readonly class CancelOzonOrdersScheduleHandler
             return;
         }
 
-        /* @see строку :194 */
+        /* удаляется после обработки запроса */
         $DeduplicatorExec->save();
 
 
@@ -78,6 +78,7 @@ final readonly class CancelOzonOrdersScheduleHandler
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
+            $DeduplicatorExec->delete();
             return;
         }
 

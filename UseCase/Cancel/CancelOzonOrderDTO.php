@@ -40,11 +40,6 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     #[Assert\Uuid]
     private ?OrderEventUid $id = null;
 
-    /** Ответственный */
-    #[Assert\NotBlank]
-    #[Assert\Uuid]
-    private readonly UserProfileUid $profile;
-
     /** Выделить заказ */
     private readonly bool $danger;
 
@@ -66,28 +61,14 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     private readonly string $posting;
 
 
-    public function __construct(array $order, UserProfile|UserProfileUid|string $profile)
+    public function __construct(array $order)
     {
-        if(is_string($profile))
-        {
-            $profile = new UserProfileUid($profile);
-        }
-
-        if($profile instanceof UserProfile)
-        {
-            $profile = $profile->getId();
-        }
-
-        $this->profile = $profile;
-
-
         $this->danger = true; // выделяем заказ
         $this->comment = sprintf('Ozon Seller: %s', $order['cancellation']['cancel_reason']);
 
         /** Идентификаторы заказа и отправления */
         $this->order = $order['order_number'];
         $this->posting = 'O-'.$order['posting_number'];
-
     }
 
     /** @see OrderEvent */
@@ -127,12 +108,6 @@ final class CancelOzonOrderDTO implements OrderEventInterface
         return $this->danger;
     }
 
-    /** Профиль пользователя при неоплаченном статусе - NULL */
-    public function getProfile(): UserProfileUid
-    {
-        return $this->profile;
-    }
-
     /**
      * Comment
      */
@@ -151,6 +126,4 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     {
         return $this->posting;
     }
-
-
 }
