@@ -29,6 +29,8 @@ namespace BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers;
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Api\Sticker\GetOzonStickerTaskRequest;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /** Проверка задания на формирование этикетки и кеширует на сутки для печати в формате JPEG */
@@ -36,8 +38,9 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class TaskOzonPackageStickersDispatcher
 {
     public function __construct(
+        #[Target('ozonOrdersLogger')] private readonly LoggerInterface $logger,
         private GetOzonStickerTaskRequest $GetOzonStickerTaskRequest,
-        private MessageDispatchInterface $MessageDispatch
+        private MessageDispatchInterface $MessageDispatch,
     ) {}
 
     public function __invoke(TaskOzonPackageStickersMessage $message): void
@@ -55,6 +58,12 @@ final readonly class TaskOzonPackageStickersDispatcher
                 stamps: [new MessageDelay('5 seconds')],
                 transport: 'ozon-orders',
             );
+
+            $this->logger->warning(sprintf('%s: Ошибка при получении стикера маркировки заказа', $message->getNumber()));
+
+            return;
         }
+
+        $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
     }
 }

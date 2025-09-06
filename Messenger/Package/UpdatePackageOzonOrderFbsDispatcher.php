@@ -497,6 +497,11 @@ final class UpdatePackageOzonOrderFbsDispatcher
                     continue;
                 }
 
+                $this->Logger->info(
+                    sprintf('Получили идентификатор задания на формирование стикера маркировки заказа %s', $task),
+                    [self::class.':'.__LINE__],
+                );
+
                 $TaskOzonPackageStickersMessage = new TaskOzonPackageStickersMessage(
                     token: $OzonTokenUid,
                     number: $postingNumber,

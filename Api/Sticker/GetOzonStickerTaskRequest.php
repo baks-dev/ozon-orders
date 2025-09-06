@@ -66,7 +66,7 @@ final class GetOzonStickerTaskRequest extends Ozon
         {
             $this->logger->warning(
                 sprintf(
-                    'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
+                    'ozon-orders: Ошибка %s при получении информации о стикере маркировки заказа на складе %s',
                     $response->getStatusCode(), $this->getWarehouse(),
                 ),
                 [self::class.':'.__LINE__, $data, $content],
