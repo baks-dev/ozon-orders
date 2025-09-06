@@ -43,7 +43,8 @@ use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageDTO;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
-use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
+use BaksDev\Ozon\Orders\Api\Sticker\CreateOzonStickerRequest;
+use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\TaskOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
@@ -88,11 +89,11 @@ final class UpdatePackageOzonOrderFbsDispatcher
         private readonly ProductConstByArticleInterface $productConstByArticleRepository,
         private readonly UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
         private readonly CurrentProductIdentifierInterface $CurrentProductIdentifierRepository,
+        private readonly CreateOzonStickerRequest $CreateOzonStickerRequest,
     ) {}
 
     public function __invoke(OrderMessage $message): void
     {
-
         /** Активное событие заказа */
         $OrderEvent = $this->orderEventRepository
             ->find($message->getEvent());
@@ -472,6 +473,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
                 continue;
             }
 
+
             /** Сохраняем для продукта его отправления */
             foreach($postingsForOrder as $postingInfo)
             {
@@ -483,18 +485,26 @@ final class UpdatePackageOzonOrderFbsDispatcher
                 $OrderProductDTO->addPosting($posting);
 
                 /**
-                 *  На каждый номер отправления бросаем сообщение для скачивания стикера OZON
-                 *
-                 * @var OrderProductPostingDTO $OrderProductPostingDTO
+                 * На каждый номер отправления - бросаем сообщение для скачивания стикера OZON
                  */
 
-                $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+                $task = $this->CreateOzonStickerRequest
+                    ->forTokenIdentifier($OzonTokenUid)
+                    ->create($postingNumber);
+
+                if(false === $task)
+                {
+                    continue;
+                }
+
+                $TaskOzonPackageStickersMessage = new TaskOzonPackageStickersMessage(
                     token: $OzonTokenUid,
-                    postingNumber: $postingNumber,
+                    number: $postingNumber,
+                    task: $task,
                 );
 
                 $this->MessageDispatch->dispatch(
-                    message: $ProcessOzonPackageStickersMessage,
+                    message: $TaskOzonPackageStickersMessage,
                     stamps: [new MessageDelay('5 seconds')],
                     transport: 'ozon-orders',
                 );

@@ -31,6 +31,7 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
+use BaksDev\Ozon\Orders\Api\Sticker\GetOzonStickerTaskRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
@@ -44,12 +45,15 @@ final readonly class OzonOrderStickerDispatcher
 {
     public function __construct(
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
+        private GetOzonStickerTaskRequest $GetOzonStickerTaskRequest,
         private MessageDispatchInterface $messageDispatch,
         private AppCacheInterface $Cache,
     ) {}
 
     public function __invoke(OrderStickerMessage $message): void
     {
+
+
         /**
          * Получаем информацию о заказе
          */
@@ -67,6 +71,10 @@ final readonly class OzonOrderStickerDispatcher
         {
             return;
         }
+
+        $this->GetOzonStickerTaskRequest
+            ->forTokenIdentifier($OrderEvent->getOrderTokenIdentifier());
+
 
         /**
          * Получаем стикеры Ozon

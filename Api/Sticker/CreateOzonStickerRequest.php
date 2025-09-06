@@ -23,53 +23,61 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Api;
+namespace BaksDev\Ozon\Orders\Api\Sticker;
 
 use BaksDev\Ozon\Api\Ozon;
 
 /**
- * Напечатать этикетку
+ * Создать задание на формирование этикеток
  */
-final class PrintOzonStickerRequest extends Ozon
+final class CreateOzonStickerRequest extends Ozon
 {
     /**
-     * Генерирует PDF-файл с этикетками для указанных отправлений.
-     * В одном запросе можно передать не больше 20 идентификаторов. Если хотя бы для одного отправления возникнет
-     * ошибка, этикетки не будут подготовлены для всех отправлений в запросе.
      *
-     * Рекомендуем запрашивать этикетки через 45–60 секунд после сборки заказа.
+     * Метод для создания задания на асинхронное формирование этикеток.
+     * Метод может вернуть несколько заданий: на формирование маленькой и большой этикетки.
      *
-     * Ошибка The next postings aren't ready означает, что этикетки ещё не готовы, повторите запрос позднее.
-     *
-     * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_PostingFBSPackageLabel
+     * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_CreateLabelBatchV2
      *
      */
-    public function find(string $number): string|false
+    public function create(string $number): int|false
     {
-        $number = str_replace('O-', '', $number);
-
-        $data['posting_number'] = [$number];
+        $data['posting_number'] = [str_replace('O-', '', $number)];
 
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
-                '/v2/posting/fbs/package-label',
+                '/v2/posting/fbs/package-label/create',
                 ['json' => $data],
             );
 
+        $content = $response->toArray(false);
+
         if($response->getStatusCode() !== 200)
         {
+            /** Номер отправления не принадлежит компании */
+            if($content['message'] === 'POSTING_NUMBERS_IS_INCORRECT_FOR_COMPANY')
+            {
+                return false;
+            }
+
             $this->logger->warning(
                 sprintf(
                     'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
                     $response->getStatusCode(), $this->getWarehouse(),
                 ),
-                [self::class.':'.__LINE__, $data],
+                [self::class.':'.__LINE__, $data, $content],
             );
 
             return false;
         }
 
-        return $response->getContent(false);
+        /** Возвращаем идентификатор задания на формирование этикеток */
+
+        $result = $content['result'];
+
+        $tasks = current($result['tasks']);
+
+        return $tasks['task_id'];
     }
 }

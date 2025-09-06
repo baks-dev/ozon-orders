@@ -26,16 +26,14 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers;
 
 use BaksDev\Core\Cache\AppCacheInterface;
-use BaksDev\Core\Messenger\MessageDelay;
-use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Api\PrintOzonStickerRequest;
+use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
 use DateInterval;
 use Imagick;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * Метод получает стикер отправления Ozon и кеширует на сутки для печати в формате JPEG
+ * Получает стикер отправления Ozon и кеширует на сутки для печати в формате JPEG
  * prev @see GetOzonPackageStickersDispatcher
  */
 #[AsMessageHandler(priority: 0)]

@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Api\Tests;
+namespace BaksDev\Ozon\Orders\Api\Sticker\Tests;
 
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
-use BaksDev\Ozon\Orders\Api\PrintOzonStickerRequest;
+use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
