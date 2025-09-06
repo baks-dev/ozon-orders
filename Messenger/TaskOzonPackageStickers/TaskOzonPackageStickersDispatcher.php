@@ -52,14 +52,14 @@ final readonly class TaskOzonPackageStickersDispatcher
 
         if(false === $result)
         {
+            $this->logger->warning(sprintf('%s: Ошибка при получении стикера маркировки заказа', $message->getNumber()));
+
             /** Пробуем получить через 5 секунд */
             $this->MessageDispatch->dispatch(
                 message: $message,
-                stamps: [new MessageDelay('5 seconds')],
+                stamps: [new MessageDelay('3 seconds')],
                 transport: 'ozon-orders',
             );
-
-            $this->logger->warning(sprintf('%s: Ошибка при получении стикера маркировки заказа', $message->getNumber()));
 
             return;
         }

@@ -49,7 +49,7 @@ final class GetOzonStickerTaskRequest extends Ozon
      *
      * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_GetLabelBatch
      */
-    public function get(int $task): int|false
+    public function get(int $task): bool
     {
         $data['task_id'] = $task;
 
@@ -86,6 +86,8 @@ final class GetOzonStickerTaskRequest extends Ozon
              * Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю)
              */
             $cache = $this->getCacheInit('order-sticker');
+
+            $cache->deleteItem($this->number);
 
             $cache->get($this->number, function(ItemInterface $item) use ($result): string|false {
 

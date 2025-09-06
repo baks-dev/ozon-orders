@@ -55,7 +55,7 @@ final readonly class CreateTaskOzonStickersDispatcher
 
             $this->MessageDispatch->dispatch(
                 message: $message,
-                stamps: [new MessageDelay('5 seconds')],
+                stamps: [new MessageDelay('3 seconds')],
                 transport: 'ozon-orders',
             );
 
@@ -67,7 +67,7 @@ final readonly class CreateTaskOzonStickersDispatcher
         }
 
         $this->logger->info(
-            sprintf('Получили идентификатор задания на формирование стикера маркировки заказа %s', $task),
+            sprintf('Получили идентификатор задания %s на формирование стикера маркировки заказа %s', $task, $message->getNumber()),
             [self::class.':'.__LINE__],
         );
 
