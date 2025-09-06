@@ -23,47 +23,69 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers;
+namespace BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\Create;
 
 
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Api\Sticker\GetOzonStickerTaskRequest;
+use BaksDev\Ozon\Orders\Api\Sticker\CreateOzonStickerRequest;
+use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\TaskOzonPackageStickersMessage;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-/** Проверка задания на формирование этикетки и кеширует на сутки для печати в формате JPEG */
 #[AsMessageHandler(priority: 0)]
-final readonly class TaskOzonPackageStickersDispatcher
+final readonly class CreateTaskOzonStickersDispatcher
 {
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
-        private GetOzonStickerTaskRequest $GetOzonStickerTaskRequest,
+        private CreateOzonStickerRequest $CreateOzonStickerRequest,
         private MessageDispatchInterface $MessageDispatch,
     ) {}
 
-    public function __invoke(TaskOzonPackageStickersMessage $message): void
+    public function __invoke(CreateTaskOzonStickersMessage $message): void
     {
-        $result = $this->GetOzonStickerTaskRequest
+        $task = $this->CreateOzonStickerRequest
             ->forTokenIdentifier($message->getToken())
-            ->number($message->getNumber())
-            ->get($message->getTask());
+            ->create($message->getNumber());
 
-        if(false === $result)
+        if(false === $task)
         {
-            /** Пробуем получить через 5 секунд */
+            /** Пробуем повторить попытку */
+
             $this->MessageDispatch->dispatch(
                 message: $message,
                 stamps: [new MessageDelay('5 seconds')],
                 transport: 'ozon-orders',
             );
 
-            $this->logger->warning(sprintf('%s: Ошибка при получении стикера маркировки заказа', $message->getNumber()));
+            $this->logger->critical(
+                sprintf('ozon-orders: Ошибка при получении задания стикера маркировки заказа %s', $message->getNumber()),
+            );
 
             return;
         }
 
-        $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
+        $this->logger->info(
+            sprintf('Получили идентификатор задания на формирование стикера маркировки заказа %s', $task),
+            [self::class.':'.__LINE__],
+        );
+
+
+        /**
+         * Пробуем получить результат задания для стикера маркировки заказа
+         */
+
+        $TaskOzonPackageStickersMessage = new TaskOzonPackageStickersMessage(
+            token: $message->getToken(),
+            number: $message->getNumber(),
+            task: $task,
+        );
+
+        $this->MessageDispatch->dispatch(
+            message: $TaskOzonPackageStickersMessage,
+            stamps: [new MessageDelay('5 seconds')],
+            transport: 'ozon-orders',
+        );
     }
 }
