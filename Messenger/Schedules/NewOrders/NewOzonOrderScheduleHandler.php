@@ -85,15 +85,6 @@ final readonly class NewOzonOrderScheduleHandler
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
     {
-        /** Получаем все токены профиля */
-        $tokensByProfile = $this->OzonTokensByProfileRepository
-            ->findAll($message->getProfile());
-
-        if(false === $tokensByProfile || false === $tokensByProfile->valid())
-        {
-            return;
-        }
-
         /**
          * Ограничиваем периодичность запросов
          */
@@ -114,6 +105,15 @@ final readonly class NewOzonOrderScheduleHandler
         /* @see строку :194 */
         $DeduplicatorExec->save();
 
+
+        /** Получаем все токены профиля */
+        $tokensByProfile = $this->OzonTokensByProfileRepository
+            ->findAll($message->getProfile());
+
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
+        {
+            return;
+        }
 
         foreach($tokensByProfile as $OzonTokenUid)
         {

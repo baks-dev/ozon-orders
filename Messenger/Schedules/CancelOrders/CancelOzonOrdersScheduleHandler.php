@@ -50,15 +50,6 @@ final readonly class CancelOzonOrdersScheduleHandler
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
     {
-        /** Получаем все токены профиля */
-        $tokensByProfile = $this->OzonTokensByProfileRepository
-            ->findAll($message->getProfile());
-
-        if(false === $tokensByProfile || false === $tokensByProfile->valid())
-        {
-            return;
-        }
-
         /**
          * Ограничиваем периодичность запросов
          */
@@ -78,6 +69,15 @@ final readonly class CancelOzonOrdersScheduleHandler
 
         /* @see строку :194 */
         $DeduplicatorExec->save();
+
+        /** Получаем все токены профиля */
+        $tokensByProfile = $this->OzonTokensByProfileRepository
+            ->findAll($message->getProfile());
+
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
+        {
+            return;
+        }
 
         foreach($tokensByProfile as $OzonTokenUid)
         {
