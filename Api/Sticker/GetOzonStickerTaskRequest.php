@@ -51,6 +51,21 @@ final class GetOzonStickerTaskRequest extends Ozon
      */
     public function get(int $task): bool
     {
+
+        /**
+         * Обрабатываем и сохраняем в кеш этикетку под номер отправления
+         * Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю)
+         */
+        $cache = $this->getCacheInit('order-sticker');
+        $item = $cache->getItem($this->number);
+
+        if($item->isHit())
+        {
+            return true;
+        }
+
+        sleep(1);
+
         $data['task_id'] = $task;
 
         $response = $this->TokenHttpClient()
@@ -59,6 +74,12 @@ final class GetOzonStickerTaskRequest extends Ozon
                 'v1/posting/fbs/package-label/get',
                 ['json' => $data],
             );
+
+        if($response->getStatusCode() === 429)
+        {
+            sleep(60);
+            return false;
+        }
 
         $content = $response->toArray(false);
 
@@ -81,13 +102,6 @@ final class GetOzonStickerTaskRequest extends Ozon
 
         if($result['status'] === 'completed')
         {
-            /**
-             * Обрабатываем и сохраняем в кеш этикетку под номер отправления
-             * Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю)
-             */
-            $cache = $this->getCacheInit('order-sticker');
-
-            $cache->deleteItem($this->number);
 
             $cache->get($this->number, function(ItemInterface $item) use ($result): string|false {
 

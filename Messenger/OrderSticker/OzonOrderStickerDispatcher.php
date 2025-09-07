@@ -31,7 +31,6 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
-use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -84,17 +83,17 @@ final readonly class OzonOrderStickerDispatcher
                 /**
                  * Если стикер не получен - пробуем получить заново
                  */
-                if(empty($ozonSticker))
-                {
-                    $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
-                        new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
-                        $orderPosting->getPostingNumber(),
-                    );
-
-                    /** @see ProcessOzonPackageStickersDispatcher */
-                    $this->messageDispatch->dispatch(message: $ProcessOzonPackageStickersMessage);
-                    $ozonSticker = $cache->getItem($key)->get();
-                }
+                //                if(empty($ozonSticker))
+                //                {
+                //                    $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
+                //                        new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
+                //                        $orderPosting->getPostingNumber(),
+                //                    );
+                //
+                //                    /** @see ProcessOzonPackageStickersDispatcher */
+                //                    $this->messageDispatch->dispatch(message: $ProcessOzonPackageStickersMessage);
+                //                    $ozonSticker = $cache->getItem($key)->get();
+                //                }
 
                 if(false === empty($ozonSticker))
                 {

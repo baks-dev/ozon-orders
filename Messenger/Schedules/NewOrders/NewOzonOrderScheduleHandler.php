@@ -58,6 +58,7 @@ use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsIn
 use BaksDev\Users\User\Entity\User;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -65,6 +66,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Получает список НОВЫХ сборочных заданий для создания НОВЫХ заказов (на каждый Ozon токен)
  */
 #[AsMessageHandler]
+#[Autoconfigure(shared: false)]
 final readonly class NewOzonOrderScheduleHandler
 {
     public function __construct(

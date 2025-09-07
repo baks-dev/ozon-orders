@@ -42,6 +42,8 @@ final class CreateOzonStickerRequest extends Ozon
      */
     public function create(string $number): int|false
     {
+        sleep(1);
+
         $data['posting_number'] = [str_replace('O-', '', $number)];
 
         $response = $this->TokenHttpClient()
