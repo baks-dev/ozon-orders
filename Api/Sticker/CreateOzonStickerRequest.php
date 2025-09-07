@@ -51,6 +51,12 @@ final class CreateOzonStickerRequest extends Ozon
                 ['json' => $data],
             );
 
+        if($response->getStatusCode() === 429)
+        {
+            sleep(60);
+            return false;
+        }
+
         $content = $response->toArray(false);
 
         if($response->getStatusCode() !== 200)
@@ -73,6 +79,8 @@ final class CreateOzonStickerRequest extends Ozon
         }
 
         /** Возвращаем идентификатор задания на формирование этикеток */
+
+        sleep(1);
 
         $result = $content['result'];
 
