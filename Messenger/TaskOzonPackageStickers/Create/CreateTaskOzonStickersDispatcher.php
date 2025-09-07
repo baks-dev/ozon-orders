@@ -55,12 +55,12 @@ final readonly class CreateTaskOzonStickersDispatcher
 
             $this->MessageDispatch->dispatch(
                 message: $message,
-                stamps: [new MessageDelay('3 seconds')],
+                stamps: [new MessageDelay('5 seconds')],
                 transport: 'ozon-orders',
             );
 
             $this->logger->critical(
-                sprintf('ozon-orders: Ошибка при получении задания стикера маркировки заказа %s', $message->getNumber()),
+                sprintf('ozon-orders: Ошибка при получении задания на формирование стикера маркировки заказа %s', $message->getNumber()),
             );
 
             return;

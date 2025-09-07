@@ -44,17 +44,26 @@ final readonly class CancelOzonOrdersScheduleHandler
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private GetOzonOrdersByStatusRequest $GetOzonOrdersByStatusRequest,
         private CancelOzonOrderHandler $CancelOzonOrderHandler,
-        private DeduplicatorInterface $deduplicator,
-        private OzonTokensByProfileInterface $OzonTokensByProfile,
+        private DeduplicatorInterface $Deduplicator,
+        private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
     ) {}
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
     {
+        /** Получаем все токены профиля */
+        $tokensByProfile = $this->OzonTokensByProfileRepository
+            ->findAll($message->getProfile());
+
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
+        {
+            return;
+        }
+
         /**
          * Ограничиваем периодичность запросов
          */
 
-        $DeduplicatorExec = $this->deduplicator
+        $DeduplicatorExec = $this->Deduplicator
             ->namespace('ozon-orders')
             ->expiresAfter(CancelOrdersSchedule::INTERVAL)
             ->deduplication([
@@ -67,24 +76,16 @@ final readonly class CancelOzonOrdersScheduleHandler
             return;
         }
 
-        /* удаляется после обработки запроса */
+        /* @see строку :194 */
         $DeduplicatorExec->save();
-
-
-        /** Получаем все токены профиля */
-
-        $tokensByProfile = $this->OzonTokensByProfile
-            ->findAll($message->getProfile());
-
-        if(false === $tokensByProfile || false === $tokensByProfile->valid())
-        {
-            $DeduplicatorExec->delete();
-            return;
-        }
-
 
         foreach($tokensByProfile as $OzonTokenUid)
         {
+            $this->logger->info(
+                sprintf('%s: Получаем список ОТМЕНЕННЫХ сборочных заданий', $OzonTokenUid),
+                [self::class.':'.__LINE__],
+            );
+
             /**
              * Получаем список ОТМЕНЕННЫХ сборочных заданий
              */
@@ -97,8 +98,8 @@ final readonly class CancelOzonOrdersScheduleHandler
             /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */
             foreach($orders as $CancelOzonOrderDTO)
             {
-                /** Индекс дедубдикации по номеру заказа */
-                $Deduplicator = $this->deduplicator
+                /** Индекс дедубдикации по номеру отправления */
+                $Deduplicator = $this->Deduplicator
                     ->namespace('ozon-orders')
                     ->expiresAfter('1 day')
                     ->deduplication([
@@ -124,6 +125,8 @@ final readonly class CancelOzonOrdersScheduleHandler
                         ],
                     );
 
+                    $Deduplicator->save();
+
                     continue;
                 }
 
@@ -139,7 +142,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                     );
                 }
 
-                $Deduplicator->save();
+
             }
         }
 

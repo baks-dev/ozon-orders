@@ -36,11 +36,12 @@ final class CancelOzonOrdersScheduleMessage
      */
     private string $profile;
 
-    private ?DateInterval $interval = null;
+    private ?DateInterval $interval;
 
     public function __construct(UserProfile|UserProfileUid|string $profile)
     {
         $this->profile = (string) $profile;
+        $this->interval = null;
     }
 
     /**

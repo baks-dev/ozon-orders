@@ -115,14 +115,12 @@ final readonly class NewOzonOrderScheduleHandler
         $DeduplicatorExec->save();
 
 
-        $this->logger->info(
-            sprintf('%s: Получаем список НОВЫХ сборочных заданий',
-                $message->getProfile()), [self::class.':'.__LINE__],
-        );
-
-
         foreach($tokensByProfile as $OzonTokenUid)
         {
+            $this->logger->info(
+                sprintf('%s: Получаем список НОВЫХ сборочных заданий', $OzonTokenUid),
+                [self::class.':'.__LINE__],
+            );
 
             /**
              * Получаем список НОВЫХ сборочных заданий токена
@@ -149,7 +147,9 @@ final readonly class NewOzonOrderScheduleHandler
                 /** Идентификатор заказа (для дедубликатора) */
 
                 $number = $OzonMarketOrderDTO->getOrderNumber();
+
                 $Deduplicator = $this->Deduplicator
+                    ->namespace('ozon-orders')
                     ->expiresAfter('1 week')
                     ->deduplication([$number, self::class]);
 
