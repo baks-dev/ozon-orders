@@ -75,25 +75,13 @@ final readonly class OzonOrderStickerDispatcher
 
         foreach($OrderEvent->getProduct() as $product)
         {
+            /**
+             * @note Если стикер не получен - пробуем через время
+             */
             foreach($product->getOrderPostings() as $orderPosting)
             {
                 $key = $orderPosting->getPostingNumber();
                 $ozonSticker = $cache->getItem($key)->get();
-
-                /**
-                 * Если стикер не получен - пробуем получить заново
-                 */
-                //                if(empty($ozonSticker))
-                //                {
-                //                    $ProcessOzonPackageStickersMessage = new ProcessOzonPackageStickersMessage(
-                //                        new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
-                //                        $orderPosting->getPostingNumber(),
-                //                    );
-                //
-                //                    /** @see ProcessOzonPackageStickersDispatcher */
-                //                    $this->messageDispatch->dispatch(message: $ProcessOzonPackageStickersMessage);
-                //                    $ozonSticker = $cache->getItem($key)->get();
-                //                }
 
                 if(false === empty($ozonSticker))
                 {

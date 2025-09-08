@@ -473,7 +473,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
             }
 
             /** Сохраняем для продукта его отправления */
-            foreach($postingsForOrder as $postingInfo)
+            foreach($postingsForOrder as $key => $postingInfo)
             {
                 $postingNumber = $postingInfo['posting_number'];
 
@@ -493,7 +493,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
 
                 $this->MessageDispatch->dispatch(
                     message: $CreateTaskOzonStickersMessage,
-                    stamps: [new MessageDelay('5 seconds')],
+                    stamps: [new MessageDelay(sprintf('%s seconds', ($key + 10)))],
                     transport: 'ozon-orders',
                 );
             }

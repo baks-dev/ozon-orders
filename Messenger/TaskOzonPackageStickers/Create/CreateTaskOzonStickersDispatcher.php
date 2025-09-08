@@ -84,7 +84,7 @@ final readonly class CreateTaskOzonStickersDispatcher
 
         $this->MessageDispatch->dispatch(
             message: $TaskOzonPackageStickersMessage,
-            stamps: [new MessageDelay('5 seconds')],
+            stamps: [new MessageDelay('30 seconds')],
             transport: 'ozon-orders',
         );
     }
