@@ -92,6 +92,7 @@ final readonly class CancelOzonOrdersScheduleHandler
 
             $orders = $this->GetOzonOrdersByStatusRequest
                 ->forTokenIdentifier($OzonTokenUid)
+                ->interval($message->getInterval())
                 ->findAllCancel();
 
 

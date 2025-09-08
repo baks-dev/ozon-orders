@@ -96,7 +96,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         $dateTimeNow = new DateTimeImmutable();
 
-        if(!$this->fromDate)
+        if(false === ($this->fromDate instanceof DateTimeImmutable))
         {
             // Новые заказы за последние 30 минут (планировщик на каждую минуту)
             $this->fromDate = $dateTimeNow->sub($this->interval ?? DateInterval::createFromDateString('30 minutes'));
