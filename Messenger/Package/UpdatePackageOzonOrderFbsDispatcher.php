@@ -43,6 +43,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageDTO;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrderScheduleHandler;
 use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\Create\CreateTaskOzonStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
@@ -93,6 +94,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
 
     public function __invoke(OrderMessage $message): void
     {
+
         /** Активное событие заказа */
         $OrderEvent = $this->orderEventRepository
             ->find($message->getEvent());
@@ -124,7 +126,22 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();
 
-        /** Получаем активное событие заказа на случай, если оно изменилось и не возможно определить номер */
+
+        /**
+         * Создаем блокировку на получение новых заказов (чтобы не прилетали дубликаты)
+         */
+
+        $DeduplicatorOrdersNew = $this->Deduplicator
+            ->namespace('ozon-orders')
+            ->expiresAfter('10 seconds')
+            ->deduplication([(string) $UserProfileUid, NewOzonOrderScheduleHandler::class]);
+
+        $DeduplicatorOrdersNew->save();
+
+        /**
+         * Получаем активное событие заказа на случай, если оно изменилось и не возможно определить номер
+         */
+
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
             $OrderEvent = $this->currentOrderEventRepository
