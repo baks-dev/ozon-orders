@@ -107,7 +107,7 @@ final class GetOzonStickerTaskRequest extends Ozon
                 $ozonSticker = file_get_contents($result['file_url']);
 
                 $imagick = new Imagick();
-                $imagick->setResolution(200, 200); // DPI
+                $imagick->setResolution(300, 300); // DPI
 
                 /** Одна страница, если передан один номер отправления */
                 $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница

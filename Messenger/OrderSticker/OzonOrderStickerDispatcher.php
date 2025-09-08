@@ -43,7 +43,6 @@ final readonly class OzonOrderStickerDispatcher
 {
     public function __construct(
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
-        private MessageDispatchInterface $messageDispatch,
         private AppCacheInterface $Cache,
     ) {}
 
