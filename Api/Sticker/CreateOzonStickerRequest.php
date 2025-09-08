@@ -42,8 +42,6 @@ final class CreateOzonStickerRequest extends Ozon
      */
     public function create(string $number): int|false
     {
-        sleep(1);
-
         $data['posting_number'] = [str_replace('O-', '', $number)];
 
         $response = $this->TokenHttpClient()
@@ -66,7 +64,7 @@ final class CreateOzonStickerRequest extends Ozon
             /** Номер отправления не принадлежит компании */
             if($content['message'] === 'POSTING_NUMBERS_IS_INCORRECT_FOR_COMPANY')
             {
-                return false;
+                return true;
             }
 
             $this->logger->warning(
@@ -81,8 +79,6 @@ final class CreateOzonStickerRequest extends Ozon
         }
 
         /** Возвращаем идентификатор задания на формирование этикеток */
-
-        sleep(1);
 
         $result = $content['result'];
 

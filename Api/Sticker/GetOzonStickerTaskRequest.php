@@ -51,7 +51,6 @@ final class GetOzonStickerTaskRequest extends Ozon
      */
     public function get(int $task): bool
     {
-
         /**
          * Обрабатываем и сохраняем в кеш этикетку под номер отправления
          * Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю)
@@ -63,8 +62,6 @@ final class GetOzonStickerTaskRequest extends Ozon
         {
             return true;
         }
-
-        sleep(1);
 
         $data['task_id'] = $task;
 
