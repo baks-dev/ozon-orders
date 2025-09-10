@@ -195,12 +195,15 @@ final readonly class NewOzonOrderScheduleHandler
                     continue;
                 }
 
-                /** Добавляем адрес в геолокацию */
-                $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
+                if($OrderDeliveryDTO->getAddress())
+                {
+                    /** Добавляем адрес в геолокацию */
+                    $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
 
-                $OrderDeliveryDTO
-                    ->setLatitude($GeocodeAddressDTO->getLatitude())
-                    ->setLongitude($GeocodeAddressDTO->getLongitude());
+                    $OrderDeliveryDTO
+                        ->setLatitude($GeocodeAddressDTO->getLatitude())
+                        ->setLongitude($GeocodeAddressDTO->getLongitude());
+                }
 
 
                 /**

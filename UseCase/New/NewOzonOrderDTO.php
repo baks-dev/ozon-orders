@@ -192,12 +192,6 @@ final class NewOzonOrderDTO implements OrderEventInterface
             $deliveryDate = new DateTimeImmutable($order['shipment_date']);
             $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
 
-            $address = $order['customer']['address'];
-            $OrderDeliveryDTO->setAddress($address['address_tail']);
-
-            /** Геолокация клиента */
-            $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
-            $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
 
             /** Информация о покупателе */
             $this->buyer = empty($order['addressee']) ? null : $order['addressee'];
@@ -205,6 +199,16 @@ final class NewOzonOrderDTO implements OrderEventInterface
             /** Комментарий покупателя */
             $this->comment = $order['customer']['address']['comment'];
 
+        }
+
+        if(isset($order['customer']['address']))
+        {
+            $address = $order['customer']['address'];
+            $OrderDeliveryDTO->setAddress($address['address_tail']);
+
+            /** Геолокация клиента */
+            $OrderDeliveryDTO->setLatitude(new GpsLatitude($address['latitude']));
+            $OrderDeliveryDTO->setLongitude(new GpsLongitude($address['longitude']));
         }
 
 

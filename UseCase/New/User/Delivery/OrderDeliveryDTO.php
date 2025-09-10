@@ -45,7 +45,7 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
 
     /** Адрес клиента */
     #[Assert\NotBlank]
-    private string $address;
+    private ?string $address;
 
 
     /** Событие способа доставки (для расчета стоимости) */
@@ -194,12 +194,12 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
     /**
      * Address
      */
-    public function getAddress(): string
+    public function getAddress(): ?string
     {
         return $this->address;
     }
 
-    public function setAddress(string $address): self
+    public function setAddress(?string $address): self
     {
         $this->address = $address;
         return $this;
