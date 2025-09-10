@@ -195,6 +195,13 @@ final readonly class NewOzonOrderScheduleHandler
                     continue;
                 }
 
+                /** Добавляем адрес в геолокацию */
+                $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
+
+                $OrderDeliveryDTO
+                    ->setLatitude($GeocodeAddressDTO->getLatitude())
+                    ->setLongitude($GeocodeAddressDTO->getLongitude());
+
 
                 /**
                  * Если заказ FBS - Доставка Ozon, геолокацию присваиваем адреса самого профиля
@@ -225,6 +232,10 @@ final readonly class NewOzonOrderScheduleHandler
                  */
                 if(true === $DeliveryUid->equals(TypeDeliveryDbsOzon::TYPE))
                 {
+                    /**
+                     * Присваиваем поле адреса доставки
+                     */
+
                     $fields = $this->FieldByDeliveryChoice->fetchDeliveryFields($OrderDeliveryDTO->getDelivery());
 
                     $address_field = array_filter($fields, static function($v) {
@@ -236,9 +247,11 @@ final readonly class NewOzonOrderScheduleHandler
 
                     if($address_field !== false)
                     {
+                        /** Присваиваем адрес  */
+
                         $OrderDeliveryFieldDTO = new OrderDeliveryFieldDTO()
                             ->setField($address_field)
-                            ->setValue($OrderDeliveryDTO->getAddress());
+                            ->setValue($GeocodeAddressDTO->getAddress() ?? $OrderDeliveryDTO->getAddress());
 
                         $OrderDeliveryDTO->addField($OrderDeliveryFieldDTO);
                     }
@@ -294,11 +307,7 @@ final readonly class NewOzonOrderScheduleHandler
                 /** Определяем геолокацию, если не указана */
                 if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
                 {
-                    $GeocodeAddressDTO = $this->GeocodeAddressParser->getGeocode($OrderDeliveryDTO->getAddress());
 
-                    $OrderDeliveryDTO->setAddress($GeocodeAddressDTO->getAddress());
-                    $OrderDeliveryDTO->setLatitude($GeocodeAddressDTO->getLatitude());
-                    $OrderDeliveryDTO->setLongitude($GeocodeAddressDTO->getLongitude());
                 }
 
 
