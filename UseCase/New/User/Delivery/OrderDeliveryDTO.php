@@ -45,7 +45,7 @@ final class OrderDeliveryDTO implements OrderDeliveryInterface
 
     /** Адрес клиента */
     #[Assert\NotBlank]
-    private ?string $address;
+    private ?string $address = null;
 
 
     /** Событие способа доставки (для расчета стоимости) */
