@@ -76,6 +76,8 @@ final readonly class CancelOzonOrdersScheduleHandler
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
+            $DeduplicatorExec->delete();
+
             return;
         }
 
@@ -111,6 +113,15 @@ final readonly class CancelOzonOrdersScheduleHandler
                 // Если передан интервал - не проверяем дедубликатор
                 if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
                 {
+                    $this->logger->info(
+                        sprintf('%s: Заказ уже отменен', $CancelOzonOrderDTO->getPostingNumber()),
+                        [
+                            self::class.':'.__LINE__,
+                            'token' => (string) $OzonTokenUid,
+                            var_export($message, true),
+                        ],
+                    );
+
                     continue;
                 }
 
@@ -142,8 +153,6 @@ final readonly class CancelOzonOrdersScheduleHandler
                         ],
                     );
                 }
-
-
             }
         }
 

@@ -84,6 +84,11 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
+            $this->logger->critical(
+                message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
+                context: [self::class.':'.__LINE__, $data, $content],
+            );
+
             /** Если упаковка уже отправлена */
             if($content['message'] === 'POSTING_ALREADY_SHIPPED')
             {
@@ -105,18 +110,8 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             /** Статус заказа уже изменился */
             if($content['message'] === 'HAS_INCORRECT_STATUS')
             {
-                $this->logger->critical(
-                    message: sprintf('ozon-orders: Ошибка при упаковке заказа %s. Статус заказа уже обновлен', $order),
-                    context: [self::class.':'.__LINE__, $data, $content],
-                );
-
                 return true;
             }
-
-            $this->logger->critical(
-                message: sprintf('ozon-orders: Ошибка при упаковке заказа %s', $order),
-                context: [self::class.':'.__LINE__, $data, $content],
-            );
 
             return false;
         }

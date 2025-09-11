@@ -116,17 +116,25 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         $data['dir'] = 'DESC'; // сортировка по убыванию
         $data['limit'] = 1000; // Количество значений в ответе
-        $data['filter']['since'] = $this->fromDate->format(DateTimeInterface::W3C); // Дата начала периода (Y-m-d\TH:i:sP)
-        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);   // Дата конца периода (Y-m-d\TH:i:sP)
         $data['filter']['status'] = $this->status; // Статус отправления
-
-        /** Новые заказы только согласно идентификатору склада */
-        //if('awaiting_packaging' === $this->status)
-        //{
-        //    $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
-        //}
-
         $data['filter']['warehouse_id'] = [$this->getWarehouse()]; // Идентификатор склада.
+
+        /**
+         * Дата начала периода, за который нужно получить список отправлений.
+         * Период по умолчанию - 1 неделя
+         */
+        $sinceDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 week'));
+        $data['filter']['since'] = $sinceDate->format(DateTimeInterface::W3C);
+        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);
+
+
+        /**
+         * Период, в который последний раз изменялся статус у отправлений.
+         * Период по умолчанию - 30 минут
+         */
+        $data['filter']['last_changed_status_date']['from'] = $this->fromDate->format(DateTimeInterface::W3C); // Дата начала периода (Y-m-d\TH:i:sP)
+        $data['filter']['last_changed_status_date']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);   // Дата конца периода (Y-m-d\TH:i:sP)
+
 
         $response = $this->TokenHttpClient()
             ->request(
