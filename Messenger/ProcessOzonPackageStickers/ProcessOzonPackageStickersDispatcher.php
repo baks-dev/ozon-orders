@@ -65,6 +65,8 @@ final readonly class ProcessOzonPackageStickersDispatcher
 
             $item->expiresAfter(DateInterval::createFromDateString('1 day'));
 
+            Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+
             $imagick = new Imagick();
             $imagick->setResolution(200, 200); // DPI
 
