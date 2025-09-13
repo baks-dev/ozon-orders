@@ -106,6 +106,7 @@ final class GetOzonStickerTaskRequest extends Ozon
 
                 $ozonSticker = file_get_contents($result['file_url']);
 
+                Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
                 $imagick = new Imagick();
                 $imagick->setResolution(300, 300); // DPI
 

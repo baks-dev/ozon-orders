@@ -116,6 +116,8 @@ class PrintOzonStickerRequestTest extends KernelTestCase
 
         $jpegFile = $testUploadDir.DIRECTORY_SEPARATOR.'ozon-sticker.jpg';
 
+        Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+
         $imagick = new Imagick();
         $imagick->setResolution(200, 200); // DPI
 
