@@ -34,6 +34,10 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+/**
+ * Создаем задание на формирование стикера отправления
+ * вызывается не раньше чем через 10 сек после упаковки
+ */
 #[AsMessageHandler(priority: 0)]
 final readonly class CreateTaskOzonStickersDispatcher
 {
@@ -45,6 +49,7 @@ final readonly class CreateTaskOzonStickersDispatcher
 
     public function __invoke(CreateTaskOzonStickersMessage $message): void
     {
+
         $task = $this->CreateOzonStickerRequest
             ->forTokenIdentifier($message->getToken())
             ->create($message->getNumber());

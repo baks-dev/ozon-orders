@@ -63,7 +63,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
                 return false;
             }
 
-            $item->expiresAfter(DateInterval::createFromDateString('1 day'));
+            $item->expiresAfter(DateInterval::createFromDateString('1 week'));
 
             Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
 
