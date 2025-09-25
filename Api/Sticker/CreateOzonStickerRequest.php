@@ -67,6 +67,12 @@ final class CreateOzonStickerRequest extends Ozon
                 return true;
             }
 
+            /** Отсутствуют отправления (заказ отменен) */
+            if($content['message'] === 'NO_POSTINGS_FOR_BATCH_DOWNLOAD')
+            {
+                return true;
+            }
+
             $this->logger->warning(
                 sprintf(
                     'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
