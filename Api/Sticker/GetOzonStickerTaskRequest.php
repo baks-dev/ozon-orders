@@ -102,9 +102,20 @@ final class GetOzonStickerTaskRequest extends Ozon
 
             $cache->get($this->number, function(ItemInterface $item) use ($result): string|false {
 
-                $item->expiresAfter(DateInterval::createFromDateString('1 day'));
+                /** Временно кешируем этикетку на 1 секунду */
+                $item->expiresAfter(DateInterval::createFromDateString('1 seconds'));
 
-                $ozonSticker = file_get_contents($result['file_url']);
+                $response = $this->TokenHttpClient()->request('GET', $result['file_url']);
+
+                if($response->getStatusCode() !== 200)
+                {
+                    return false;
+                }
+
+                $ozonSticker = $response->getContent(false);
+
+                /** Кешируем этикетку на 1 неделю */
+                $item->expiresAfter(DateInterval::createFromDateString('1 week'));
 
                 Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
                 $imagick = new Imagick();
@@ -113,13 +124,12 @@ final class GetOzonStickerTaskRequest extends Ozon
                 /** Одна страница, если передан один номер отправления */
                 $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница
 
-                $imagick->setImageFormat('jpeg');
-
-                $stickerJpeg = $imagick->getImageBlob();
+                $imagick->setImageFormat('png');
+                $imageBlob = $imagick->getImageBlob();
 
                 $imagick->clear();
 
-                return $stickerJpeg;
+                return $imageBlob;
 
             });
 

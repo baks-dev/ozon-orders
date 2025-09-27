@@ -66,20 +66,18 @@ final readonly class ProcessOzonPackageStickersDispatcher
             $item->expiresAfter(DateInterval::createFromDateString('1 week'));
 
             Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
-
             $imagick = new Imagick();
             $imagick->setResolution(200, 200); // DPI
 
             /** Одна страница, если передан один номер отправления */
             $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница
 
-            $imagick->setImageFormat('jpeg');
-
-            $stickerJpeg = $imagick->getImageBlob();
+            $imagick->setImageFormat('png');
+            $imageBlob = $imagick->getImageBlob();
 
             $imagick->clear();
 
-            return $stickerJpeg;
+            return $imageBlob;
 
         });
 

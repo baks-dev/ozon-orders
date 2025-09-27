@@ -125,7 +125,7 @@ class PrintOzonStickerRequestTest extends KernelTestCase
         $imagick->readImage($pdfFile.'[0]'); // Чтение PDF
         //        $imagick->readImageBlob($ozonSticker.'[0]'); // Чтение бинарника
 
-        $imagick->setImageFormat('jpeg');
+        $imagick->setImageFormat('png');
 
         //        $image = $imagick->getImageBlob(); // Сохраняю в памяти
         $imagick->writeImage($jpegFile); // Сохраняю в файл
