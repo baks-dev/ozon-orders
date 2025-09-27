@@ -110,7 +110,8 @@ final readonly class NewOzonOrderScheduleHandler
 
         /** Получаем все токены профиля */
         $tokensByProfile = $this->OzonTokensByProfileRepository
-            ->findAll($message->getProfile());
+            ->forProfile($message->getProfile())
+            ->findAll();
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
