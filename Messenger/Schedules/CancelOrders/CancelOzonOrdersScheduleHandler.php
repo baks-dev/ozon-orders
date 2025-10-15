@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\Schedules\CancelOrders;
 
 
+use BaksDev\Centrifugo\Server\Publish\CentrifugoPublishInterface;
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
@@ -46,6 +47,7 @@ final readonly class CancelOzonOrdersScheduleHandler
         private CancelOzonOrderHandler $CancelOzonOrderHandler,
         private DeduplicatorInterface $Deduplicator,
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
+        private CentrifugoPublishInterface $publish,
     ) {}
 
     public function __invoke(CancelOzonOrdersScheduleMessage $message): void
@@ -126,9 +128,9 @@ final readonly class CancelOzonOrdersScheduleHandler
                     continue;
                 }
 
-                $handle = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
+                $Order = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
 
-                if($handle instanceof Order)
+                if($Order instanceof Order)
                 {
                     $this->logger->info(
                         sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getPostingNumber()),
@@ -138,18 +140,24 @@ final readonly class CancelOzonOrdersScheduleHandler
                         ],
                     );
 
+                    /** Скрываем идентификатор у всех пользователей */
+                    $this->publish
+                        ->addData(['profile' => false]) // Скрывает у всех
+                        ->addData(['identifier' => (string) $Order->getId()])
+                        ->send('remove');
+
                     $Deduplicator->save();
 
                     continue;
                 }
 
-                if($handle !== false)
+                if($Order !== false)
                 {
                     $this->logger->critical(
                         sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getPostingNumber()),
                         [
                             self::class.':'.__LINE__,
-                            'handle' => $handle,
+                            'handle' => $Order,
                             'token' => (string) $OzonTokenUid,
                         ],
                     );
