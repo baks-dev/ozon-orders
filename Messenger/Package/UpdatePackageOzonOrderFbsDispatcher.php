@@ -43,7 +43,6 @@ use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageDTO;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
-use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrderScheduleHandler;
 use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\Create\CreateTaskOzonStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
@@ -51,7 +50,7 @@ use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
-use BaksDev\Products\Product\Repository\CurrentProductIdentifier\CurrentProductIdentifierInterface;
+use BaksDev\Products\Product\Repository\CurrentProductIdentifier\CurrentProductIdentifierByEventInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
@@ -88,7 +87,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
         private readonly ProductParameterInterface $productParameterRepository,
         private readonly ProductConstByArticleInterface $productConstByArticleRepository,
         private readonly UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
-        private readonly CurrentProductIdentifierInterface $CurrentProductIdentifierRepository,
+        private readonly CurrentProductIdentifierByEventInterface $CurrentProductIdentifierRepository,
 
     ) {}
 
@@ -116,7 +115,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
         }
 
         /**
-         * Завершаем обработчик если тип доставки заказа не Ozon Fbs «Доставка службой Ozon»
+         * Завершаем обработчик если тип доставки заказа НЕ!!! Ozon Fbs «Доставка службой Ozon»
          */
         if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
         {
@@ -127,16 +126,16 @@ final class UpdatePackageOzonOrderFbsDispatcher
         $UserProfileUid = $OrderEvent->getOrderProfile();
 
 
-        /**
-         * Создаем блокировку на получение новых заказов (чтобы не прилетали дубликаты)
-         */
-
-        $DeduplicatorOrdersNew = $this->Deduplicator
-            ->namespace('ozon-orders')
-            ->expiresAfter('10 seconds')
-            ->deduplication([(string) $UserProfileUid, NewOzonOrderScheduleHandler::class]);
-
-        $DeduplicatorOrdersNew->save();
+        //        /**
+        //         * Создаем блокировку на получение новых заказов (чтобы не прилетали дубликаты)
+        //         */
+        //
+        //        $DeduplicatorOrdersNew = $this->Deduplicator
+        //            ->namespace('ozon-orders')
+        //            ->expiresAfter('10 seconds')
+        //            ->deduplication([(string) $UserProfileUid, NewOzonOrderScheduleHandler::class]);
+        //
+        //        $DeduplicatorOrdersNew->save();
 
         /**
          * Получаем активное событие заказа на случай, если оно изменилось и не возможно определить номер
@@ -213,11 +212,89 @@ final class UpdatePackageOzonOrderFbsDispatcher
         }
 
         /**
-         * ПОДСЧЕТ ОБЗЕГО КОЛИЧЕСТВА ТОВАРОВ В ЗАКАЗЕ
+         * ПОДСЧЕТ ОБЩЕГО КОЛИЧЕСТВА ТОВАРОВ В ЗАКАЗЕ
          */
+
+
+        /** Если в заказе один продукт и его количество в заказе равно одному */
+
+        if($NewOzonOrderDTO->getProduct()->count() === 1)
+        {
+            foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
+            {
+                /** Отправляем заказ на упаковку без разделения */
+                if($NewOrderProductDTO->getPrice()->getTotal() === 1)
+                {
+                    /** Добавляем продукт для упаковки */
+                    $package[] = [
+                        'products' => [
+                            [
+                                "product_id" => $NewOrderProductDTO->getSku(),
+                                "quantity" => 1,
+                            ],
+                        ],
+                    ];
+
+
+                    /**
+                     * Делаем запрос на разделение и отправку заказа в доставку
+                     *
+                     * @var $postings UpdateOzonOrdersPackageDTO|false
+                     */
+                    $postings = $this
+                        ->updateOzonOrdersPackageRequest
+                        ->forTokenIdentifier($OzonTokenUid)
+                        ->products($package)
+                        ->package($OrderEvent->getOrderNumber());
+
+                    if(false === $postings)
+                    {
+                        $this->Logger->critical(
+                            message: sprintf('ozon-orders: заказ %s с продуктом арт: %s не удалось разделить на отправления',
+                                $OrderEvent->getOrderNumber(),
+                                $NewOrderProductDTO->getArticle(),
+                            ),
+                            context: [
+                                self::class.':'.__LINE__,
+                                var_export($OrderEvent->getId(), true),
+                            ],
+                        );
+
+                        $this->MessageDispatch->dispatch(
+                            message: $message,
+                            stamps: [new MessageDelay('5 seconds')],
+                            transport: $UserProfileUid.'-low',
+                        );
+
+                        return;
+                    }
+
+
+                    /**
+                     * Бросаем сообщение для скачивания стикера OZON
+                     */
+
+                    $CreateTaskOzonStickersMessage = new CreateTaskOzonStickersMessage(
+                        $OzonTokenUid,
+                        $OrderEvent->getOrderNumber(),
+                    );
+
+                    $this->MessageDispatch->dispatch(
+                        message: $CreateTaskOzonStickersMessage,
+                        stamps: [new MessageDelay('10 seconds')],
+                        transport: 'ozon-orders',
+                    );
+
+                    return;
+                }
+            }
+        }
+
 
         /**
          * @var NewOrderProductDTO $NewOrderProductDTO
+         * @deprecated Логика разделения заказа переделывается на разделение заказов на 1 машиноместо
+         * @todo переделать на логику маркировки заказа на 1 заказ - 1 стикер
          */
 
         $this->total = 0;
