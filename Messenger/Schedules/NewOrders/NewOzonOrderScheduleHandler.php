@@ -347,12 +347,11 @@ final readonly class NewOzonOrderScheduleHandler
                     }
                 }
 
-
-                /** Определяем геолокацию, если не указана */
-                if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
-                {
-
-                }
+                //                /** Определяем геолокацию, если не указана */
+                //                if(is_null($OrderDeliveryDTO->getLatitude()) || is_null($OrderDeliveryDTO->getLongitude()))
+                //                {
+                //
+                //                }
 
 
                 /**
