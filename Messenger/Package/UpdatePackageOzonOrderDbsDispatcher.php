@@ -46,7 +46,7 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
-use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
@@ -232,7 +232,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
              * Из всех продуктов в заказе в системе находим соответствие продукту из заказа Ozon
              *
              * @var OrderProductDTO|null $orderProductDTO
-             * @var CurrentProductDTO $ProductData
+             * @var CurrentProductByBarcodeResult $ProductData
              */
 
             $orderProductDTO = $EditOrderDTO->getProduct()

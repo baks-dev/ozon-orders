@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Core\Type\Field\InputField;
 use BaksDev\Core\Type\Gps\GpsLatitude;
 use BaksDev\Core\Type\Gps\GpsLongitude;
@@ -37,6 +38,7 @@ use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
+use BaksDev\Ozon\Orders\Messenger\SplitOrders\SplitOzonOrderMessage;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
@@ -46,7 +48,7 @@ use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Orders\UseCase\New\User\Delivery\Field\OrderDeliveryFieldDTO;
 use BaksDev\Ozon\Orders\UseCase\New\User\UserProfile\Value\ValueDTO;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
-use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Address\Services\GeocodeAddressParser;
 use BaksDev\Users\Address\Type\AddressField\AddressField;
@@ -82,7 +84,8 @@ final readonly class NewOzonOrderScheduleHandler
         private NewOzonOrderHandler $NewOzonOrderHandler,
         private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
         private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
-        private readonly FieldValueFormInterface $fieldValue,
+        private FieldValueFormInterface $fieldValue,
+        private MessageDispatchInterface $MessageDispatch,
     ) {}
 
     public function __invoke(NewOzonOrdersScheduleMessage $message): void
@@ -164,10 +167,61 @@ final readonly class NewOzonOrderScheduleHandler
                 $NewOrderInvariable = $OzonMarketOrderDTO->getInvariable();
                 $UserProfileUid = $NewOrderInvariable->getProfile();
 
+                $OrderUserDTO = $OzonMarketOrderDTO->getUsr();
+                $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
+                $DeliveryUid = $OrderDeliveryDTO->getDelivery();
+
+                if(false === ($DeliveryUid instanceof DeliveryUid))
+                {
+                    $this->logger->critical(
+                        'ozon-orders: Невозможно определить тип доставки DeliveryUid',
+                        [self::class.':'.__LINE__],
+                    );
+
+                    continue;
+                }
+
+
+                /**
+                 * Если заказ FBS - Доставка Ozon, и количество товаров в поставке больше одного - разделяем заказ на отправления
+                 */
+                if(true === $DeliveryUid->equals(TypeDeliveryFbsOzon::TYPE))
+                {
+                    $total = 0;
+
+                    foreach($OzonMarketOrderDTO->getProduct() as $product)
+                    {
+                        $total += $product->getPrice()->getTotal();
+                    }
+
+                    /**
+                     * Разделяем заказ на отдельные отправления
+                     *
+                     * @see SplitOzonOrderDispatcher::__invoke(SplitOzonOrderMessage)
+                     */
+                    if($total > 1)
+                    {
+                        $SplitOzonOrderMessage = new SplitOzonOrderMessage(
+                            $UserProfileUid,
+                            $OzonTokenUid,
+                            $number,
+                        );
+
+                        $this->MessageDispatch->dispatch(
+                            message: $SplitOzonOrderMessage,
+                            transport: (string) $message->getProfile(),
+                        );
+
+                        continue;
+                    }
+                }
+
+
                 /**
                  * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
                  */
-                $User = $this->UserByUserProfileRepository->forProfile($UserProfileUid)->find();
+                $User = $this->UserByUserProfileRepository
+                    ->forProfile($UserProfileUid)->find();
 
                 if(false === ($User instanceof User))
                 {
@@ -181,20 +235,6 @@ final readonly class NewOzonOrderScheduleHandler
                 }
 
                 $NewOrderInvariable->setUsr($User->getId());
-                $OrderUserDTO = $OzonMarketOrderDTO->getUsr();
-
-                $OrderDeliveryDTO = $OrderUserDTO->getDelivery();
-                $DeliveryUid = $OrderDeliveryDTO->getDelivery();
-
-                if(false === ($DeliveryUid instanceof DeliveryUid))
-                {
-                    $this->logger->critical(
-                        'ozon-orders: Невозможно определить тип доставки  DeliveryUid',
-                        [self::class.':'.__LINE__],
-                    );
-
-                    continue;
-                }
 
                 if($OrderDeliveryDTO->getAddress())
                 {
@@ -335,7 +375,7 @@ final readonly class NewOzonOrderScheduleHandler
                 {
                     $ProductData = $this->ProductConstByArticleRepository->find($product->getArticle());
 
-                    if(false === ($ProductData instanceof CurrentProductDTO))
+                    if(false === ($ProductData instanceof CurrentProductByBarcodeResult))
                     {
                         $DeduplicatorExec->delete();
 

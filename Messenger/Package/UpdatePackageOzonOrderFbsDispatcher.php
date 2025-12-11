@@ -48,7 +48,7 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
-use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductDTO;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Products\Product\Repository\CurrentProductIdentifier\CurrentProductIdentifierByEventInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
@@ -65,7 +65,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class UpdatePackageOzonOrderFbsDispatcher
 {
     /** Общее количество продуктов в заказе  */
-    private int $total;
+    private int $total = 0;
 
     /** Массив отправлений для разделения в Ozon */
     private array|null $products;
@@ -383,7 +383,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
              * Из всех продуктов в заказе в системе находим соответствие продукту из заказа Ozon
              *
              * @var OrderProductDTO|null $orderProductDTO
-             * @var CurrentProductDTO $ProductData
+             * @var CurrentProductByBarcodeResult $ProductData
              */
 
             $orderProductDTO = $EditOrderDTO->getProduct()
