@@ -70,7 +70,5 @@ class CreateOzonStickerRequestTest extends KernelTestCase
         $CreateOzonStickerRequest->TokenHttpClient(self::$Authorization);
 
         $task = $CreateOzonStickerRequest->create('59348204-bcb0-1');
-
-        // dd($task);
     }
 }

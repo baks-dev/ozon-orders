@@ -79,8 +79,6 @@ class PrintOzonStickerRequestTest extends KernelTestCase
         $ozonSticker = $PrintOzonStickerRequest
             ->find(number: '111111111-1111-1');
 
-        // dd($ozonSticker);
-
 
         self::assertIsString($ozonSticker);
         return;

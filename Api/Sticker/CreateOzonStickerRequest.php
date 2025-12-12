@@ -40,7 +40,7 @@ final class CreateOzonStickerRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/?__rr=1&abt_att=1#operation/PostingAPI_CreateLabelBatchV2
      *
      */
-    public function create(string $number): int|false
+    public function create(string $number): int|bool
     {
         $data['posting_number'] = [str_replace('O-', '', $number)];
 

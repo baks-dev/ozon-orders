@@ -26,33 +26,51 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
-use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use InvalidArgumentException;
 
 /**
- * Информация о заказах
+ * Собрать заказ
  */
-final class GetOzonOrderInfoRequest extends Ozon
+final class SplitOzonOrdersPackageRequest extends Ozon
 {
+    private array|false $products = false;
+
+    public function products(array $products): self
+    {
+        $this->products = $products;
+        return $this;
+    }
+
     /**
-     * Получить информацию об отправлении по идентификатору
+     * Разделить заказ на отправления без сборки
      *
-     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_GetFbsPostingV3
+     * @see https://docs.ozon.ru/api/seller/#operation/FbsSplit
      *
      */
-    public function find(string $number): NewOzonOrderDTO|false
+    public function package(int|string $order): bool
     {
-        $number = str_replace('O-', '', $number);
+        /** Если в тестовом окружении */
+        if(false === $this->isExecuteEnvironment())
+        {
+            return true;
+        }
 
-        $data['posting_number'] = $number;
+        if(empty($this->products))
+        {
+            throw new InvalidArgumentException('Invalid Argument $products');
+        }
 
-        $data['with'] = [
-            "related_postings" => true,
+        $order = str_replace('O-', '', (string) $order);
+
+        $data = [
+            "posting_number" => $order,
+            "postings" => $this->products,
         ];
 
         $response = $this->TokenHttpClient()
             ->request(
                 'POST',
-                '/v3/posting/fbs/get',
+                '/v1/posting/fbs/split',
                 ['json' => $data],
             );
 
@@ -61,17 +79,13 @@ final class GetOzonOrderInfoRequest extends Ozon
         if($response->getStatusCode() !== 200)
         {
             $this->logger->critical(
-                sprintf(
-                    'ozon-orders: Ошибка %s при получении информации о заказе на складе %s',
-                    $response->getStatusCode(), $this->getWarehouse(),
-                ),
-                [self::class.':'.__LINE__, $data, $content],
+                message: sprintf('ozon-orders: Ошибка при разделение заказа %s', $order),
+                context: [self::class.':'.__LINE__, $data, $content],
             );
 
             return false;
         }
 
-        return new NewOzonOrderDTO(current($content), $this->getProfile());
-
+        return true;
     }
 }

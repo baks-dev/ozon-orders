@@ -23,25 +23,36 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Api\Tests;
+namespace BaksDev\Ozon\Orders\Messenger\SplitOrders\Tests;
 
+use BaksDev\Core\Messenger\MessageDispatchInterface;
+use BaksDev\Core\Type\Field\InputField;
+use BaksDev\Core\Type\Gps\GpsLatitude;
+use BaksDev\Core\Type\Gps\GpsLongitude;
+use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
+use BaksDev\Orders\Order\Entity\Order;
+use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
+use BaksDev\Ozon\Orders\Messenger\SplitOrders\SplitOzonOrderMessage;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
-use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
+use BaksDev\Ozon\Type\Id\OzonTokenUid;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
+use BaksDev\Users\Address\Services\GeocodeAddressParser;
+use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
+use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
 use PHPUnit\Framework\Attributes\Group;
-use ReflectionClass;
-use ReflectionMethod;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
 
 #[Group('ozon-orders')]
 #[When(env: 'test')]
-class GetOzonOrdersInfoRequestTest extends KernelTestCase
+class SplitOzonOrdersDispatcherTest extends KernelTestCase
 {
     private static OzonAuthorizationToken $Authorization;
 
@@ -51,9 +62,8 @@ class GetOzonOrdersInfoRequestTest extends KernelTestCase
         PackageProductStockTest::setUpBeforeClass();
         UserNewUserProfileHandleTest::setUpBeforeClass();
 
-
         self::$Authorization = new OzonAuthorizationToken(
-            new UserProfileUid($_SERVER['TEST_PROFILE'] ?? null),
+            new UserProfileUid('018d464d-c67a-7285-8192-7235b0510924'),
             $_SERVER['TEST_OZON_TOKEN'],
             TypeProfileFbsOzon::TYPE,
             $_SERVER['TEST_OZON_CLIENT'],
@@ -71,30 +81,39 @@ class GetOzonOrdersInfoRequestTest extends KernelTestCase
 
         /** @var GetOzonOrderInfoRequest $GetOzonOrderInfoRequest */
         $GetOzonOrderInfoRequest = self::getContainer()->get(GetOzonOrderInfoRequest::class);
-
         $GetOzonOrderInfoRequest->TokenHttpClient(self::$Authorization);
 
-        /** @var NewOzonOrderDTO $NewOzonOrderDTO */
-        $NewOzonOrderDTO = $GetOzonOrderInfoRequest
-            ->find('number');
+        $NewOzonOrderDTO = $GetOzonOrderInfoRequest->find('30873379-0157-1');
 
-        if($NewOzonOrderDTO instanceof NewOzonOrderDTO)
+        $products = null;
+
+        /**
+         * @var NewOrderProductDTO $NewOrderProductDTO
+         * Разделяем заказа на отдельные машиноместа
+         */
+        foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
         {
-            // Вызываем все геттеры
-            $reflectionClass = new ReflectionClass(NewOzonOrderDTO::class);
-            $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
+            $pack = $NewOrderProductDTO->getPrice()->getTotal();
 
-            foreach($methods as $method)
+            for($i = 1; $i <= $pack; $i++)
             {
-                // Методы без аргументов
-                if($method->getNumberOfParameters() === 0)
-                {
-                    // Вызываем метод
-                    $data = $method->invoke($NewOzonOrderDTO);
-                    // dump($data);
-                }
+                $products[]['products'][] = [
+                    "product_id" => $NewOrderProductDTO->getSku(),
+                    "quantity" => 1, // всегда делим заказ на одно машиноместо
+                ];
             }
         }
 
+
+        /** @var MessageDispatchInterface $MessageDispatch */
+        $MessageDispatch = self::getContainer()->get(MessageDispatchInterface::class);
+
+        $SplitOzonOrderMessage = new SplitOzonOrderMessage(
+            profile: new UserProfileUid(),
+            token: new OzonTokenUid('01978694-98ff-7e22-ae35-8b621ffbe981'),
+            order: '30873379-0157-1',
+        );
+
+        $MessageDispatch->dispatch($SplitOzonOrderMessage);
     }
 }

@@ -41,6 +41,7 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
+use BaksDev\Ozon\Orders\UseCase\New\Invariable\NewOrderInvariable;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Payment\Type\Id\PaymentUid;
@@ -68,7 +69,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     /** Постоянная величина */
     #[Assert\Valid]
-    private Invariable\NewOrderInvariable $invariable;
+    private NewOrderInvariable $invariable;
 
     /** Дата заказа */
     #[Assert\NotBlank]
@@ -80,7 +81,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Коллекция продукции в заказе
      *
-     * @var ArrayCollection{int, NewOrderProductDTO} $product
+     * @var ArrayCollection<int, NewOrderProductDTO> $product
      */
     #[Assert\Valid]
     private ArrayCollection $product;
@@ -89,8 +90,6 @@ final class NewOzonOrderDTO implements OrderEventInterface
     #[Assert\Valid]
     private User\OrderUserDTO $usr;
 
-    /** Ответственный */
-    private ?UserProfileUid $profile = null;
 
     /** Комментарий к заказу */
     private ?string $comment = null;
@@ -110,7 +109,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
 
         /** Постоянная величина */
-        $this->invariable = new Invariable\NewOrderInvariable()
+        $this->invariable = new NewOrderInvariable()
             ->setCreated($this->created) // Дата и время начала обработки отправления.
             ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
             ->setToken($identifier) // идентификатор токена маркетплейса
@@ -215,7 +214,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         /** Продукция */
         foreach($order['products'] as $item)
         {
-            $NewOrderProductDTO = new Products\NewOrderProductDTO($item['offer_id']);
+            $NewOrderProductDTO = new NewOrderProductDTO($item['offer_id']);
             $NewOrderProductDTO->setSku($item['sku']);
 
             $NewOrderPriceDTO = $NewOrderProductDTO->getPrice();
@@ -282,7 +281,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Коллекция продукции в заказе
      *
-     * @return  ArrayCollection{int, NewOrderProductDTO}
+     * @return  ArrayCollection<int, NewOrderProductDTO>
      */
     public function getProduct(): ArrayCollection
     {
@@ -294,9 +293,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->product = $product;
     }
 
-    public function addProduct(Products\NewOrderProductDTO $product): void
+    public function addProduct(NewOrderProductDTO $product): void
     {
-        $filter = $this->product->filter(function(Products\NewOrderProductDTO $element) use ($product) {
+        $filter = $this->product->filter(function(NewOrderProductDTO $element) use ($product) {
             return $element->getArticle() === $product->getArticle();
         });
 
@@ -306,7 +305,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         }
     }
 
-    public function removeProduct(Products\NewOrderProductDTO $product): void
+    public function removeProduct(NewOrderProductDTO $product): void
     {
         $this->product->removeElement($product);
     }
@@ -330,23 +329,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Invariable
      */
-    public function getInvariable(): Invariable\NewOrderInvariable
+    public function getInvariable(): NewOrderInvariable
     {
         return $this->invariable;
-    }
-
-    /**
-     * Profile
-     */
-    public function getProfile(): ?UserProfileUid
-    {
-        return $this->profile;
-    }
-
-    public function resetProfile(?UserProfileUid $profile = null): self
-    {
-        $this->profile = $profile;
-        return $this;
     }
 
     /**

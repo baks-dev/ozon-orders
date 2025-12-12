@@ -27,12 +27,15 @@ namespace BaksDev\Ozon\Orders\Messenger\OrderSticker;
 
 
 use BaksDev\Core\Cache\AppCacheInterface;
+use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
+use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
+use Imagick;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -43,7 +46,9 @@ final readonly class OzonOrderStickerDispatcher
 {
     public function __construct(
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
+        private PrintOzonStickerRequest $PrintOzonStickerRequest,
         private AppCacheInterface $Cache,
+        private DeduplicatorInterface $Deduplicator,
     ) {}
 
     public function __invoke(OrderStickerMessage $message): void
@@ -70,12 +75,54 @@ final readonly class OzonOrderStickerDispatcher
          * Получаем стикеры Ozon
          */
 
+        $Deduplicator = $this->Deduplicator
+            ->namespace('order-sticker')
+            ->expiresAfter('1 minute');
+
         $cache = $this->Cache->init('order-sticker');
 
+
+        /**
+         * @todo переделать на логику маркировки заказа на 1 заказ - 1 стикер
+         */
         foreach($OrderEvent->getProduct() as $product)
         {
+            /** Если список идентификаторов отправлений пустой - пробуем определить по номеру заказа  */
+            if($product->getOrderPostings()->isEmpty())
+            {
+                $key = $OrderEvent->getOrderNumber();
+                $ozonSticker = $cache->getItem($key)->get();
+
+                if(false === empty($ozonSticker))
+                {
+                    $message->addResult(number: $key, code: base64_encode($ozonSticker));
+                }
+
+                /**
+                 * Если стикер по заданию не найден - пробуем распечатать
+                 */
+
+                if($Deduplicator->isExecuted())
+                {
+                    return;
+                }
+
+                $this->print(
+                    new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
+                    $key, $message,
+                );
+
+                $Deduplicator
+                    ->deduplication([self::class, $key])
+                    ->save();
+
+                return;
+            }
+
             /**
              * @note Если стикер не получен - пробуем через время
+             * @deprecated Логика разделения заказа переделывается на разделение заказов на 1 машиноместо
+             * TODO: удалить (маркировки заказа на 1 заказ - 1 стикер)
              */
             foreach($product->getOrderPostings() as $orderPosting)
             {
@@ -85,8 +132,55 @@ final readonly class OzonOrderStickerDispatcher
                 if(false === empty($ozonSticker))
                 {
                     $message->addResult(number: $key, code: base64_encode($ozonSticker));
+
+                    continue;
                 }
+
+                /**
+                 * Если стикер по заданию не найден - пробуем распечатать
+                 */
+
+                if($Deduplicator->isExecuted())
+                {
+                    return;
+                }
+
+                $this->print(
+                    new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
+                    $key, $message,
+                );
+
+                $Deduplicator
+                    ->deduplication([self::class, $key])
+                    ->save();
             }
+        }
+    }
+
+    /**
+     * Если стикер по заданию не найден - пробуем распечатать
+     */
+    private function print(OzonTokenUid $token, string $number, OrderStickerMessage $message): void
+    {
+        $OzonSticker = $this->PrintOzonStickerRequest
+            ->forTokenIdentifier($token)
+            ->find($number);
+
+        if($OzonSticker)
+        {
+            Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+            $imagick = new Imagick();
+            $imagick->setResolution(300, 300); // DPI
+
+            /** Одна страница, если передан один номер отправления */
+            $imagick->readImageBlob($OzonSticker.'[0]'); // [0] — первая страница
+
+            $imagick->setImageFormat('png');
+            $imageBlob = $imagick->getImageBlob();
+
+            $imagick->clear();
+
+            $message->addResult(number: $number, code: base64_encode($imageBlob));
         }
     }
 }

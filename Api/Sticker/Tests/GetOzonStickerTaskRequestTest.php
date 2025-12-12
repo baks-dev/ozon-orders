@@ -73,7 +73,5 @@ class GetOzonStickerTaskRequestTest extends KernelTestCase
         $task = $GetOzonStickerTaskRequest
             ->number(number: '00000000000')
             ->get(task: 1111111111111);
-
-        // dd($task);
     }
 }
