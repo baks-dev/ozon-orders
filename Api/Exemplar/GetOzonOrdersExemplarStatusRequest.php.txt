@@ -1,0 +1,91 @@
+<?php
+/*
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is furnished
+ *  to do so, subject to the following conditions:
+ *  
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *  
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ */
+
+declare(strict_types=1);
+
+namespace BaksDev\Ozon\Orders\Api\Exemplar;
+
+use BaksDev\Ozon\Api\Ozon;
+use DateInterval;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Symfony\Contracts\Cache\ItemInterface;
+
+#[Autoconfigure(public: true)] /* TODO: удалить !!! */
+final class GetOzonOrdersExemplarStatusRequest extends Ozon
+{
+    private array|false $exemplars = false;
+
+    /**
+     * Получить статус добавления экземпляров
+     *
+     * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_FbsPostingProductExemplarStatusV5
+     *
+     */
+    public function find(string $number): bool|self
+    {
+        $number = str_replace('O-', '', $number);
+
+        $cache = $this->getCacheInit('ozon-orders');
+        $key = md5($number.self::class);
+
+        return $cache->get($key, function(ItemInterface $item) use ($number): bool {
+
+            /** Временно кешируем этикетку на 1 секунду */
+            $item->expiresAfter(DateInterval::createFromDateString('3 seconds'));
+
+            $response = $this->TokenHttpClient()
+                ->request(
+                    'POST',
+                    '/v5/fbs/posting/product/exemplar/status',
+                    ['json' => ['posting_number' => $number]],
+                );
+
+            $content = $response->toArray(false);
+
+            if($response->getStatusCode() !== 200)
+            {
+                $this->logger->critical(
+                    message: sprintf('ozon-orders: Ошибка при получении информации о статусе экземпляра отправления %s', $number),
+                    context: [self::class.':'.__LINE__, $content],
+                );
+
+                return false;
+            }
+
+            if(true === isset($content['status']) && true === in_array($content['status'], ['ship_available', 'update_available']))
+            {
+                $item->expiresAfter(DateInterval::createFromDateString('1 day'));
+                return true;
+            }
+
+            $this->exemplars = $content;
+
+            return false;
+        });
+    }
+
+    public function getExemplars(): array|false
+    {
+        return $this->exemplars;
+    }
+}

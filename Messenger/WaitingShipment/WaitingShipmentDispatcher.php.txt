@@ -52,7 +52,7 @@ final readonly class WaitingShipmentDispatcher
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
         private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
         private UpdateOzonOrdersPackageRequest $UpdateOzonOrdersPackageRequest,
-        private GetOzonOrdersExemplarStatusRequest $GetOzonOrdersExemplarStatusRequest,
+        //private GetOzonOrdersExemplarStatusRequest $GetOzonOrdersExemplarStatusRequest,
         private MessageDispatchInterface $MessageDispatch,
     ) {}
 
@@ -89,27 +89,27 @@ final readonly class WaitingShipmentDispatcher
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
 
-        /**
-         * Проверяем, что заказ может быть отправлен в «Ожидают отгрузки»
-         */
-
-        $isExemplar = $this
-            ->GetOzonOrdersExemplarStatusRequest
-            ->forTokenIdentifier($OzonTokenUid)
-            ->find($OrderEvent->getOrderNumber());
-
-        /** Если $exemplar не равен TRUE - заказ требует указать доп. информацию */
-        if(true !== $isExemplar)
-        {
-            $UpdateOrderExemplarInfoMessage = new UpdateOrderExemplarInfoMessage($message->getOrderId());
-
-            $this->MessageDispatch->dispatch(
-                message: $UpdateOrderExemplarInfoMessage,
-                transport: $OrderEvent->getOrderProfile(),
-            );
-
-            return;
-        }
+//        /**
+//         * Проверяем, что заказ может быть отправлен в «Ожидают отгрузки»
+//         */
+//
+//        $isExemplar = $this
+//            ->GetOzonOrdersExemplarStatusRequest
+//            ->forTokenIdentifier($OzonTokenUid)
+//            ->find($OrderEvent->getOrderNumber());
+//
+//        /** Если $exemplar не равен TRUE - заказ требует указать доп. информацию */
+//        if(true !== $isExemplar)
+//        {
+//            $UpdateOrderExemplarInfoMessage = new UpdateOrderExemplarInfoMessage($message->getOrderId());
+//
+//            $this->MessageDispatch->dispatch(
+//                message: $UpdateOrderExemplarInfoMessage,
+//                transport: $OrderEvent->getOrderProfile(),
+//            );
+//
+//            return;
+//        }
 
         /**
          * Получаем информацию о заказе
