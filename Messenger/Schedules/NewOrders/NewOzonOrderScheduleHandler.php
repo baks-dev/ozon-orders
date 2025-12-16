@@ -152,7 +152,8 @@ final readonly class NewOzonOrderScheduleHandler
             {
                 /** Идентификатор заказа (для дедубликатора) */
 
-                $number = $OzonMarketOrderDTO->getOrderNumber();
+                // $number = $OzonMarketOrderDTO->getOrderNumber();
+                $number = $OzonMarketOrderDTO->getInvariable()->getNumber();
 
                 $Deduplicator = $this->Deduplicator
                     ->namespace('ozon-orders')
@@ -204,7 +205,7 @@ final readonly class NewOzonOrderScheduleHandler
                         $SplitOzonOrderMessage = new SplitOzonOrderMessage(
                             $UserProfileUid,
                             $OzonTokenUid,
-                            $number,
+                            $OzonMarketOrderDTO->getInvariable()->getNumber(),
                         );
 
                         $this->MessageDispatch->dispatch(

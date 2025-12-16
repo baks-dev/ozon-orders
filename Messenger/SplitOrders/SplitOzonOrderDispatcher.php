@@ -87,7 +87,7 @@ final readonly class SplitOzonOrderDispatcher
 
             $this->MessageDispatch->dispatch(
                 message: $message,
-                stamps: [new MessageDelay('3 seconds')],
+                stamps: [new MessageDelay('5 seconds')],
                 transport: $message->getProfile().'-low',
             );
 
