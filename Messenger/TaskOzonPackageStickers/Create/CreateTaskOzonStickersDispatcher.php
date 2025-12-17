@@ -54,6 +54,16 @@ final readonly class CreateTaskOzonStickersDispatcher
             ->forTokenIdentifier($message->getToken())
             ->create($message->getNumber());
 
+        /**
+         * Не создаем задание:
+         * - заказ отменен
+         * - номер отправления не принадлежит компании
+         */
+        if(true === $task)
+        {
+            return;
+        }
+
         if(false === $task)
         {
             /** Пробуем повторить попытку */
