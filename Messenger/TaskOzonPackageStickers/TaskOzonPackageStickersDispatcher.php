@@ -61,7 +61,10 @@ final readonly class TaskOzonPackageStickersDispatcher
         /** @see ProcessOzonPackageStickersDispatcher */
         $this->MessageDispatch->dispatch(message: $ProcessOzonPackageStickersMessage);
         $cache = $this->cache->init('order-sticker');
-        $ozonSticker = $cache->getItem($message->getNumber())->get();
+
+
+        $number = str_replace('O-', '', $message->getNumber());
+        $ozonSticker = $cache->getItem($number)->get();
 
         if(null !== $ozonSticker)
         {

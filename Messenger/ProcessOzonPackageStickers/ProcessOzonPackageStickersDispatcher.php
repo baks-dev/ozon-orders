@@ -48,7 +48,7 @@ final readonly class ProcessOzonPackageStickersDispatcher
     {
         /** Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю) */
         $cache = $this->Cache->init('order-sticker');
-        $key = $message->getPostingNumber();
+        $key = str_replace('O-', '', $message->getPostingNumber());
 
         $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|false {
 

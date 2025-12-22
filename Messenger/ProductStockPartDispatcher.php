@@ -29,31 +29,47 @@ namespace BaksDev\Ozon\Orders\Messenger;
 use BaksDev\Barcode\Writer\BarcodeFormat;
 use BaksDev\Barcode\Writer\BarcodeType;
 use BaksDev\Barcode\Writer\BarcodeWrite;
+use BaksDev\Core\Cache\AppCacheInterface;
+use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Products\Sign\Repository\ProductSignByOrder\ProductSignByOrderInterface;
 use BaksDev\Products\Stocks\Messenger\Part\ProductStockPartMessage;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-/** Получаем стикер маркировки заказов для определенного продукта */
+/** Получаем стикер маркировки заказов Ozon */
 #[AsMessageHandler(priority: 0)]
 final readonly class ProductStockPartDispatcher
 {
     public function __construct(
         #[Target('productsSignLogger')] private LoggerInterface $logger,
-        private ProductSignByOrderInterface $ProductSignByOrderRepository,
+        private AppCacheInterface $Cache,
     ) {}
 
     public function __invoke(ProductStockPartMessage $message): void
     {
+        $cache = $this->Cache->init('order-sticker');
+        $sticker = null;
 
         /** Получаем стикеры маркировки заказа на продукцию */
         foreach($message->getOrders() as $order)
         {
+            $number = str_replace('O-', '', (string) $order->number);
 
+            $ozonSticker = $cache->getItem($number)->get();
 
-            // $message->addSticker($sticker);
+            if(false === empty($ozonSticker))
+            {
+                $sticker[(string) $order->id][$number]['ozon'][] = base64_encode($ozonSticker);
+                continue;
+            }
 
+            $this->logger->critical(
+                sprintf('ozon-orders: стикер маркировки заказа %s не найден', $order->number),
+                [self::class.':'.__LINE__],
+            );
         }
+
+        $message->addSticker($sticker);
     }
 }
