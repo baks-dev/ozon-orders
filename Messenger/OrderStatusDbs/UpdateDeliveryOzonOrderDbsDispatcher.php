@@ -79,6 +79,16 @@ final readonly class UpdateDeliveryOzonOrderDbsDispatcher
             return;
         }
 
+        if(empty($OrderEvent->getOrderTokenIdentifier()))
+        {
+            $this->Logger->warning(
+                message: 'Токен авторизации в заказе не найден! Возможно заказ был создан Администратором.',
+                context: [self::class.':'.__LINE__, var_export($message, true)],
+            );
+
+            return;
+        }
+
         /** Токен из заказа в системе (был установлен при получении заказа из Ozon) */
         $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
 
