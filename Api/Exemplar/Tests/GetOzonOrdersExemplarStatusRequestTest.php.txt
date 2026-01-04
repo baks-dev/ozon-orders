@@ -111,8 +111,5 @@ class GetOzonOrdersExemplarStatusRequestTest extends KernelTestCase
 
         $UpdateOzonOrdersExemplarRequest->update($orders);
 
-        dd('$orders'); /* TODO: удалить !!! */
-
-
     }
 }
