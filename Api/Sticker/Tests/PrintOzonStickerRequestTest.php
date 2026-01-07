@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -115,9 +115,10 @@ class PrintOzonStickerRequestTest extends KernelTestCase
         $jpegFile = $testUploadDir.DIRECTORY_SEPARATOR.'ozon-sticker.jpg';
 
         Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+        Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
 
         $imagick = new Imagick();
-        $imagick->setResolution(200, 200); // DPI
+        $imagick->setResolution(400, 400); // DPI
 
         /** [0] — первая страница */
         $imagick->readImage($pdfFile.'[0]'); // Чтение PDF

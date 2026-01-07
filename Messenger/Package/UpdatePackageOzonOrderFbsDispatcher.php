@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -88,11 +88,22 @@ final class UpdatePackageOzonOrderFbsDispatcher
         private readonly ProductConstByArticleInterface $productConstByArticleRepository,
         private readonly UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
         private readonly CurrentProductIdentifierByEventInterface $CurrentProductIdentifierRepository,
-
     ) {}
 
     public function __invoke(OrderMessage $message): void
     {
+        /** Дедубликатор по идентификатору заказа */
+        $Deduplicator = $this->Deduplicator
+            ->namespace('orders-order')
+            ->deduplication([
+                (string) $message->getId(),
+                self::class,
+            ]);
+
+        if($Deduplicator->isExecuted() === true)
+        {
+            return;
+        }
 
         /** Активное событие заказа */
         $OrderEvent = $this->orderEventRepository
@@ -108,19 +119,21 @@ final class UpdatePackageOzonOrderFbsDispatcher
             return;
         }
 
+        /**
+         * Завершаем обработчик если тип доставки заказа НЕ!!! Ozon Fbs «Доставка службой Ozon»
+         */
+        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
+        {
+            $Deduplicator->save();
+            return;
+        }
+
         /** Завершаем обработчик, если статус заказа не Package «Упаковка заказов» */
         if(false === $OrderEvent->isStatusEquals(OrderStatusPackage::class))
         {
             return;
         }
 
-        /**
-         * Завершаем обработчик если тип доставки заказа НЕ!!! Ozon Fbs «Доставка службой Ozon»
-         */
-        if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
-        {
-            return;
-        }
 
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();

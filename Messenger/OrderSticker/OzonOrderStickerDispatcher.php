@@ -36,6 +36,8 @@ use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use Imagick;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -45,6 +47,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class OzonOrderStickerDispatcher
 {
     public function __construct(
+        #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
         private CurrentOrderEventInterface $CurrentOrderEventRepository,
         private PrintOzonStickerRequest $PrintOzonStickerRequest,
         private AppCacheInterface $Cache,
@@ -53,6 +56,19 @@ final readonly class OzonOrderStickerDispatcher
 
     public function __invoke(OrderStickerMessage $message): void
     {
+        /** Дедубликатор по идентификатору заказа */
+        $Deduplicator = $this->Deduplicator
+            ->namespace('orders-order')
+            ->deduplication([
+                (string) $message->getId(),
+                self::class,
+            ]);
+
+        if($Deduplicator->isExecuted() === true)
+        {
+            return;
+        }
+
         /**
          * Получаем информацию о заказе
          */
@@ -63,11 +79,17 @@ final readonly class OzonOrderStickerDispatcher
 
         if(false === ($OrderEvent instanceof OrderEvent))
         {
+            $this->Logger->critical(
+                message: 'ozon-orders: Не найдено событие OrderEvent',
+                context: [self::class.':'.__LINE__, var_export($message, true)],
+            );
+
             return;
         }
 
         if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryFbsOzon::TYPE))
         {
+            $Deduplicator->save();
             return;
         }
 
@@ -169,8 +191,10 @@ final readonly class OzonOrderStickerDispatcher
         if($OzonSticker)
         {
             Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+            Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
+
             $imagick = new Imagick();
-            $imagick->setResolution(300, 300); // DPI
+            $imagick->setResolution(400, 400); // DPI
 
             /** Одна страница, если передан один номер отправления */
             $imagick->readImageBlob($OzonSticker.'[0]'); // [0] — первая страница

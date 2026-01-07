@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,12 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Messenger\OrderStatusDbs;
 
+use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCompleted;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersCompleteRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
@@ -46,10 +48,23 @@ final readonly class UpdateCompleteOzonOrderDbsDispatcher
         #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
         private UpdateOzonOrdersCompleteRequest $UpdateOzonOrdersCompleteRequest,
         private OrderEventInterface $orderEventRepository,
+        private DeduplicatorInterface $deduplicator,
     ) {}
 
     public function __invoke(OrderMessage $message): void
     {
+        /** Дедубликатор по идентификатору заказа */
+        $Deduplicator = $this->deduplicator
+            ->namespace('orders-order')
+            ->deduplication([
+                (string) $message->getId(),
+                self::class,
+            ]);
+
+        if($Deduplicator->isExecuted() === true)
+        {
+            return;
+        }
 
         /** Активное событие заказа */
         $OrderEvent = $this->orderEventRepository
@@ -65,16 +80,17 @@ final readonly class UpdateCompleteOzonOrderDbsDispatcher
             return;
         }
 
-        /** Завершаем обработчик, если статус заказа не Completed «Выполнен» */
-        if(false === $OrderEvent->isStatusEquals(OrderStatusCompleted::class))
-        {
-            return;
-        }
-
         /**
          * Завершаем обработчик если тип доставки заказа не Ozon Dbs «Доставка собственной службой логистики»
          */
         if(false === $OrderEvent->isDeliveryTypeEquals(TypeDeliveryDbsOzon::TYPE))
+        {
+            $Deduplicator->save();
+            return;
+        }
+
+        /** Завершаем обработчик, если статус заказа не Completed «Выполнен» */
+        if(false === $OrderEvent->isStatusEquals(OrderStatusCompleted::class))
         {
             return;
         }
@@ -103,6 +119,9 @@ final readonly class UpdateCompleteOzonOrderDbsDispatcher
                 message: sprintf('%s: Обновили статус заказа на «Доставлено»', $OrderEvent->getOrderNumber()),
                 context: [self::class.':'.__LINE__, var_export($message, true)],
             );
+
+            $Deduplicator->save();
         }
+
     }
 }
