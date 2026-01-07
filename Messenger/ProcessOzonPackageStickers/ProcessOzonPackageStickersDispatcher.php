@@ -25,10 +25,9 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers;
 
+use BaksDev\Barcode\Reader\BarcodeRead;
 use BaksDev\Core\Cache\AppCacheInterface;
 use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
-use DateInterval;
-use Imagick;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -40,49 +39,35 @@ use Symfony\Contracts\Cache\ItemInterface;
 final readonly class ProcessOzonPackageStickersDispatcher
 {
     public function __construct(
-        private AppCacheInterface $Cache,
         private PrintOzonStickerRequest $printOzonStickerRequest,
+        private AppCacheInterface $Cache,
+        private BarcodeRead $BarcodeRead,
     ) {}
 
     public function __invoke(ProcessOzonPackageStickersMessage $message): bool
     {
-        /** Указываем отличающийся namespace для кеша стикера (не сбрасываем по какому-либо модулю) */
-        $cache = $this->Cache->init('order-sticker');
-        $key = str_replace('O-', '', $message->getPostingNumber());
+        $ozonSticker = $this->printOzonStickerRequest
+            ->forTokenIdentifier($message->getToken())
+            ->find($message->getPostingNumber());
 
-        $sticker = $cache->get($key, function(ItemInterface $item) use ($message): string|false {
+        /** Делаем проверку, что стикер читается */
 
-            $item->expiresAfter(DateInterval::createFromDateString('1 second'));
+        if(false === empty($ozonSticker))
+        {
+            /** Делаем проверку, что стикер читается */
+            $isErrorRead = $this->BarcodeRead->decode($ozonSticker, decode: true)->isError();
 
-            $ozonSticker = $this->printOzonStickerRequest
-                ->forTokenIdentifier($message->getToken())
-                ->find($message->getPostingNumber());
-
-            if(false === $ozonSticker)
+            /** Если стикер не читается - удаляем кеш для повторной попытки */
+            if(true === $isErrorRead)
             {
+                $number = str_replace('O-', '', $message->getPostingNumber());
+                $cache = $this->Cache->init('order-sticker');
+                $cache->deleteItem($number);
+
                 return false;
             }
+        }
 
-            $item->expiresAfter(DateInterval::createFromDateString('1 week'));
-
-            Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
-            Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
-
-            $imagick = new Imagick();
-            $imagick->setResolution(400, 400); // DPI
-
-            /** Одна страница, если передан один номер отправления */
-            $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница
-
-            $imagick->setImageFormat('png');
-            $imageBlob = $imagick->getImageBlob();
-
-            $imagick->clear();
-
-            return $imageBlob;
-
-        });
-
-        return $sticker !== false;
+        return false === empty($ozonSticker);
     }
 }

@@ -35,7 +35,6 @@ use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface
 use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
-use Imagick;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -113,11 +112,12 @@ final readonly class OzonOrderStickerDispatcher
             if($product->getOrderPostings()->isEmpty())
             {
                 $key = $OrderEvent->getOrderNumber();
+                $key = str_replace('O-', '', $key);
                 $ozonSticker = $cache->getItem($key)->get();
 
                 if(false === empty($ozonSticker))
                 {
-                    $message->addResult(number: $key, code: base64_encode($ozonSticker));
+                    $message->addResult(number: $key, code: $ozonSticker);
                 }
 
                 /**
@@ -149,11 +149,12 @@ final readonly class OzonOrderStickerDispatcher
             foreach($product->getOrderPostings() as $orderPosting)
             {
                 $key = $orderPosting->getPostingNumber();
+                $key = str_replace('O-', '', $key);
                 $ozonSticker = $cache->getItem($key)->get();
 
                 if(false === empty($ozonSticker))
                 {
-                    $message->addResult(number: $key, code: base64_encode($ozonSticker));
+                    $message->addResult(number: $key, code: $ozonSticker);
 
                     continue;
                 }
@@ -190,21 +191,7 @@ final readonly class OzonOrderStickerDispatcher
 
         if($OzonSticker)
         {
-            Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
-            Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
-
-            $imagick = new Imagick();
-            $imagick->setResolution(400, 400); // DPI
-
-            /** Одна страница, если передан один номер отправления */
-            $imagick->readImageBlob($OzonSticker.'[0]'); // [0] — первая страница
-
-            $imagick->setImageFormat('png');
-            $imageBlob = $imagick->getImageBlob();
-
-            $imagick->clear();
-
-            $message->addResult(number: $number, code: base64_encode($imageBlob));
+            $message->addResult(number: $number, code: $OzonSticker);
         }
     }
 }

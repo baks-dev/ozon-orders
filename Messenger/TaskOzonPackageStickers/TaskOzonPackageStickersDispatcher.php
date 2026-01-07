@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers;
 
 
+use BaksDev\Barcode\Reader\BarcodeRead;
 use BaksDev\Core\Cache\AppCacheInterface;
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
@@ -44,7 +45,8 @@ final readonly class TaskOzonPackageStickersDispatcher
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private GetOzonStickerTaskRequest $GetOzonStickerTaskRequest,
         private MessageDispatchInterface $MessageDispatch,
-        private AppCacheInterface $cache
+        private AppCacheInterface $cache,
+        private BarcodeRead $BarcodeRead,
     ) {}
 
     public function __invoke(TaskOzonPackageStickersMessage $message): void
@@ -58,23 +60,40 @@ final readonly class TaskOzonPackageStickersDispatcher
             $message->getNumber(),
         );
 
-        /** @see ProcessOzonPackageStickersDispatcher */
+        /**
+         * Получаем стикер по отправлению мимо задания
+         *
+         * @see ProcessOzonPackageStickersDispatcher
+         */
         $this->MessageDispatch->dispatch(message: $ProcessOzonPackageStickersMessage);
         $cache = $this->cache->init('order-sticker');
-
 
         $number = str_replace('O-', '', $message->getNumber());
         $ozonSticker = $cache->getItem($number)->get();
 
-        if(null !== $ozonSticker)
-        {
-            $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
-
-            return;
-        }
 
         /**
-         * Если не удалось получить стикер - пробуем получить по заданию
+         * Если стикер был ранее получен
+         */
+
+        if(false === empty($ozonSticker))
+        {
+            /** Делаем проверку, что стикер читается */
+            $isErrorRead = $this->BarcodeRead->decode($ozonSticker, decode: true)->isError();
+
+            if(false === $isErrorRead)
+            {
+                $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
+                // return;
+            }
+
+            /** Если стикер не читается - удаляем кеш и пробуем получить по заданию */
+            $cache->deleteItem($number);
+        }
+
+
+        /**
+         * Если не удалось получить стикер - пробуем получить по заданию позже
          */
 
         $result = $this->GetOzonStickerTaskRequest
@@ -96,6 +115,28 @@ final readonly class TaskOzonPackageStickersDispatcher
             return;
         }
 
-        $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
+
+        /** Делаем проверку, что стикер читается */
+        $ozonSticker = $cache->getItem($number)->get();
+        $isErrorRead = $this->BarcodeRead->decode($ozonSticker, decode: true)->isError();
+
+        if(false === $isErrorRead)
+        {
+            $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
+            return;
+        }
+
+        /**
+         * Если стикер не читается - удаляем кеш и заново запрашиваем
+         */
+
+        $cache->deleteItem($number);
+
+        /** Пробуем получить еще раз */
+        $this->MessageDispatch->dispatch(
+            message: $message,
+            stamps: [new MessageDelay('5 seconds')],
+            transport: 'ozon-orders',
+        );
     }
 }

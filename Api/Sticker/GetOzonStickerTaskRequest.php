@@ -131,12 +131,7 @@ final class GetOzonStickerTaskRequest extends Ozon
 
                 $imagick->clear();
 
-
-                /** Пробуем сохранить и прочесть  */
-
-
-                return $imageBlob;
-
+                return base64_encode($imageBlob);
             });
 
             return true;

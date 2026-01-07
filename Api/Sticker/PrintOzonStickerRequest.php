@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api\Sticker;
 
 use BaksDev\Ozon\Api\Ozon;
+use DateInterval;
+use Imagick;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Напечатать этикетку
@@ -48,28 +51,59 @@ final class PrintOzonStickerRequest extends Ozon
     {
         $number = str_replace('O-', '', $number);
 
-        $data['posting_number'] = [$number];
+        $cache = $this->getCacheInit('order-sticker');
 
-        $response = $this->TokenHttpClient()
-            ->request(
-                'POST',
-                '/v2/posting/fbs/package-label',
-                ['json' => $data],
-            );
+        $content = $cache->get($number, function(ItemInterface $item) use ($number): string|false {
 
-        if($response->getStatusCode() !== 200)
-        {
-            $this->logger->warning(
-                sprintf(
-                    'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
-                    $response->getStatusCode(), $this->getWarehouse(),
-                ),
-                [self::class.':'.__LINE__, $data],
-            );
+            /** Временно кешируем этикетку на 1 секунду */
+            $item->expiresAfter(DateInterval::createFromDateString('1 seconds'));
 
-            return false;
-        }
+            $data['posting_number'] = [$number];
 
-        return $response->getContent(false);
+            $response = $this->TokenHttpClient()
+                ->request(
+                    'POST',
+                    '/v2/posting/fbs/package-label',
+                    ['json' => $data],
+                );
+
+
+            if($response->getStatusCode() !== 200)
+            {
+                $this->logger->warning(
+                    sprintf(
+                        'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
+                        $response->getStatusCode(), $this->getWarehouse(),
+                    ),
+                    [self::class.':'.__LINE__, $data],
+                );
+
+                return false;
+            }
+
+            $ozonSticker = $response->getContent(false);
+
+            /** Кешируем этикетку на 1 неделю */
+            $item->expiresAfter(DateInterval::createFromDateString('1 week'));
+
+            Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
+            Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
+
+            $imagick = new Imagick();
+            $imagick->setResolution(400, 400); // DPI
+
+            /** Одна страница, если передан один номер отправления */
+            $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница
+
+            $imagick->setImageFormat('png');
+            $imageBlob = $imagick->getImageBlob();
+
+            $imagick->clear();
+
+            return base64_encode($imageBlob);
+        });
+
+
+        return $content;
     }
 }
