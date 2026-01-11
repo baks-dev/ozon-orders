@@ -27,6 +27,7 @@ namespace BaksDev\Ozon\Orders\Api\Sticker;
 
 use BaksDev\Ozon\Api\Ozon;
 use DateInterval;
+use Exception;
 use Imagick;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -93,7 +94,16 @@ final class PrintOzonStickerRequest extends Ozon
             $imagick->setResolution(400, 400); // DPI
 
             /** Одна страница, если передан один номер отправления */
-            $imagick->readImageBlob($ozonSticker.'[0]'); // [0] — первая страница
+            try
+            {
+                $imagick->readImageBlob($ozonSticker.'[0]');
+            }
+
+                /** Если с индексом 0 вознкла проблема - пробуем индекс 1 */
+            catch(Exception)
+            {
+                $imagick->readImageBlob($ozonSticker.'[1]');
+            }
 
             $imagick->setImageFormat('png');
             $imageBlob = $imagick->getImageBlob();

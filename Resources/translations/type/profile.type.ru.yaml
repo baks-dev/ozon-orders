@@ -19,8 +19,8 @@ ozon:
 
   dbs:
 
-    name: 'DBS Ozon'
-    desc: 'Пользователь DBS Ozon'
+    name: 'DBS: Ozon'
+    desc: 'Пользователь Ozon'
 
     section:
       contact:

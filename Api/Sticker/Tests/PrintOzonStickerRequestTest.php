@@ -33,6 +33,7 @@ use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
+use Exception;
 use Imagick;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -120,9 +121,17 @@ class PrintOzonStickerRequestTest extends KernelTestCase
         $imagick = new Imagick();
         $imagick->setResolution(400, 400); // DPI
 
-        /** [0] — первая страница */
-        $imagick->readImage($pdfFile.'[0]'); // Чтение PDF
-        //        $imagick->readImageBlob($ozonSticker.'[0]'); // Чтение бинарника
+        try
+        {
+            /** [0] — первая страница */
+            $imagick->readImage($pdfFile.'[0]'); // Чтение PDF
+        }
+
+            /** Если с индексом 0 вознкла проблема - пробуем индекс 1 */
+        catch(Exception)
+        {
+            $imagick->readImageBlob($pdfFile.'[1]');
+        }
 
         $imagick->setImageFormat('png');
 

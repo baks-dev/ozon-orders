@@ -234,84 +234,93 @@ final class UpdatePackageOzonOrderFbsDispatcher
             return;
         }
 
+
+        if($NewOzonOrderDTO->getProduct()->count() > 1)
+        {
+            $this->Logger->critical(
+                sprintf(
+                    'ozon-orders: Ошибка при упаковке заказа! Заказ %s FBS Ozon должен состоять из одного продукта',
+                    $OrderEvent->getOrderNumber(),
+                ),
+                [self::class.':'.__LINE__],
+            );
+
+            return;
+        }
+
+        $NewOrderProductDTO = $NewOzonOrderDTO->getProduct()->current();
+
+        if($NewOrderProductDTO->getPrice()->getTotal() > 1)
+        {
+            $this->Logger->critical(
+                sprintf(
+                    'ozon-orders: Ошибка при упаковке заказа! Продукт в заказе %s FBS Ozon должен состоять из одной единицы',
+                    $OrderEvent->getOrderNumber(),
+                ),
+                [self::class.':'.__LINE__],
+            );
+        }
+
         /**
-         * ПОДСЧЕТ ОБЩЕГО КОЛИЧЕСТВА ТОВАРОВ В ЗАКАЗЕ
+         * Отправляем заказ на упаковку
          */
 
+        $package[] = [
+            'products' => [
+                [
+                    "product_id" => $NewOrderProductDTO->getSku(),
+                    "quantity" => 1,
+                ],
+            ],
+        ];
 
-        /** Если в заказе один продукт и его количество в заказе равно одному */
+        /** Делаем запрос отправку заказа в доставку */
+        $UpdateOzonOrdersPackageDTO = $this
+            ->updateOzonOrdersPackageRequest
+            ->forTokenIdentifier($OzonTokenUid)
+            ->products($package)
+            ->package($OrderEvent->getOrderNumber());
 
-        if($NewOzonOrderDTO->getProduct()->count() === 1)
+        if(false === ($UpdateOzonOrdersPackageDTO instanceof UpdateOzonOrdersPackageDTO))
         {
-            foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
-            {
-                /** Отправляем заказ на упаковку без разделения */
-                if($NewOrderProductDTO->getPrice()->getTotal() === 1)
-                {
-                    /** Добавляем продукт для упаковки */
-                    $package[] = [
-                        'products' => [
-                            [
-                                "product_id" => $NewOrderProductDTO->getSku(),
-                                "quantity" => 1,
-                            ],
-                        ],
-                    ];
+            $this->Logger->critical(
+                message: sprintf('ozon-orders: Пробуем позже отправить заказ %s с продуктом арт: %s на упаковку',
+                    $OrderEvent->getOrderNumber(),
+                    $NewOrderProductDTO->getArticle(),
+                ),
+                context: [
+                    self::class.':'.__LINE__,
+                    var_export($OrderEvent->getId(), true),
+                ],
+            );
 
+            $this->MessageDispatch->dispatch(
+                message: $message,
+                stamps: [new MessageDelay('5 seconds')],
+                transport: $UserProfileUid.'-low',
+            );
 
-                    /**
-                     * Делаем запрос на разделение и отправку заказа в доставку
-                     *
-                     * @var $postings UpdateOzonOrdersPackageDTO|false
-                     */
-                    $postings = $this
-                        ->updateOzonOrdersPackageRequest
-                        ->forTokenIdentifier($OzonTokenUid)
-                        ->products($package)
-                        ->package($OrderEvent->getOrderNumber());
-
-                    if(false === $postings)
-                    {
-                        $this->Logger->critical(
-                            message: sprintf('ozon-orders: заказ %s с продуктом арт: %s не удалось разделить на отправления',
-                                $OrderEvent->getOrderNumber(),
-                                $NewOrderProductDTO->getArticle(),
-                            ),
-                            context: [
-                                self::class.':'.__LINE__,
-                                var_export($OrderEvent->getId(), true),
-                            ],
-                        );
-
-                        $this->MessageDispatch->dispatch(
-                            message: $message,
-                            stamps: [new MessageDelay('5 seconds')],
-                            transport: $UserProfileUid.'-low',
-                        );
-
-                        return;
-                    }
-
-
-                    /**
-                     * Бросаем сообщение для скачивания стикера OZON
-                     */
-
-                    $CreateTaskOzonStickersMessage = new CreateTaskOzonStickersMessage(
-                        $OzonTokenUid,
-                        $OrderEvent->getOrderNumber(),
-                    );
-
-                    $this->MessageDispatch->dispatch(
-                        message: $CreateTaskOzonStickersMessage,
-                        stamps: [new MessageDelay('10 seconds')],
-                        transport: 'ozon-orders',
-                    );
-
-                    return;
-                }
-            }
+            return;
         }
+
+
+        /**
+         * Бросаем сообщение для скачивания стикера OZON
+         */
+
+        $CreateTaskOzonStickersMessage = new CreateTaskOzonStickersMessage(
+            $OzonTokenUid,
+            $OrderEvent->getOrderNumber(),
+        );
+
+        $this->MessageDispatch->dispatch(
+            message: $CreateTaskOzonStickersMessage,
+            stamps: [new MessageDelay('10 seconds')],
+            transport: 'ozon-orders',
+        );
+
+
+        return;
 
 
         /**
