@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-/** Получаем стикер маркировки заказов Ozon */
+/** Получаем стикер маркировки заказов Ozon в сборочном листе */
 #[AsMessageHandler(priority: 0)]
 final readonly class ProductStockPartDispatcher
 {
