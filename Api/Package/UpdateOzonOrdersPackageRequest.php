@@ -65,6 +65,11 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             throw new InvalidArgumentException('Invalid Argument $products');
         }
 
+        if(false === $this->isOrders())
+        {
+            return true;
+        }
+
         $order = str_replace('O-', '', (string) $order);
 
         $data = [

@@ -46,6 +46,11 @@ final class UpdateOzonOrdersDeliveryRequest extends Ozon
             return true;
         }
 
+        if(false === $this->isOrders())
+        {
+            return true;
+        }
+
         $order = str_replace('O-', '', (string) $order);
 
         $data['posting_number'] = [$order];
