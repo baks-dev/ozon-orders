@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,7 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
-use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
 use BaksDev\Ozon\Orders\UseCase\New\User\Delivery\Field\OrderDeliveryFieldDTO;
 use BaksDev\Ozon\Orders\UseCase\New\User\UserProfile\Value\ValueDTO;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
@@ -369,7 +369,7 @@ final readonly class NewOzonOrderScheduleHandler
                 /**
                  * Получаем события продукции
                  *
-                 * @var NewOrderProductDTO $product
+                 * @var NewOzonOrderProductDTO $product
                  */
                 foreach($OzonMarketOrderDTO->getProduct() as $product)
                 {

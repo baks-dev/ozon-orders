@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Messenger\SplitOrders\SplitOzonOrderMessage;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
-use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
 use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
@@ -88,7 +88,7 @@ class SplitOzonOrdersDispatcherTest extends KernelTestCase
         $products = null;
 
         /**
-         * @var NewOrderProductDTO $NewOrderProductDTO
+         * @var NewOzonOrderProductDTO $NewOrderProductDTO
          * Разделяем заказа на отдельные машиноместа
          */
         foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)

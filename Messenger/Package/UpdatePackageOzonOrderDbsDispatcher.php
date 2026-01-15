@@ -44,7 +44,7 @@ use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
-use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
@@ -202,7 +202,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
         $package = null;
 
         /**
-         * @var NewOrderProductDTO $NewOrderProductDTO
+         * @var NewOzonOrderProductDTO $NewOrderProductDTO
          */
         foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)
         {

@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\SplitOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
-use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -97,7 +97,7 @@ final readonly class SplitOzonOrderDispatcher
         /**
          * Подсчет общего количества продукта в заказе
          *
-         * @var NewOrderProductDTO $NewOrderProductDTO
+         * @var NewOzonOrderProductDTO $NewOrderProductDTO
          */
 
         $total = 0;
@@ -119,7 +119,7 @@ final readonly class SplitOzonOrderDispatcher
         $products = null;
 
         /**
-         * @var NewOrderProductDTO $NewOrderProductDTO
+         * @var NewOzonOrderProductDTO $NewOrderProductDTO
          * Разделяем заказа на отдельные машиноместа
          */
         foreach($NewOzonOrderDTO->getProduct() as $NewOrderProductDTO)

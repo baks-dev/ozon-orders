@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@ use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\ExistsOrderNumber\ExistsOrderNumberInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
+use BaksDev\Ozon\Orders\UseCase\New\Products\Items\NewOzonOrderProductItemDTO;
 use BaksDev\Users\Profile\UserProfile\Entity\UserProfile;
 use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\UserProfileHandler;
 use Doctrine\ORM\EntityManagerInterface;
@@ -97,6 +98,29 @@ final class NewOzonOrderHandler extends AbstractHandler
             $UserProfileEvent = $UserProfile->getEvent();
             $OrderUserDTO->setProfile($UserProfileEvent);
         }
+
+
+        /**
+         * Items
+         * Создаем единицу продукта по количеству продукта в заказе
+         */
+        foreach($command->getProduct() as $product)
+        {
+            for($i = 0; $i < $product->getPrice()->getTotal(); $i++)
+            {
+                $item = new NewOzonOrderProductItemDTO();
+
+                /**
+                 * Присваиваем цену из продукта в заказе
+                 */
+                $item->getPrice()
+                    ->setPrice($product->getPrice()->getPrice())
+                    ->setCurrency($product->getPrice()->getCurrency());
+
+                $product->addItem($item);
+            }
+        }
+
 
 
         $this

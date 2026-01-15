@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\Invariable\NewOrderInvariable;
-use BaksDev\Ozon\Orders\UseCase\New\Products\NewOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
@@ -81,7 +81,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Коллекция продукции в заказе
      *
-     * @var ArrayCollection<int, NewOrderProductDTO> $product
+     * @var ArrayCollection<int, NewOzonOrderProductDTO> $product
      */
     #[Assert\Valid]
     private ArrayCollection $product;
@@ -214,7 +214,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         /** Продукция */
         foreach($order['products'] as $item)
         {
-            $NewOrderProductDTO = new NewOrderProductDTO($item['offer_id']);
+            $NewOrderProductDTO = new NewOzonOrderProductDTO($item['offer_id']);
             $NewOrderProductDTO->setSku($item['sku']);
 
             $NewOrderPriceDTO = $NewOrderProductDTO->getPrice();
@@ -281,7 +281,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Коллекция продукции в заказе
      *
-     * @return  ArrayCollection<int, NewOrderProductDTO>
+     * @return  ArrayCollection<int, NewOzonOrderProductDTO>
      */
     public function getProduct(): ArrayCollection
     {
@@ -293,9 +293,9 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->product = $product;
     }
 
-    public function addProduct(NewOrderProductDTO $product): void
+    public function addProduct(NewOzonOrderProductDTO $product): void
     {
-        $filter = $this->product->filter(function(NewOrderProductDTO $element) use ($product) {
+        $filter = $this->product->filter(function(NewOzonOrderProductDTO $element) use ($product) {
             return $element->getArticle() === $product->getArticle();
         });
 
@@ -305,7 +305,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         }
     }
 
-    public function removeProduct(NewOrderProductDTO $product): void
+    public function removeProduct(NewOzonOrderProductDTO $product): void
     {
         $this->product->removeElement($product);
     }
