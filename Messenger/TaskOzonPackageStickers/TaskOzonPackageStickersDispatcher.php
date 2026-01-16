@@ -84,7 +84,7 @@ final readonly class TaskOzonPackageStickersDispatcher
             if(false === $isErrorRead)
             {
                 $this->logger->info(sprintf('%s: получили стикер маркировки заказа', $message->getNumber()));
-                // return;
+                return;
             }
 
             /** Если стикер не читается - удаляем кеш и пробуем получить по заданию */
