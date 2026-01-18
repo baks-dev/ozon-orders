@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -145,6 +145,11 @@ final readonly class CancelOzonOrdersScheduleHandler
                         ->addData(['profile' => false]) // Скрывает у всех
                         ->addData(['identifier' => (string) $Order->getId()])
                         ->send('remove');
+
+                    $this->publish
+                        ->addData(['profile' => false]) // Скрывает у всех
+                        ->addData(['order' => (string) $Order->getId()])
+                        ->send('orders');
 
                     $Deduplicator->save();
 
