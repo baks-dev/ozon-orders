@@ -39,7 +39,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /** Получаем стикер маркировки заказов Ozon в сборочном листе */
 #[AsMessageHandler(priority: 0)]
-final readonly class ProductStockPartDispatcher
+final readonly class ProductStockPartOzonOrdersDispatcher
 {
     public function __construct(
         #[Target('productsSignLogger')] private LoggerInterface $logger,
@@ -54,6 +54,11 @@ final readonly class ProductStockPartDispatcher
         /** Получаем стикеры маркировки заказа на продукцию */
         foreach($message->getOrders() as $order)
         {
+            if(false === str_starts_with($order->number, 'O-'))
+            {
+                continue;
+            }
+
             $number = str_replace('O-', '', (string) $order->number);
 
             $ozonSticker = $cache->getItem($number)->get();
@@ -64,8 +69,8 @@ final readonly class ProductStockPartDispatcher
                 continue;
             }
 
-            $this->logger->critical(
-                sprintf('ozon-orders: стикер маркировки заказа %s не найден', $order->number),
+            $this->logger->warning(
+                sprintf('ozon-orders: стикер маркировки заказа %s в упаковке не найден', $order->number),
                 [self::class.':'.__LINE__],
             );
         }
