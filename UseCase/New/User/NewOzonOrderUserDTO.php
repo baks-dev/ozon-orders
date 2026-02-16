@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,11 +26,15 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\UseCase\New\User;
 
 use BaksDev\Orders\Order\Entity\User\OrderUserInterface;
+use BaksDev\Ozon\Orders\UseCase\New\User\Delivery\NewOzonOrderDeliveryDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\Payment\NewOzonOrderPaymentDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\UserAccount\NewOzonUserAccountDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\UserProfile\NewOzonUserProfileDTO;
 use BaksDev\Users\Profile\UserProfile\Type\Event\UserProfileEventUid;
 use BaksDev\Users\User\Type\Id\UserUid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class OrderUserDTO implements OrderUserInterface
+final class NewOzonOrderUserDTO implements OrderUserInterface
 {
     /* Пользователь  */
 
@@ -39,7 +43,7 @@ final class OrderUserDTO implements OrderUserInterface
     private ?UserUid $usr = null;
 
     /** Новый Аккаунт */
-    private UserAccount\UserAccountDTO $userAccount;
+    private NewOzonUserAccountDTO $userAccount;
 
     /* Профиль пользователя */
 
@@ -48,24 +52,24 @@ final class OrderUserDTO implements OrderUserInterface
     private ?UserProfileEventUid $profile = null;
 
     /** Новый профиль пользователя */
-    private UserProfile\UserProfileDTO $userProfile;
+    private NewOzonUserProfileDTO $userProfile;
 
 
     /** Способ оплаты */
     #[Assert\Valid]
-    private Payment\OrderPaymentDTO $payment;
+    private NewOzonOrderPaymentDTO $payment;
 
     /** Способ доставки */
     #[Assert\Valid]
-    private Delivery\OrderDeliveryDTO $delivery;
+    private NewOzonOrderDeliveryDTO $delivery;
 
 
     public function __construct()
     {
-        $this->userAccount = new UserAccount\UserAccountDTO();
-        $this->userProfile = new UserProfile\UserProfileDTO();
-        $this->payment = new Payment\OrderPaymentDTO();
-        $this->delivery = new Delivery\OrderDeliveryDTO();
+        $this->userAccount = new NewOzonUserAccountDTO();
+        $this->userProfile = new NewOzonUserProfileDTO();
+        $this->payment = new NewOzonOrderPaymentDTO();
+        $this->delivery = new NewOzonOrderDeliveryDTO();
 
         $this->usr = new UserUid();
     }
@@ -103,7 +107,7 @@ final class OrderUserDTO implements OrderUserInterface
 
     /** Новый Аккаунт */
 
-    public function getUserAccount(): ?UserAccount\UserAccountDTO
+    public function getUserAccount(): ?NewOzonUserAccountDTO
     {
         //		if(!$this->user)
         //		{
@@ -114,7 +118,7 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setUserAccount(?UserAccount\UserAccountDTO $userAccount): self
+    public function setUserAccount(?NewOzonUserAccountDTO $userAccount): self
     {
         $this->userAccount = $userAccount;
         return $this;
@@ -123,7 +127,7 @@ final class OrderUserDTO implements OrderUserInterface
 
     /** Новый профиль пользователя */
 
-    public function getUserProfile(): ?UserProfile\UserProfileDTO
+    public function getUserProfile(): ?NewOzonUserProfileDTO
     {
         //		if(!$this->profile)
         //		{
@@ -134,7 +138,7 @@ final class OrderUserDTO implements OrderUserInterface
     }
 
 
-    public function setUserProfile(?UserProfile\UserProfileDTO $userProfile): self
+    public function setUserProfile(?NewOzonUserProfileDTO $userProfile): self
     {
         $this->userProfile = $userProfile;
         return $this;
@@ -143,13 +147,13 @@ final class OrderUserDTO implements OrderUserInterface
 
     /** Способ оплаты */
 
-    public function getPayment(): Payment\OrderPaymentDTO
+    public function getPayment(): NewOzonOrderPaymentDTO
     {
         return $this->payment;
     }
 
 
-    public function setPayment(Payment\OrderPaymentDTO $payment): self
+    public function setPayment(NewOzonOrderPaymentDTO $payment): self
     {
         $this->payment = $payment;
         return $this;
@@ -158,13 +162,13 @@ final class OrderUserDTO implements OrderUserInterface
 
     /** Способ доставки */
 
-    public function getDelivery(): Delivery\OrderDeliveryDTO
+    public function getDelivery(): NewOzonOrderDeliveryDTO
     {
         return $this->delivery;
     }
 
 
-    public function setDelivery(Delivery\OrderDeliveryDTO $delivery): self
+    public function setDelivery(NewOzonOrderDeliveryDTO $delivery): self
     {
         $this->delivery = $delivery;
         return $this;

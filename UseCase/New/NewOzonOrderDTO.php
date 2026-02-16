@@ -41,8 +41,10 @@ use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentDbsOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileDbsOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
-use BaksDev\Ozon\Orders\UseCase\New\Invariable\NewOrderInvariable;
+use BaksDev\Ozon\Orders\UseCase\New\Invariable\NewOzonOrderInvariableDTO;
+use BaksDev\Ozon\Orders\UseCase\New\Posting\NewOzonOrderPostingDTO;
 use BaksDev\Ozon\Orders\UseCase\New\Products\NewOzonOrderProductDTO;
+use BaksDev\Ozon\Orders\UseCase\New\User\NewOzonOrderUserDTO;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Currency\Type\Currency;
@@ -62,14 +64,14 @@ final class NewOzonOrderDTO implements OrderEventInterface
     #[Assert\Uuid]
     private ?OrderEventUid $id = null;
 
-    /**
-     * Идентификатор заказа Ozon (для дедубликтора)
-     */
-    private string $number;
-
     /** Постоянная величина */
     #[Assert\Valid]
-    private NewOrderInvariable $invariable;
+    private NewOzonOrderInvariableDTO $invariable;
+
+
+    #[Assert\Valid]
+    private NewOzonOrderPostingDTO $posting;
+
 
     /** Дата заказа */
     #[Assert\NotBlank]
@@ -88,7 +90,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
     /** Пользователь */
     #[Assert\Valid]
-    private User\OrderUserDTO $usr;
+    private NewOzonOrderUserDTO $usr;
 
 
     /** Комментарий к заказу */
@@ -109,14 +111,16 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $this->created = (new DateTimeImmutable($order['in_process_at']))->setTimezone($timezone);
 
         /** Постоянная величина */
-        $this->invariable = new NewOrderInvariable()
+        $this->invariable = new NewOzonOrderInvariableDTO()
             ->setCreated($this->created) // Дата и время начала обработки отправления.
             ->setProfile($profile) // идентификатор профиля бизнес-аккаунта
             ->setToken($identifier) // идентификатор токена маркетплейса
-            ->setNumber('O-'.$order['posting_number']) // помечаем заказ префиксом O
+            ->setNumber('O-'.$order['order_number']) // помечаем заказ префиксом O
         ;
 
-        $this->number = $order['order_number']; // помечаем заказ для дедубликатора
+        /** Номер отправления */
+        $this->posting = new NewOzonOrderPostingDTO()
+            ->setValue('O-'.$order['posting_number']);
 
         /** Определяем статус заказа */
         $yandexStatus = match ($order['status'])
@@ -126,11 +130,10 @@ final class NewOzonOrderDTO implements OrderEventInterface
             default => OrderStatusNew::class,
         };
 
-
         $this->status = new OrderStatus($yandexStatus);
 
         $this->product = new ArrayCollection();
-        $this->usr = new User\OrderUserDTO();
+        $this->usr = new NewOzonOrderUserDTO();
 
         $OrderDeliveryDTO = $this->usr->getDelivery();
         $OrderPaymentDTO = $this->usr->getPayment();
@@ -268,15 +271,10 @@ final class NewOzonOrderDTO implements OrderEventInterface
         return $this;
     }
 
-
-    /**
-     * Number
-     */
-    public function getOrderNumber(): string
+    public function getPostingNumber(): string
     {
-        return $this->number;
+        return $this->posting->getValue();
     }
-
 
     /**
      * Коллекция продукции в заказе
@@ -313,7 +311,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Usr
      */
-    public function getUsr(): User\OrderUserDTO
+    public function getUsr(): NewOzonOrderUserDTO
     {
         return $this->usr;
     }
@@ -329,7 +327,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     /**
      * Invariable
      */
-    public function getInvariable(): NewOrderInvariable
+    public function getInvariable(): NewOzonOrderInvariableDTO
     {
         return $this->invariable;
     }

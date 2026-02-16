@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ use BaksDev\Auth\Email\Type\Email\AccountEmail;
 use BaksDev\Auth\Email\Type\Event\AccountEventUid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class UserAccountDTO implements AccountEventInterface
+final class NewOzonUserAccountDTO implements AccountEventInterface
 {
     /** UserEvent ID */
     #[Assert\IsNull]
@@ -54,13 +54,13 @@ final class UserAccountDTO implements AccountEventInterface
     private readonly string $passwordPlain;
 
     #[Assert\Valid]
-    private Status\UserAccountStatusDTO $status;
+    private Status\NewOzonUserAccountStatusDTO $status;
 
 
     public function __construct()
     {
         $this->id = null;
-        $this->status = new Status\UserAccountStatusDTO();
+        $this->status = new Status\NewOzonUserAccountStatusDTO();
 
     }
 
@@ -91,7 +91,7 @@ final class UserAccountDTO implements AccountEventInterface
     /** Статус */
 
 
-    public function getStatus(): Status\UserAccountStatusDTO
+    public function getStatus(): Status\NewOzonUserAccountStatusDTO
     {
         return $this->status;
     }
