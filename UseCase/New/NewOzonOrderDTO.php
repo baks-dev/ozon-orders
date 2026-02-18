@@ -340,6 +340,11 @@ final class NewOzonOrderDTO implements OrderEventInterface
         return $this->buyer;
     }
 
+    public function getPosting(): NewOzonOrderPostingDTO
+    {
+        return $this->posting;
+    }
+
     /**
      * Связанные отправления — те, на которое было разделено родительское отправление при сборке.
      */

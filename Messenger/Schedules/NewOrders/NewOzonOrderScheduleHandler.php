@@ -153,7 +153,7 @@ final readonly class NewOzonOrderScheduleHandler
                 /** Идентификатор заказа (для дедубликатора) */
 
                 // $number = $OzonMarketOrderDTO->getOrderNumber();
-                $number = $OzonMarketOrderDTO->getInvariable()->getNumber();
+                $number = $OzonMarketOrderDTO->getPostingNumber();
 
                 $Deduplicator = $this->Deduplicator
                     ->namespace('ozon-orders')
@@ -229,7 +229,7 @@ final readonly class NewOzonOrderScheduleHandler
                     $this->logger->critical(sprintf(
                         'ozon-orders: Пользователь профиля %s для заказа %s не найден',
                         $NewOrderInvariable->getProfile(),
-                        $NewOrderInvariable->getNumber(),
+                        $OzonMarketOrderDTO->getPostingNumber(),
                     ), [self::class.':'.__LINE__]);
 
                     continue;
@@ -304,7 +304,8 @@ final readonly class NewOzonOrderScheduleHandler
                     /** Получаем контактную информацию клиента */
                     $InfoOzonOrderDTO = $this->GetOzonOrderInfoRequest
                         ->forTokenIdentifier($OzonTokenUid)
-                        ->find($NewOrderInvariable->getNumber());
+                        //->find($NewOrderInvariable->getNumber())
+                        ->find($OzonMarketOrderDTO->getPostingNumber());
 
                     /** Профиль пользователя и Идентификатор типа профиля */
                     $UserProfileDTO = $OzonMarketOrderDTO->getUsr()->getUserProfile();
@@ -395,7 +396,7 @@ final readonly class NewOzonOrderScheduleHandler
                 if(false === ($Order instanceof Order))
                 {
                     $this->logger->critical(
-                        sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $NewOrderInvariable->getNumber()),
+                        sprintf('ozon-orders: Ошибка %s при добавлении нового заказа %s', $Order, $OzonMarketOrderDTO->getPostingNumber()),
                         [$message, self::class.':'.__LINE__],
                     );
 
@@ -403,7 +404,7 @@ final readonly class NewOzonOrderScheduleHandler
                 }
 
                 $this->logger->info(
-                    sprintf('Добавили новый заказ %s', $NewOrderInvariable->getNumber()),
+                    sprintf('Добавили новый заказ %s', $OzonMarketOrderDTO->getPostingNumber()),
                     [$message, self::class.':'.__LINE__],
                 );
 

@@ -63,7 +63,7 @@ final class NewOzonOrderHandler extends AbstractHandler
             return 'Заказ не является в статусе New «Новый»';
         }
 
-        $isExists = $this->existsOrderNumber->isExists($command->getInvariable()->getNumber());
+        $isExists = $this->existsOrderNumber->isExists($command->getPostingNumber());
 
         if($isExists)
         {
