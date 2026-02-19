@@ -205,7 +205,7 @@ final readonly class NewOzonOrderScheduleHandler
                         $SplitOzonOrderMessage = new SplitOzonOrderMessage(
                             $UserProfileUid,
                             $OzonTokenUid,
-                            $OzonMarketOrderDTO->getInvariable()->getNumber(),
+                            $OzonMarketOrderDTO->getPostingNumber(),
                         );
 
                         $this->MessageDispatch->dispatch(

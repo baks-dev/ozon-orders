@@ -210,13 +210,13 @@ final class UpdatePackageOzonOrderFbsDispatcher
          */
         $NewOzonOrderDTO = $this->getOzonOrderInfoRequest
             ->forTokenIdentifier($OzonTokenUid)
-            ->find($OrderEvent->getOrderNumber());
+            ->find($OrderEvent->getPostingNumber());
 
         if(false === ($NewOzonOrderDTO instanceof NewOzonOrderDTO))
         {
             $this->Logger->critical(
                 message: sprintf('ozon-orders: не удалось получить информацию о заказе %s',
-                    $OrderEvent->getOrderNumber(),
+                    $OrderEvent->getPostingNumber(),
                 ),
                 context: [
                     self::class.':'.__LINE__,
@@ -280,7 +280,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
             ->updateOzonOrdersPackageRequest
             ->forTokenIdentifier($OzonTokenUid)
             ->products($package)
-            ->package($OrderEvent->getOrderNumber());
+            ->package($OrderEvent->getPostingNumber());
 
         /** Если возвращается TRUE - не отправляем больше запросы */
         if(true === $UpdateOzonOrdersPackageDTO)
@@ -294,7 +294,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
         {
             $this->Logger->critical(
                 message: sprintf('ozon-orders: Пробуем позже отправить заказ %s с продуктом арт: %s на упаковку',
-                    $OrderEvent->getOrderNumber(),
+                    $OrderEvent->getPostingNumber(),
                     $NewOrderProductDTO->getArticle(),
                 ),
                 context: [
@@ -319,7 +319,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
 
         $CreateTaskOzonStickersMessage = new CreateTaskOzonStickersMessage(
             $OzonTokenUid,
-            $OrderEvent->getOrderNumber(),
+            $OrderEvent->getPostingNumber(),
         );
 
         $this->MessageDispatch->dispatch(

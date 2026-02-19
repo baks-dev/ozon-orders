@@ -122,7 +122,6 @@ final class NewOzonOrderHandler extends AbstractHandler
         }
 
 
-
         $this
             ->setCommand($command)
             ->preEventPersistOrUpdate(Order::class, OrderEvent::class);
@@ -136,10 +135,12 @@ final class NewOzonOrderHandler extends AbstractHandler
         $this->flush();
 
         /* Отправляем сообщение в шину */
-        $this->messageDispatch->dispatch(
-            message: new OrderMessage($this->main->getId(), $this->main->getEvent(), $command->getEvent()),
-            transport: 'orders-order'
-        );
+        $this->messageDispatch
+            ->addClearCacheOther('orders-order-new')
+            ->dispatch(
+                message: new OrderMessage($this->main->getId(), $this->main->getEvent(), $command->getEvent()),
+                transport: 'orders-order',
+            );
 
         return $this->main;
     }
