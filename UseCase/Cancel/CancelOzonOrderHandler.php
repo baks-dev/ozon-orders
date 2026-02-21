@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -39,53 +39,56 @@ use BaksDev\Orders\Order\UseCase\Admin\Status\OrderStatusHandler;
 
 final class CancelOzonOrderHandler // extends AbstractHandler
 {
-
     public function __construct(
         private OrderStatusHandler $orderStatusHandler,
         private CurrentOrderEventByNumberInterface $currentOrderEventByNumber,
     ) {}
 
     /** @see CancelOzonOrderDTO */
-    public function handle(
-        CancelOzonOrderDTO|OrderEventInterface $command
-    ): Order|string|false
+    public function handle(CancelOzonOrderDTO|OrderEventInterface $command): array|false
     {
 
-        /** Получаем заказ по номеру */
-        $OrderEvent = $this->currentOrderEventByNumber->find($command->getPostingNumber());
+        $orders = [];
 
-        if(false === ($OrderEvent instanceof OrderEvent))
+        /** Получаем все отправления по номеру заказа */
+        $results = $this->currentOrderEventByNumber->findAll($command->getPostingNumber());
+
+        if(true === empty($results))
         {
             return false;
         }
 
-        $EditOrderDTO = new EditOrderDTO();
-        $OrderEvent->getDto($EditOrderDTO);
-
-        if(
-            true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class)
-            || true === $OrderEvent->isDanger()
-        )
+        foreach($results as $OrderEvent)
         {
-            return false;
+            $EditOrderDTO = new EditOrderDTO();
+            $OrderEvent->getDto($EditOrderDTO);
+
+            if(
+                true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class)
+                || true === $OrderEvent->isDanger()
+            )
+            {
+                continue;
+            }
+
+            /**
+             * Делаем отмену заказа
+             */
+
+            $OrderEvent->getDto($command);
+
+            if(
+                true === $OrderEvent->isStatusEquals(OrderStatusNew::class)
+                || true === $OrderEvent->isStatusEquals(OrderStatusUnpaid::class)
+            )
+            {
+                /** Автоматически отменяем «Новый» либо «Не оплаченный» заказ */
+                $command->cancelOrder();
+            }
+
+            $orders[] = $this->orderStatusHandler->handle($command, false);
         }
 
-
-        /**
-         * Делаем отмену заказа
-         */
-
-        $OrderEvent->getDto($command);
-
-        if(
-            true === $OrderEvent->isStatusEquals(OrderStatusNew::class)
-            || true === $OrderEvent->isStatusEquals(OrderStatusUnpaid::class)
-        )
-        {
-            /** Автоматически отменяем «Новый» либо «Не оплаченный» заказ */
-            $command->cancelOrder();
-        }
-
-        return $this->orderStatusHandler->handle($command, false);
+        return $orders;
     }
 }

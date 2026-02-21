@@ -109,7 +109,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                     ->namespace('ozon-orders')
                     ->expiresAfter('1 day')
                     ->deduplication([
-                        $CancelOzonOrderDTO->getPostingNumber(),
+                        $CancelOzonOrderDTO->getOrderNumber(),
                         self::class,
                     ]);
 
@@ -117,7 +117,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                 if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
                 {
                     $this->logger->info(
-                        sprintf('%s: Заказ уже отменен', $CancelOzonOrderDTO->getPostingNumber()),
+                        sprintf('%s: Заказ уже отменен', $CancelOzonOrderDTO->getOrderNumber()),
                         [
                             self::class.':'.__LINE__,
                             'token' => (string) $OzonTokenUid,
@@ -128,12 +128,12 @@ final readonly class CancelOzonOrdersScheduleHandler
                     continue;
                 }
 
-                $Order = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
+                $arrOrdersCancel = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
 
-                if($Order instanceof Order)
+                if(false === empty($arrOrdersCancel))
                 {
                     $this->logger->info(
-                        sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getPostingNumber()),
+                        sprintf('Отменили заказ %s', $CancelOzonOrderDTO->getOrderNumber()),
                         [
                             self::class.':'.__LINE__,
                             'token' => (string) $OzonTokenUid,
@@ -141,32 +141,35 @@ final readonly class CancelOzonOrdersScheduleHandler
                     );
 
                     /** Скрываем идентификатор у всех пользователей */
-                    $this->publish
-                        ->addData(['profile' => false]) // Скрывает у всех
-                        ->addData(['identifier' => (string) $Order->getId()])
-                        ->send('remove');
 
-                    $this->publish
-                        ->addData(['profile' => false]) // Скрывает у всех
-                        ->addData(['order' => (string) $Order->getId()])
-                        ->send('orders');
+                    foreach($arrOrdersCancel as $Order)
+                    {
+                        $this->publish
+                            ->addData(['profile' => false]) // Скрывает у всех
+                            ->addData(['identifier' => (string) $Order->getId()])
+                            ->send('remove');
+
+                        $this->publish
+                            ->addData(['profile' => false]) // Скрывает у всех
+                            ->addData(['order' => (string) $Order->getId()])
+                            ->send('orders');
+                    }
 
                     $Deduplicator->save();
 
                     continue;
                 }
 
-                if($Order !== false)
-                {
-                    $this->logger->critical(
-                        sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getPostingNumber()),
-                        [
-                            self::class.':'.__LINE__,
-                            'handle' => $Order,
-                            'token' => (string) $OzonTokenUid,
-                        ],
-                    );
-                }
+                $this->logger->critical(
+                    sprintf('ozon-orders: Ошибка при отмене заказа %s', $CancelOzonOrderDTO->getOrderNumber()),
+                    [
+                        self::class.':'.__LINE__,
+                        'token' => (string) $OzonTokenUid,
+                    ],
+                );
+
+                $Deduplicator->save();
+
             }
         }
 
