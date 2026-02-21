@@ -51,7 +51,7 @@ final class CancelOzonOrderHandler // extends AbstractHandler
         $orders = [];
 
         /** Получаем все отправления по номеру заказа */
-        $results = $this->currentOrderEventByNumber->findAll($command->getPostingNumber());
+        $results = $this->currentOrderEventByNumber->findAll($command->getOrderNumber());
 
         if(true === empty($results))
         {
