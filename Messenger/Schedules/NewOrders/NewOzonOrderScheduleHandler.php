@@ -217,7 +217,6 @@ final readonly class NewOzonOrderScheduleHandler
                     }
                 }
 
-
                 /**
                  * Присваиваем идентификатор пользователя @UserUid по идентификатору профиля @UserProfileUid
                  */
