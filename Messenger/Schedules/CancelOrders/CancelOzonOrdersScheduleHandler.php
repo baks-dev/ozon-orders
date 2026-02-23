@@ -113,18 +113,8 @@ final readonly class CancelOzonOrdersScheduleHandler
                         self::class,
                     ]);
 
-                // Если передан интервал - не проверяем дедубликатор
-                if(is_null($message->getInterval()) && $Deduplicator->isExecuted())
+                if($Deduplicator->isExecuted())
                 {
-                    $this->logger->info(
-                        sprintf('%s: Заказ уже отменен', $CancelOzonOrderDTO->getOrderNumber()),
-                        [
-                            self::class.':'.__LINE__,
-                            'token' => (string) $OzonTokenUid,
-                            var_export($message, true),
-                        ],
-                    );
-
                     continue;
                 }
 
