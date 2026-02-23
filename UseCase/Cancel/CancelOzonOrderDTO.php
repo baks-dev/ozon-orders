@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,7 @@ final class CancelOzonOrderDTO implements OrderEventInterface
         $this->comment = sprintf('Ozon Seller: %s', $order['cancellation']['cancel_reason']);
 
         /** Идентификаторы заказа и отправления */
-        $this->order = $order['order_number'];
+        $this->order = 'O-'.$order['order_number'];
         $this->posting = 'O-'.$order['posting_number'];
     }
 
