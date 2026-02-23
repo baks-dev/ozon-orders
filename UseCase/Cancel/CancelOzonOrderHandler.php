@@ -32,6 +32,7 @@ use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\CurrentOrderNumber\CurrentOrderEventByNumberInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCanceled;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCompleted;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusMarketplace;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusUnpaid;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
@@ -65,7 +66,9 @@ final class CancelOzonOrderHandler // extends AbstractHandler
 
             if(
                 true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class)
+                || true === $OrderEvent->isStatusEquals(OrderStatusMarketplace::class)
                 || true === $OrderEvent->isDanger()
+
             )
             {
                 continue;
