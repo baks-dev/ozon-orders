@@ -86,6 +86,16 @@ final class CancelOzonOrderHandler // extends AbstractHandler
                 $command->cancelOrder();
             }
 
+
+            /**
+             * Если заказ Completed «Выполнен» - переносим его в статус Marketplace «Ожидается возврат службой маркетплейса»
+             */
+            if(true === $OrderEvent->isStatusEquals(OrderStatusCompleted::class))
+            {
+                $command->returnOrderMarketplace();
+            }
+
+
             $orders[] = $this->orderStatusHandler->handle($command, false);
         }
 
