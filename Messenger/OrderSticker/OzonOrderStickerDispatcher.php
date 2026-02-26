@@ -76,6 +76,7 @@ final readonly class OzonOrderStickerDispatcher
             ->forOrder($message->getId())
             ->find();
 
+
         if(false === ($OrderEvent instanceof OrderEvent))
         {
             $this->Logger->critical(
@@ -96,102 +97,34 @@ final readonly class OzonOrderStickerDispatcher
          * Получаем стикеры Ozon
          */
 
-        $Deduplicator = $this->Deduplicator
-            ->namespace('order-sticker')
-            ->expiresAfter('1 minute');
-
         $cache = $this->Cache->init('order-sticker');
 
 
-        /**
-         * @todo переделать на логику маркировки заказа на 1 заказ - 1 стикер
-         */
-        foreach($OrderEvent->getProduct() as $product)
+        $key = $OrderEvent->getPostingNumber();
+        $key = str_replace('O-', '', $key);
+        $ozonSticker = $cache->getItem($key)->get();
+
+        if(false === empty($ozonSticker))
         {
-            /** Если список идентификаторов отправлений пустой - пробуем определить по номеру заказа  */
-            if($product->getOrderPostings()->isEmpty())
-            {
-                $key = $OrderEvent->getOrderNumber();
-                $key = str_replace('O-', '', $key);
-                $ozonSticker = $cache->getItem($key)->get();
+            $message->addResult(number: $key, code: $ozonSticker);
 
-                if(false === empty($ozonSticker))
-                {
-                    $message->addResult(number: $key, code: $ozonSticker);
-                }
-
-                /**
-                 * Если стикер по заданию не найден - пробуем распечатать
-                 */
-
-                if($Deduplicator->isExecuted())
-                {
-                    return;
-                }
-
-                $this->print(
-                    new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
-                    $key, $message,
-                );
-
-                $Deduplicator
-                    ->deduplication([self::class, $key])
-                    ->save();
-
-                return;
-            }
-
-            /**
-             * @note Если стикер не получен - пробуем через время
-             * @deprecated Логика разделения заказа переделывается на разделение заказов на 1 машиноместо
-             * TODO: удалить (маркировки заказа на 1 заказ - 1 стикер)
-             */
-            foreach($product->getOrderPostings() as $orderPosting)
-            {
-                $key = $orderPosting->getPostingNumber();
-                $key = str_replace('O-', '', $key);
-                $ozonSticker = $cache->getItem($key)->get();
-
-                if(false === empty($ozonSticker))
-                {
-                    $message->addResult(number: $key, code: $ozonSticker);
-
-                    continue;
-                }
-
-                /**
-                 * Если стикер по заданию не найден - пробуем распечатать
-                 */
-
-                if($Deduplicator->isExecuted())
-                {
-                    return;
-                }
-
-                $this->print(
-                    new OzonTokenUid($OrderEvent->getOrderTokenIdentifier()),
-                    $key, $message,
-                );
-
-                $Deduplicator
-                    ->deduplication([self::class, $key])
-                    ->save();
-            }
+            return;
         }
-    }
 
-    /**
-     * Если стикер по заданию не найден - пробуем распечатать
-     */
-    private function print(OzonTokenUid $token, string $number, OrderStickerMessage $message): void
-    {
+        /**
+         * Если стикер по заданию не найден - пробуем распечатать запросив по API
+         */
+
+        $OzonTokenUid = new OzonTokenUid($OrderEvent->getOrderTokenIdentifier());
+
         $OzonSticker = $this->PrintOzonStickerRequest
-            ->forTokenIdentifier($token)
-            ->find($number);
+            ->forTokenIdentifier($OzonTokenUid)
+            ->find($key);
 
         if($OzonSticker)
         {
-            $message->addResult(number: $number, code: $OzonSticker);
+            $message->addResult(number: $key, code: $OzonSticker);
         }
     }
+
 }
