@@ -50,12 +50,14 @@ use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductBy
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Обновляем заказ Озон при отправке заказа на упаковку и разделяем заказ на машиноместо
  */
+#[Autoconfigure(public: true)]
 #[AsMessageHandler(priority: 8)]
 final readonly class UpdatePackageOzonOrderDbsDispatcher
 {

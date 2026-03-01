@@ -67,8 +67,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 /**
  * Получает список НОВЫХ сборочных заданий для создания НОВЫХ заказов (на каждый Ozon токен)
  */
-#[AsMessageHandler]
-#[Autoconfigure(shared: false)]
+#[Autoconfigure(public: true)]
+#[AsMessageHandler(priority: 0)]
 final readonly class NewOzonOrderScheduleHandler
 {
     public function __construct(

@@ -29,11 +29,13 @@ use BaksDev\Ozon\Api\Ozon;
 use DateInterval;
 use Exception;
 use Imagick;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Получить файл с этикетками
  */
+#[Autoconfigure(public: true)]
 final class GetOzonStickerTaskRequest extends Ozon
 {
     private string $number;

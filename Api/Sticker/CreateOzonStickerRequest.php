@@ -26,10 +26,12 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api\Sticker;
 
 use BaksDev\Ozon\Api\Ozon;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
 /**
  * Создать задание на формирование этикеток
  */
+#[Autoconfigure(public: true)]
 final class CreateOzonStickerRequest extends Ozon
 {
     /**
