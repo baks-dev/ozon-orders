@@ -112,6 +112,13 @@ final class CancelOzonOrderDTO implements OrderEventInterface
     /**
      * Danger
      */
+
+    public function orderDanger(): self
+    {
+        $this->danger = true;
+        return $this;
+    }
+
     public function getDanger(): bool
     {
         return $this->danger;

@@ -61,8 +61,8 @@ final class CancelOzonOrderHandler // extends AbstractHandler
 
         foreach($results as $OrderEvent)
         {
-            $EditOrderDTO = new EditOrderDTO();
-            $OrderEvent->getDto($EditOrderDTO);
+            //$EditOrderDTO = new EditOrderDTO();
+            //$OrderEvent->getDto($EditOrderDTO);
 
             if(
                 true === $OrderEvent->isStatusEquals(OrderStatusCanceled::class)
@@ -79,6 +79,7 @@ final class CancelOzonOrderHandler // extends AbstractHandler
              */
 
             $OrderEvent->getDto($command);
+            $command->orderDanger();
 
             if(
                 true === $OrderEvent->isStatusEquals(OrderStatusNew::class)
