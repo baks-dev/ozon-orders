@@ -84,6 +84,12 @@ final readonly class CancelOzonOrdersScheduleHandler
             return;
         }
 
+
+        $orderDeduplicator = $this->Deduplicator
+            ->namespace('ozon-orders')
+            ->expiresAfter('1 day');
+
+
         foreach($tokensByProfile as $OzonTokenUid)
         {
             $this->logger->info(
@@ -100,23 +106,21 @@ final readonly class CancelOzonOrdersScheduleHandler
                 ->interval($message->getInterval())
                 ->findAllCancel();
 
-
             /** @var CancelOzonOrderDTO $CancelOzonOrderDTO */
             foreach($orders as $CancelOzonOrderDTO)
             {
                 /** Индекс дедубдикации по номеру отправления */
-                $Deduplicator = $this->Deduplicator
-                    ->namespace('ozon-orders')
-                    ->expiresAfter('1 day')
-                    ->deduplication([
-                        $CancelOzonOrderDTO->getOrderNumber(),
-                        self::class,
-                    ]);
+                $orderDeduplicator->deduplication([
+                    $CancelOzonOrderDTO->getOrderNumber(),
+                    self::class,
+                ]);
 
-                if($Deduplicator->isExecuted())
+                if($orderDeduplicator->isExecuted())
                 {
                     continue;
                 }
+
+                $orderDeduplicator->save();
 
                 $arrOrdersCancel = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
 
@@ -145,8 +149,6 @@ final readonly class CancelOzonOrdersScheduleHandler
                             ->send('orders');
                     }
 
-                    $Deduplicator->save();
-
                     continue;
                 }
 
@@ -158,7 +160,7 @@ final readonly class CancelOzonOrdersScheduleHandler
                     ],
                 );
 
-                $Deduplicator->save();
+                $orderDeduplicator->save();
 
             }
         }
