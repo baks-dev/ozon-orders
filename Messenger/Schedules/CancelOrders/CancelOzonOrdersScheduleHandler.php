@@ -120,8 +120,6 @@ final readonly class CancelOzonOrdersScheduleHandler
                     continue;
                 }
 
-                $orderDeduplicator->save();
-
                 $arrOrdersCancel = $this->CancelOzonOrderHandler->handle($CancelOzonOrderDTO);
 
                 if(false === empty($arrOrdersCancel))
@@ -148,6 +146,8 @@ final readonly class CancelOzonOrdersScheduleHandler
                             ->addData(['order' => (string) $Order->getId()])
                             ->send('orders');
                     }
+
+                    $orderDeduplicator->save();
 
                     continue;
                 }
