@@ -51,7 +51,7 @@ final class GetOzonOrdersByStatusRequest extends Ozon
     {
         if(empty($interval))
         {
-            $this->interval = DateInterval::createFromDateString('30 minutes');
+            $this->interval = DateInterval::createFromDateString('1 hour');
             return $this;
         }
 
@@ -100,8 +100,8 @@ final class GetOzonOrdersByStatusRequest extends Ozon
 
         if(false === ($this->fromDate instanceof DateTimeImmutable))
         {
-            // Новые заказы за последние 30 минут (планировщик на каждую минуту)
-            $this->fromDate = $dateTimeNow->sub($this->interval ?? DateInterval::createFromDateString('30 minutes'));
+            // Новые заказы за последний час
+            $this->fromDate = $dateTimeNow->sub($this->interval ?? DateInterval::createFromDateString('1 hour'));
 
             /**
              * В 3 часа ночи получаем заказы за сутки
