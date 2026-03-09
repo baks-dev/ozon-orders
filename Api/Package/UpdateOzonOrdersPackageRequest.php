@@ -96,25 +96,25 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             );
 
             /** Если упаковка уже отправлена */
-            if($content['message'] === 'POSTING_ALREADY_SHIPPED')
+            if(str_contains(mb_strtolower($content['message']), 'posting_already_shipped'))
             {
                 return true;
             }
 
             /** Заказ отменен */
-            if($content['message'] === 'POSTING_ALREADY_CANCELLED')
+            if(str_contains(mb_strtolower($content['message']), 'posting_already_cancelled'))
             {
                 return true;
             }
 
             /** Заказу требуется указать Доп. информацию */
-            if($content['message'] === 'EXEMPLAR_INFO_NOT_FILLED_COMPLETELY')
+            if(str_contains(mb_strtolower($content['message']), 'exemplar_info_not_filled_completely'))
             {
                 return true;
             }
 
             /** Статус заказа уже изменился */
-            if($content['message'] === 'HAS_INCORRECT_STATUS')
+            if(str_contains(mb_strtolower($content['message']), 'has_incorrect_status'))
             {
                 return true;
             }
