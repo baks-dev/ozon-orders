@@ -19,6 +19,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
+ *
  */
 
 declare(strict_types=1);
@@ -28,17 +29,18 @@ namespace BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers;
 use BaksDev\Barcode\Reader\BarcodeRead;
 use BaksDev\Core\Cache\AppCacheInterface;
 use BaksDev\Ozon\Orders\Api\Sticker\PrintOzonStickerRequest;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Получает стикер отправления Ozon и кеширует на сутки для печати в формате JPEG
- * prev @see GetOzonPackageStickersDispatcher
  */
 #[AsMessageHandler(priority: 0)]
 final readonly class ProcessOzonPackageStickersDispatcher
 {
     public function __construct(
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private PrintOzonStickerRequest $printOzonStickerRequest,
         private AppCacheInterface $Cache,
         private BarcodeRead $BarcodeRead,
@@ -60,6 +62,14 @@ final readonly class ProcessOzonPackageStickersDispatcher
             /** Если стикер не читается - удаляем кеш для повторной попытки */
             if(true === $isErrorRead)
             {
+                $this->logger->warning(
+                    'ozon-orders: Ошибка чтения штрихкода при попытке распечатать',
+                    [
+                        self::class.':'.__LINE__,
+                        var_export($message, true)
+                    ]
+                );
+
                 $number = str_replace('O-', '', $message->getPostingNumber());
                 $cache = $this->Cache->init('order-sticker');
                 $cache->deleteItem($number);
