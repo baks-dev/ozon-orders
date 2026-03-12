@@ -28,7 +28,7 @@ namespace BaksDev\Ozon\Orders\Api\Exemplar;
 use BaksDev\Ozon\Api\Ozon;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
-#[Autoconfigure(public: true)]  /* TODO: удалить !!! */
+// #[Autoconfigure(public: true)]
 final class UpdateOzonOrdersExemplarRequest extends Ozon
 {
     private string|false $sign = false;

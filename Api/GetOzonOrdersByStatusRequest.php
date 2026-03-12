@@ -38,7 +38,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 /**
  * Информация о заказах
  */
-#[Autoconfigure(public: true)]
+// #[Autoconfigure(public: true)]
 final class GetOzonOrdersByStatusRequest extends Ozon
 {
     private ?DateTimeImmutable $fromDate = null;
