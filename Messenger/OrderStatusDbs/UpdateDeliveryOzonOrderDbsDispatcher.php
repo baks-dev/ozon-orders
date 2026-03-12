@@ -34,12 +34,14 @@ use BaksDev\Ozon\Orders\Api\UpdateOzonOrdersDeliveryRequest;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Обновляем заказ Озон DBS при доставке заказа клиенту
  */
+#[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 8)]
 final readonly class UpdateDeliveryOzonOrderDbsDispatcher
 {

@@ -59,8 +59,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 /**
  * Обновляем заказ Озон при отправке заказа на упаковку и разделяем заказ на машиноместо
  */
+#[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 8)]
-// #[Autoconfigure(public: true)]
 final class UpdatePackageOzonOrderFbsDispatcher
 {
     /** Общее количество продуктов в заказе  */

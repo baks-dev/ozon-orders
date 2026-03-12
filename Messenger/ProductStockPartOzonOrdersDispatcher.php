@@ -34,10 +34,12 @@ use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Products\Sign\Repository\ProductSignByOrder\ProductSignByOrderInterface;
 use BaksDev\Products\Stocks\Messenger\Part\ProductStockPartMessage;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /** Получаем стикер маркировки заказов Ozon в сборочном листе */
+#[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
 final readonly class ProductStockPartOzonOrdersDispatcher
 {

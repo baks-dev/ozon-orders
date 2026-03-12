@@ -34,10 +34,12 @@ use BaksDev\Ozon\Orders\Api\Sticker\GetOzonStickerTaskRequest;
 use BaksDev\Ozon\Orders\Messenger\ProcessOzonPackageStickers\ProcessOzonPackageStickersMessage;
 use BaksDev\Ozon\Type\Id\OzonTokenUid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /** Проверка задания на формирование этикетки и кеширует на сутки для печати в формате JPEG */
+#[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
 final readonly class TaskOzonPackageStickersDispatcher
 {

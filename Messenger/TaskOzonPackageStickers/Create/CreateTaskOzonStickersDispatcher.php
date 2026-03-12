@@ -31,6 +31,7 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Api\Sticker\CreateOzonStickerRequest;
 use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\TaskOzonPackageStickersMessage;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -38,6 +39,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Создаем задание на формирование стикера отправления
  * вызывается не раньше чем через 10 сек после упаковки
  */
+#[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
 final readonly class CreateTaskOzonStickersDispatcher
 {
