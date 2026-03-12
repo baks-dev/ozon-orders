@@ -19,7 +19,6 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
- *
  */
 
 declare(strict_types=1);
@@ -92,7 +91,7 @@ final class PrintOzonStickerRequest extends Ozon
             Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));
 
             $imagick = new Imagick();
-            $imagick->setResolution(200, 200); // DPI
+            $imagick->setResolution(400, 400); // DPI
 
             /** Одна страница, если передан один номер отправления */
             try
@@ -100,7 +99,7 @@ final class PrintOzonStickerRequest extends Ozon
                 $imagick->readImageBlob($ozonSticker.'[0]');
             }
 
-                /** Если с индексом 0 вознкла проблема - пробуем индекс 1 */
+                /** Если с индексом 0 возникла проблема - пробуем индекс 1 */
             catch(Exception)
             {
                 $imagick->readImageBlob($ozonSticker.'[1]');
