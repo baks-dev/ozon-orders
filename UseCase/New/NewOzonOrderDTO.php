@@ -240,6 +240,18 @@ final class NewOzonOrderDTO implements OrderEventInterface
         }
     }
 
+    public function addProduct(NewOzonOrderProductDTO $product): void
+    {
+        $filter = $this->product->filter(function(NewOzonOrderProductDTO $element) use ($product) {
+            return $element->getArticle() === $product->getArticle();
+        });
+
+        if($filter->isEmpty())
+        {
+            $this->product->add($product);
+        }
+    }
+
     /** @see OrderEvent */
     public function getEvent(): ?OrderEventUid
     {
@@ -260,15 +272,15 @@ final class NewOzonOrderDTO implements OrderEventInterface
         return $this->status;
     }
 
-    public function getStatusEquals(mixed $status): bool
-    {
-        return $this->status->equals($status);
-    }
-
     public function setStatus(OrderStatus|OrderStatusInterface|string $status): self
     {
         $this->status = new OrderStatus($status);
         return $this;
+    }
+
+    public function getStatusEquals(mixed $status): bool
+    {
+        return $this->status->equals($status);
     }
 
     public function getPostingNumber(): string
@@ -289,18 +301,6 @@ final class NewOzonOrderDTO implements OrderEventInterface
     public function setProduct(ArrayCollection $product): void
     {
         $this->product = $product;
-    }
-
-    public function addProduct(NewOzonOrderProductDTO $product): void
-    {
-        $filter = $this->product->filter(function(NewOzonOrderProductDTO $element) use ($product) {
-            return $element->getArticle() === $product->getArticle();
-        });
-
-        if($filter->isEmpty())
-        {
-            $this->product->add($product);
-        }
     }
 
     public function removeProduct(NewOzonOrderProductDTO $product): void

@@ -62,6 +62,11 @@ final class NewOzonUserProfileDTO implements UserProfileEventInterface
         return $this->id;
     }
 
+    public function getType(): ?TypeProfileUid
+    {
+        return $this->type;
+    }
+
     /** Тип профиля */
 
     public function setType(?TypeProfileUid $type): self
@@ -69,12 +74,6 @@ final class NewOzonUserProfileDTO implements UserProfileEventInterface
         $this->type = $type;
         return $this;
     }
-
-    public function getType(): ?TypeProfileUid
-    {
-        return $this->type;
-    }
-
 
     /** Информация профиля */
 

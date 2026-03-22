@@ -63,6 +63,15 @@ final class CreateOzonStickerRequest extends Ozon
         if($response->getStatusCode() === 429)
         {
             sleep(60);
+
+            $this->logger->critical(
+                sprintf(
+                    'ozon-orders: Ошибка %s при получении информации о стикере отправления на складе %s',
+                    $response->getStatusCode(), $this->getWarehouse(),
+                ),
+                [self::class.':'.__LINE__, $data],
+            );
+
             return false;
         }
 

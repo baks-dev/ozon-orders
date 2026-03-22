@@ -47,7 +47,7 @@ class CancelOzonOrdersScheduleHandlerDebugTest extends KernelTestCase
 
         /** @see CancelOzonOrdersScheduleMessage */
         $CancelOzonOrdersScheduleMessage = new CancelOzonOrdersScheduleMessage(
-            new UserProfileUid()
+            new UserProfileUid(),
         );
 
         $CancelOzonOrdersScheduleHandler($CancelOzonOrdersScheduleMessage);

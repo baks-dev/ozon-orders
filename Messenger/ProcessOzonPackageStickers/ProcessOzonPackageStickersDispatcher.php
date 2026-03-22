@@ -67,8 +67,8 @@ final readonly class ProcessOzonPackageStickersDispatcher
                     'ozon-orders: Ошибка чтения штрихкода при попытке распечатать',
                     [
                         self::class.':'.__LINE__,
-                        var_export($message, true)
-                    ]
+                        var_export($message, true),
+                    ],
                 );
 
                 $number = str_replace('O-', '', $message->getPostingNumber());

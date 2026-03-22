@@ -46,7 +46,7 @@ class NewOzonOrdersScheduleDebugTest extends KernelTestCase
 
         /** @see NewOzonOrdersScheduleHandlerDTO */
         $NewOzonOrdersScheduleMessage = new NewOzonOrdersScheduleMessage(
-            new UserProfileUid()
+            new UserProfileUid(),
         );
 
         $NewOzonOrderScheduleHandler($NewOzonOrdersScheduleMessage);

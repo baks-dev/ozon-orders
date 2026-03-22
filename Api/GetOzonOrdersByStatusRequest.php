@@ -67,6 +67,24 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         return $this;
     }
 
+    /** Заказы только в статусе "отменено" */
+    public function findAllCancel(): Generator|bool
+    {
+        $this->status = 'cancelled';
+
+        $orders = $this->findAll();
+
+        if(false === $orders)
+        {
+            return false;
+        }
+
+        foreach($orders as $order)
+        {
+            yield new CancelOzonOrderDTO($order);
+        }
+    }
+
     /**
      * Возвращает информацию последних заказах со статусом:
      *
@@ -162,24 +180,6 @@ final class GetOzonOrdersByStatusRequest extends Ozon
         }
 
         return $content['result']['postings'];
-    }
-
-    /** Заказы только в статусе "отменено" */
-    public function findAllCancel(): Generator|bool
-    {
-        $this->status = 'cancelled';
-
-        $orders = $this->findAll();
-
-        if(false === $orders)
-        {
-            return false;
-        }
-
-        foreach($orders as $order)
-        {
-            yield new CancelOzonOrderDTO($order);
-        }
     }
 
     /** Заказы только в статусе "ожидает упаковки" */
