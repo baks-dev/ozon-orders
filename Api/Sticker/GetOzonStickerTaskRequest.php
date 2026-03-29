@@ -35,7 +35,7 @@ use Symfony\Contracts\Cache\ItemInterface;
 /**
  * Получить файл с этикетками
  */
-// #[Autoconfigure(public: true)]
+#[Autoconfigure(shared: false)]
 final class GetOzonStickerTaskRequest extends Ozon
 {
     private string $number;

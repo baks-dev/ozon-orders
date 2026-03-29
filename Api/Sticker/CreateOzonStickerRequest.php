@@ -31,7 +31,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 /**
  * Создать задание на формирование этикеток
  */
-// #[Autoconfigure(public: true)]
+#[Autoconfigure(shared: false)]
 final class CreateOzonStickerRequest extends Ozon
 {
     /**

@@ -27,10 +27,12 @@ namespace BaksDev\Ozon\Orders\Api\Package;
 
 use BaksDev\Ozon\Api\Ozon;
 use InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
 /**
  * Собрать заказ
  */
+#[Autoconfigure(shared: false)]
 final class UpdateOzonOrdersPackageRequest extends Ozon
 {
     private array|false $products = false;

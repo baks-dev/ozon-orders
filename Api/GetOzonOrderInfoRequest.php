@@ -32,7 +32,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 /**
  * Информация о заказах
  */
-// #[Autoconfigure(public: true)]
+#[Autoconfigure(shared: false)]
 final class GetOzonOrderInfoRequest extends Ozon
 {
     /**
