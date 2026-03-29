@@ -44,7 +44,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class ProductStockPartOzonOrdersDispatcher
 {
     public function __construct(
-        #[Target('productsSignLogger')] private LoggerInterface $logger,
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private AppCacheInterface $Cache,
     ) {}
 
