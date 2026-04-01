@@ -41,7 +41,7 @@ final class GetOzonOrderInfoRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/#operation/PostingAPI_GetFbsPostingV3
      *
      */
-    public function find(string $number): NewOzonOrderDTO|false
+    public function find(string $number): NewOzonOrderDTO|bool
     {
         $number = str_replace('O-', '', $number);
 
@@ -69,6 +69,14 @@ final class GetOzonOrderInfoRequest extends Ozon
                 ),
                 [self::class.':'.__LINE__, $data, $content],
             );
+
+            if(
+                isset($content['message'])
+                && str_contains(mb_strtolower($content['message']), 'unknown')
+            )
+            {
+                return true;
+            }
 
             return false;
         }
