@@ -27,15 +27,18 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\AutoPackage;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Orders\Order\Entity\Event\OrderEvent;
 use BaksDev\Orders\Order\Messenger\MultiplyOrdersPackage\MultiplyOrdersPackageMessage;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
+use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Ozon\Manufacture\BaksDevOzonManufactureBundle;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
+use BaksDev\Users\User\Type\Id\UserUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -50,7 +53,7 @@ final readonly class AutoPackageOzonOrderDispatcher
 {
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $Logger,
-        private OrderEventInterface $orderEventRepository,
+        private CurrentOrderEventInterface $CurrentOrderEventRepository,
         private DeduplicatorInterface $deduplicator,
         private MessageDispatchInterface $messageDispatch,
     ) {}
@@ -78,8 +81,9 @@ final readonly class AutoPackageOzonOrderDispatcher
         }
 
         /** Активное событие заказа */
-        $OrderEvent = $this->orderEventRepository
-            ->find($message->getEvent());
+        $OrderEvent = $this->CurrentOrderEventRepository
+            ->forOrder($message->getId())
+            ->find();
 
         if(false === ($OrderEvent instanceof OrderEvent))
         {
@@ -110,9 +114,9 @@ final readonly class AutoPackageOzonOrderDispatcher
         $this->Logger->info(
             message: sprintf(
                 '%s: статус заказа Ozon будет автоматически изменен со статуса %s на %s',
-                $OrderEvent->getPostingNumber() ?? $OrderEvent->getInvariable()->getNumber(),
+                $OrderEvent->getPostingNumber() ?? $OrderEvent->getOrderNumber(),
                 $OrderEvent->getStatus()->getOrderStatusValue(),
-                OrderStatusPackage::STATUS
+                OrderStatusPackage::STATUS,
             ),
             context: [self::class.':'.__LINE__, var_export($message, true)],
         );
@@ -120,9 +124,10 @@ final readonly class AutoPackageOzonOrderDispatcher
         $this->messageDispatch->dispatch(
             message: new MultiplyOrdersPackageMessage(
                 $OrderEvent->getMain(),
-                $OrderEvent->getInvariable()->getProfile(),
-                $OrderEvent->getInvariable()->getUsr(),
+                $OrderEvent->getOrderProfile(),
+                true === ($OrderEvent->getModifyUser() instanceof UserUid) ? $OrderEvent->getModifyUser() : $OrderEvent->getOrderUser(),
             ),
+            stamps: [new MessageDelay('5 seconds')],
             transport: 'orders-order',
         );
 
