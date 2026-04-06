@@ -43,6 +43,7 @@ use BaksDev\Orders\Order\UseCase\Admin\Posting\UpdateOrderProductsPostingHandler
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageDTO;
 use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageRequest;
+use BaksDev\Ozon\Orders\Messenger\Schedules\CancelOrders\CancelOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Orders\Messenger\TaskOzonPackageStickers\Create\CreateTaskOzonStickersMessage;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
@@ -285,6 +286,12 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /** Если возвращается TRUE - не отправляем больше запросы */
         if(true === $UpdateOzonOrdersPackageDTO)
         {
+            /** Делаем проверку на отмену заказа */
+            $this->MessageDispatch->dispatch(
+                message: new CancelOzonOrdersScheduleMessage($UserProfileUid),
+                transport: $UserProfileUid,
+            );
+
             $Deduplicator->save();
             return;
         }
