@@ -109,12 +109,6 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
                 return true;
             }
 
-            /** Заказу требуется указать Доп. информацию */
-            if(str_contains(mb_strtolower($content['message']), 'exemplar_info_not_filled_completely'))
-            {
-                return true;
-            }
-
             /** Статус заказа уже изменился */
             if(str_contains(mb_strtolower($content['message']), 'has_incorrect_status'))
             {

@@ -356,7 +356,7 @@ final readonly class UpdatePackageOzonOrderDbsDispatcher
 
             $this->MessageDispatch->dispatch(
                 message: $message,
-                stamps: [new MessageDelay('3 seconds')],
+                stamps: [new MessageDelay('15 seconds')],
                 transport: $UserProfileUid.'-low',
             );
         }

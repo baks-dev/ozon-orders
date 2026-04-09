@@ -283,16 +283,21 @@ final class UpdatePackageOzonOrderFbsDispatcher
             ->products($package)
             ->package($OrderEvent->getPostingNumber());
 
-        /** Если возвращается TRUE - не отправляем больше запросы */
+        /** Если возвращается TRUE - пробуем отправить один раз позже */
         if(true === $UpdateOzonOrdersPackageDTO)
         {
             /** Делаем проверку на отмену заказа */
             $this->MessageDispatch->dispatch(
                 message: new CancelOzonOrdersScheduleMessage($UserProfileUid),
-                transport: $UserProfileUid,
+                transport: (string) $UserProfileUid,
             );
 
-            $Deduplicator->save();
+            $this->MessageDispatch->dispatch(
+                message: $message,
+                stamps: [new MessageDelay('15 seconds')],
+                transport: $UserProfileUid.'-low',
+            );
+
             return;
         }
 
