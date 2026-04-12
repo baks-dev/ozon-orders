@@ -106,8 +106,9 @@ final class UpdatePackageOzonOrderFbsDispatcher
         }
 
         /** Активное событие заказа */
-        $OrderEvent = $this->orderEventRepository
-            ->find($message->getEvent());
+        $OrderEvent = $this->currentOrderEventRepository
+            ->forOrder($message->getId())
+            ->find();
 
         if(false === ($OrderEvent instanceof OrderEvent))
         {
@@ -138,37 +139,21 @@ final class UpdatePackageOzonOrderFbsDispatcher
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();
 
-
-        //        /**
-        //         * Создаем блокировку на получение новых заказов (чтобы не прилетали дубликаты)
-        //         */
-        //
-        //        $DeduplicatorOrdersNew = $this->Deduplicator
-        //            ->namespace('ozon-orders')
-        //            ->expiresAfter('10 seconds')
-        //            ->deduplication([(string) $UserProfileUid, NewOzonOrderScheduleHandler::class]);
-        //
-        //        $DeduplicatorOrdersNew->save();
-
         /**
          * Получаем активное событие заказа на случай, если оно изменилось и не возможно определить номер
          */
 
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
-            $OrderEvent = $this->currentOrderEventRepository
-                ->forOrder($message->getId())
-                ->find();
+            $this->Logger->critical(
+                message: sprintf(
+                    'ozon-orders: Профиль пользователя заказа %s не определен',
+                    $OrderEvent->getPostingNumber(),
+                ),
+                context: [self::class.':'.__LINE__, var_export($message, true)],
+            );
 
-            if(false === ($OrderEvent instanceof OrderEvent))
-            {
-                $this->Logger->critical(
-                    message: 'ozon-orders: Не найдено событие OrderEvent',
-                    context: [self::class.':'.__LINE__, var_export($message, true)],
-                );
-
-                return;
-            }
+            return;
         }
 
         $EditOrderDTO = new EditOrderDTO();
@@ -290,12 +275,6 @@ final class UpdatePackageOzonOrderFbsDispatcher
             $this->MessageDispatch->dispatch(
                 message: new CancelOzonOrdersScheduleMessage($UserProfileUid),
                 transport: (string) $UserProfileUid,
-            );
-
-            $this->MessageDispatch->dispatch(
-                message: $message,
-                stamps: [new MessageDelay('15 seconds')],
-                transport: $UserProfileUid.'-low',
             );
 
             return;
