@@ -16,6 +16,9 @@ ozon:
             name: 'Контактное лицо'
             desc: 'ФИО пользователя'
 
+  fbo:
+    name: 'Ozon FBO'
+    desc: 'Пользователь Ozon FBO'
 
   dbs:
 

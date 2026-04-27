@@ -7,6 +7,9 @@ ozon:
       name: 'Ozon pick-up point address'
       desc: 'Address of the Ozon order pick-up point selected by the client'
 
+  fbo:
+    name: 'FBO: Warehouse Ozon'
+    desc: 'Selling goods from the Ozon warehouse'
 
   dbs:
     name: 'Delivery to Ozon client'

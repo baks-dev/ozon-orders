@@ -16,6 +16,9 @@ ozon:
             name: 'Contact person'
             desc: 'User name'
 
+  fbo:
+    name: 'Ozon FBO'
+    desc: 'Ozon FBO user'
 
   dbs:
 
