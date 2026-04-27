@@ -3,6 +3,10 @@ ozon:
     name: 'Ozon'
     desc: 'Payment for FBS Ozon'
 
+  fbo:
+    name: 'FBS Ozon'
+    desc: 'Payment for FBO Ozon'
+
   dbs:
     name: 'DBS Ozon'
     desc: 'Payment for DBS Ozon'

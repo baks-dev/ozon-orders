@@ -3,6 +3,10 @@ ozon:
     name: 'Ozon'
     desc: 'Курьерская доставка Ozon'
 
+  fbo:
+    name: 'FBO: Склад Ozon'
+    desc: 'Реализация товара со склада Ozon'
+
   dbs:
     name: 'Доставка клиенту Ozon'
     desc: 'Доставка клиенту Ozon'
