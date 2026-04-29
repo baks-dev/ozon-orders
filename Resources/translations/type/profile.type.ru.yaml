@@ -2,7 +2,7 @@ ozon:
 
   fbs:
 
-    name: 'Ozon'
+    name: 'FBS: Ozon'
     desc: 'Пользователь Ozon'
 
     section:
@@ -17,11 +17,11 @@ ozon:
             desc: 'ФИО пользователя'
 
   fbo:
-    name: 'Ozon FBO'
-    desc: 'Пользователь Ozon FBO'
+    name: 'FBO: Ozon'
+    desc: 'Реализация со склада Ozon'
+
 
   dbs:
-
     name: 'DBS: Ozon'
     desc: 'Пользователь Ozon'
 

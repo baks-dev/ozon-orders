@@ -2,44 +2,44 @@ ozon:
 
   fbs:
 
-    name: 'Ozon'
-    desc: 'Ozon user'
+    name: 'FBS: Ozon'
+    desc: 'Пользователь Ozon'
 
     section:
       contact:
-        name: 'Contact details'
-        desc: 'Data for communication between store managers and customers.'
+        name: 'Контактные данные'
+        desc: 'Данные для связи менеджерами магазина с покупателем.'
 
         field:
 
           name:
-            name: 'Contact person'
-            desc: 'User name'
+            name: 'Контактное лицо'
+            desc: 'ФИО пользователя'
 
   fbo:
-    name: 'Ozon FBO'
-    desc: 'Ozon FBO user'
+    name: 'FBO: Ozon'
+    desc: 'Реализация со склада Ozon'
+
 
   dbs:
-
-    name: 'DBS Ozon'
-    desc: 'DBS Ozon user'
+    name: 'DBS: Ozon'
+    desc: 'Пользователь Ozon'
 
     section:
       contact:
-        name: 'Contact details'
-        desc: 'Data for communication between store managers and customers.'
+        name: 'Контактные данные'
+        desc: 'Данные для связи менеджерами магазина с покупателем.'
 
         field:
 
           name:
-            name: 'Recipient'
-            desc: 'User name'
+            name: 'Получатель'
+            desc: 'ФИО пользователя'
 
           email:
-            name: 'Contact Email'
-            desc: 'Contact email for communication'
+            name: 'Контактный E-mail'
+            desc: 'Укажите для отправки уведомлений'
 
           phone:
-            name: 'Contact phone'
-            desc: 'Contact telephone number'
+            name: 'Контактный телефон'
+            desc: 'Контактный телефон для связи'

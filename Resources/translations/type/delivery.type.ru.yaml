@@ -1,6 +1,6 @@
 ozon:
   fbs:
-    name: 'Ozon'
+    name: 'FBO: Склад Ozon'
     desc: 'Курьерская доставка Ozon'
 
   fbo:

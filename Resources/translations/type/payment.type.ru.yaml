@@ -1,13 +1,13 @@
 ozon:
   fbs:
-    name: 'Ozon'
-    desc: 'Оплата FBS Ozon'
+    name: 'FBS Ozon'
+    desc: 'Оплата на сайте маркетплейса Ozon'
 
   fbo:
-    name: 'Ozon'
-    desc: 'Оплата FBO Ozon'
+    name: 'FBO Ozon'
+    desc: 'Оплата на сайте маркетплейса Ozon'
 
   dbs:
     name: 'DBS Ozon'
-    desc: 'Оплата DBS Ozon'
+    desc: 'Оплата на сайте маркетплейса Ozon'
 
