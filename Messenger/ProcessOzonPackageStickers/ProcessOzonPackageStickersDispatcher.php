@@ -34,7 +34,7 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Получает стикер отправления Ozon и кеширует на сутки для печати в формате JPEG
+ * Получает стикер отправления Ozon и кеширует для печати в формате JPEG
  */
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]

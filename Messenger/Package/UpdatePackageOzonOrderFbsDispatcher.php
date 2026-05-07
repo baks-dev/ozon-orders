@@ -82,12 +82,7 @@ final class UpdatePackageOzonOrderFbsDispatcher
         private readonly MessageDispatchInterface $MessageDispatch,
         private readonly UpdateOzonOrdersPackageRequest $updateOzonOrdersPackageRequest,
         private readonly GetOzonOrderInfoRequest $getOzonOrderInfoRequest,
-        private readonly OrderEventInterface $orderEventRepository,
         private readonly CurrentOrderEventInterface $currentOrderEventRepository,
-        private readonly ProductParameterInterface $productParameterRepository,
-        private readonly ProductConstByArticleInterface $productConstByArticleRepository,
-        private readonly UpdateOrderProductsPostingHandler $updateOrderProductsPostingHandler,
-        private readonly CurrentProductIdentifierByEventInterface $CurrentProductIdentifierRepository,
     ) {}
 
     public function __invoke(OrderMessage $message): void
