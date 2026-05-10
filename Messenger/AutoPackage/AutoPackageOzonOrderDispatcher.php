@@ -127,7 +127,7 @@ final readonly class AutoPackageOzonOrderDispatcher
                 $OrderEvent->getOrderProfile(),
                 true === ($OrderEvent->getModifyUser() instanceof UserUid) ? $OrderEvent->getModifyUser() : $OrderEvent->getOrderUser(),
             ),
-            stamps: [new MessageDelay('5 seconds')],
+            stamps: [new MessageDelay('30 seconds')],
             transport: 'orders-order',
         );
 
