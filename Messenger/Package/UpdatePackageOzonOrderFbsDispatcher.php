@@ -34,6 +34,7 @@ use BaksDev\Orders\Order\Entity\Products\OrderProduct;
 use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusExtradition;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\OrderProductDTO;
@@ -124,8 +125,17 @@ final class UpdatePackageOzonOrderFbsDispatcher
             return;
         }
 
-        /** Завершаем обработчик, если статус заказа не Package «Упаковка заказов» */
-        if(false === $OrderEvent->isStatusEquals(OrderStatusPackage::class))
+        /**
+         * Завершаем обработчик, если статус заказа не является:
+         * - Package «Упаковка заказов»
+         * - Extradition «Готов к выдаче»
+         *
+         * @note Extradition на случай если быстро двинули на Укомплектован
+         */
+        if(
+            false === $OrderEvent->isStatusEquals(OrderStatusPackage::class)
+            && false === $OrderEvent->isStatusEquals(OrderStatusExtradition::class)
+        )
         {
             return;
         }
@@ -133,10 +143,6 @@ final class UpdatePackageOzonOrderFbsDispatcher
 
         /** Идентификатор бизнес профиля (склада) */
         $UserProfileUid = $OrderEvent->getOrderProfile();
-
-        /**
-         * Получаем активное событие заказа на случай, если оно изменилось и не возможно определить номер
-         */
 
         if(false === ($UserProfileUid instanceof UserProfileUid))
         {
