@@ -47,6 +47,9 @@ final class NewOzonOrderProductDTO implements OrderProductInterface
     #[Assert\NotBlank]
     private int $sku;
 
+    /** Идентификатор экземпляра. */
+    private ?int $exemplar = null;
+
     /** Событие продукта */
     #[Assert\NotBlank]
     #[Assert\Uuid]
@@ -191,6 +194,17 @@ final class NewOzonOrderProductDTO implements OrderProductInterface
     public function setSku(int $sku): self
     {
         $this->sku = $sku;
+        return $this;
+    }
+
+    public function getExemplar(): ?int
+    {
+        return $this->exemplar;
+    }
+
+    public function setExemplar(?int $exemplar): self
+    {
+        $this->exemplar = $exemplar;
         return $this;
     }
 

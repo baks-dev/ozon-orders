@@ -97,7 +97,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
     private ?string $comment = null;
 
     /** Информация о покупателе */
-    private ?array $buyer;
+    private ?array $buyer = null;
 
     /**
      * Связанные отправления — те, на которое было разделено родительское отправление при сборке.
@@ -217,8 +217,33 @@ final class NewOzonOrderDTO implements OrderEventInterface
         /** Продукция */
         foreach($order['products'] as $item)
         {
+            /**
+             * Информация о продукте
+             */
+
             $NewOrderProductDTO = new NewOzonOrderProductDTO($item['offer_id']);
             $NewOrderProductDTO->setSku($item['sku']);
+
+            /** Если присутствует информация по грузоместу */
+            if(false === empty($order['product_exemplars']['products']))
+            {
+                /** Предполагаем, что грузоместо всегда одно */
+                $exemplars = current($order['product_exemplars']['products']);
+
+                if(false === empty($exemplars['exemplars']))
+                {
+                    $exemplar = current($exemplars['exemplars']);
+
+                    if(false === empty($exemplar['exemplar_id']))
+                    {
+                        $NewOrderProductDTO->setExemplar($exemplar['exemplar_id']);
+                    }
+                }
+            }
+
+            /**
+             * Стоимость
+             */
 
             $NewOrderPriceDTO = $NewOrderProductDTO->getPrice();
 

@@ -49,6 +49,7 @@ final class GetOzonOrderInfoRequest extends Ozon
 
         $data['with'] = [
             "related_postings" => true,
+            "product_exemplars" => true,
         ];
 
         $response = $this->TokenHttpClient()
