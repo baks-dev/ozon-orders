@@ -320,5 +320,6 @@ final class UpdatePackageOzonOrderFbsDispatcher
             transport: 'ozon-orders',
         );
 
+        $Deduplicator->save();
     }
 }

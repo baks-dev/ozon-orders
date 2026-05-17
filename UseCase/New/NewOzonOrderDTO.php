@@ -227,6 +227,8 @@ final class NewOzonOrderDTO implements OrderEventInterface
             /** Если присутствует информация по грузоместу */
             if(false === empty($order['product_exemplars']['products']))
             {
+                // dd($order['requirements']['products_requiring_mandatory_mark']); /* TODO: удалить !!! */
+
                 /** Предполагаем, что грузоместо всегда одно */
                 $exemplars = current($order['product_exemplars']['products']);
 

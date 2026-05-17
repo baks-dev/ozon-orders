@@ -100,7 +100,9 @@ final class UpdateOzonOrdersPackageRequest extends Ozon
             /** Если упаковка уже отправлена */
             if(str_contains(mb_strtolower($content['message']), 'posting_already_shipped'))
             {
-                return true;
+                return new UpdateOzonOrdersPackageDTO(
+                    ['result' => 'упаковка уже отправлена'],
+                );
             }
 
             /** Заказ отменен */

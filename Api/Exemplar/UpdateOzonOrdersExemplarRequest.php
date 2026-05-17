@@ -127,6 +127,12 @@ final class UpdateOzonOrdersExemplarRequest extends Ozon
 
         if($response->getStatusCode() !== 200)
         {
+            /** Если честный знак не обязательно для отправления */
+            if($content['message'] === 'MANDATORY_MARK_REDUNDANT')
+            {
+                return true;
+            }
+
             $this->logger->critical(
                 message: sprintf('ozon-orders: Ошибка %s при обновлении информации об отправлении %s ',
                     $response->getStatusCode(),
