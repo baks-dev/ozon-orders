@@ -144,7 +144,6 @@ final class NewOzonOrderDTO implements OrderEventInterface
          * Дата доставки
          */
 
-
         // По умолчанию дата доставки - на след. день
         $deliveryDate = new DateTimeImmutable('+ 1 day');
 
@@ -225,10 +224,11 @@ final class NewOzonOrderDTO implements OrderEventInterface
             $NewOrderProductDTO->setSku($item['sku']);
 
             /** Если присутствует информация по грузоместу */
-            if(false === empty($order['product_exemplars']['products']))
+            if(
+                false === empty($order['product_exemplars']['products'])
+                && false === empty($order['requirements']['products_requiring_gtd']) // флаг обязательной маркировки ГТД
+            )
             {
-                // dd($order['requirements']['products_requiring_mandatory_mark']); /* TODO: удалить !!! */
-
                 /** Предполагаем, что грузоместо всегда одно */
                 $exemplars = current($order['product_exemplars']['products']);
 
