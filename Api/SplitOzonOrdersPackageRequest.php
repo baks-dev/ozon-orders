@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Api;
 
 use BaksDev\Ozon\Api\Ozon;
+use BaksDev\Ozon\Orders\Api\Package\UpdateOzonOrdersPackageDTO;
 use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
@@ -90,6 +91,14 @@ final class SplitOzonOrdersPackageRequest extends Ozon
                 message: sprintf('ozon-orders: Ошибка при разделение заказа %s', $order),
                 context: [self::class.':'.__LINE__, $data, $content],
             );
+
+            /** Если упаковка уже отправлена */
+            if(str_contains(mb_strtolower($content['message']), 'posting_already_shipped'))
+            {
+                return new UpdateOzonOrdersPackageDTO(
+                    ['result' => 'упаковка уже отправлена'],
+                );
+            }
 
             return false;
         }

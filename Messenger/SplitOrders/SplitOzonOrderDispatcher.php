@@ -29,6 +29,7 @@ namespace BaksDev\Ozon\Orders\Messenger\SplitOrders;
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Api\SplitOzonOrdersPackageRequest;
 use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderDTO;
@@ -91,6 +92,20 @@ final readonly class SplitOzonOrderDispatcher
                 message: $message,
                 stamps: [new MessageDelay('5 seconds')],
                 transport: $message->getProfile().'-low',
+            );
+
+            return;
+        }
+
+        /** Разделяем заказ только в статусе нового */
+        if(false === $NewOzonOrderDTO->getStatusEquals(OrderStatusNew::class))
+        {
+            $this->logger->error(
+                message: sprintf('%s: Статус при разделении заказа изменился на %s',
+                    $message->getOrderNumber(),
+                    $NewOzonOrderDTO->getStatus(),
+                ),
+                context: [self::class.':'.__LINE__,],
             );
 
             return;
