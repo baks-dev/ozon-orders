@@ -34,6 +34,7 @@ use BaksDev\Orders\Order\Type\Event\OrderEventUid;
 use BaksDev\Orders\Order\Type\Status\OrderStatus;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCanceled;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\OrderStatusInterface;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryDbsOzon;
 use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFbsOzon;
@@ -126,6 +127,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
         $yandexStatus = match ($order['status'])
         {
             'cancelled' => OrderStatusCanceled::class, // заказ отменен
+            'awaiting_deliver' => OrderStatusPackage::class, // заказ ожидает отгрузки
             'delivering', 'driver_pickup' => OrderStatusDelivery::class, // заказ передан в службу доставки
             default => OrderStatusNew::class,
         };

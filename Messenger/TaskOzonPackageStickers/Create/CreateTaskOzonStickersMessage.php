@@ -34,7 +34,7 @@ final class CreateTaskOzonStickersMessage
 
     public function __construct(
         OzonTokenUid $token,
-        private string $number
+        private readonly string $number
     )
     {
         $this->token = (string) $token;

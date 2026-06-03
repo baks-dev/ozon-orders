@@ -35,6 +35,7 @@ use BaksDev\Orders\Order\Messenger\OrderMessage;
 use BaksDev\Orders\Order\Repository\CurrentOrderEvent\CurrentOrderEventInterface;
 use BaksDev\Orders\Order\Repository\OrderEvent\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusExtradition;
+use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusNew;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusPackage;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\EditOrderDTO;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\OrderProductDTO;
@@ -199,6 +200,31 @@ final class UpdatePackageOzonOrderFbsDispatcher
             ->forTokenIdentifier($OzonTokenUid)
             ->find($OrderEvent->getPostingNumber());
 
+
+        /** Если заказ уже не новый -  */
+        if(false === $NewOzonOrderDTO->getStatus()->equals(OrderStatusNew::class))
+        {
+            /**
+             * Бросаем сообщение для скачивания стикера OZON
+             */
+
+            $CreateTaskOzonStickersMessage = new CreateTaskOzonStickersMessage(
+                $OzonTokenUid,
+                $OrderEvent->getPostingNumber(),
+            );
+
+            $this->MessageDispatch->dispatch(
+                message: $CreateTaskOzonStickersMessage,
+                stamps: [new MessageDelay('10 seconds')],
+                transport: 'ozon-orders',
+            );
+
+            $Deduplicator->save();
+
+            return;
+        }
+
+
         if(false === ($NewOzonOrderDTO instanceof NewOzonOrderDTO))
         {
             $this->Logger->critical(
@@ -211,11 +237,14 @@ final class UpdatePackageOzonOrderFbsDispatcher
                 ],
             );
 
-            $this->MessageDispatch->dispatch(
-                message: $message,
-                stamps: [new MessageDelay('3 seconds')],
-                transport: $UserProfileUid.'-low',
-            );
+            if(false === $NewOzonOrderDTO)
+            {
+                $this->MessageDispatch->dispatch(
+                    message: $message,
+                    stamps: [new MessageDelay('5 seconds')],
+                    transport: $UserProfileUid.'-low',
+                );
+            }
 
             return;
         }
