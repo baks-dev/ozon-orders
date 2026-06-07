@@ -264,7 +264,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
 
         if(isset($order['related_postings']['related_posting_numbers']))
         {
-            /** Дата доставки */
+            /** Связанные отправления */
             $this->relatedPostings = $order['related_postings']['related_posting_numbers'];
         }
     }
