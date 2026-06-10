@@ -228,7 +228,7 @@ final class NewOzonOrderDTO implements OrderEventInterface
             /** Если присутствует информация по грузоместу */
             if(
                 false === empty($order['product_exemplars']['products'])
-                && false === empty($order['requirements']['products_requiring_gtd']) // флаг обязательной маркировки ГТД
+                // && false === empty($order['requirements']['products_requiring_gtd']) // флаг обязательной маркировки ГТД
             )
             {
                 /** Предполагаем, что грузоместо всегда одно */
