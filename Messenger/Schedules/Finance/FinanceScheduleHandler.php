@@ -87,7 +87,7 @@ final class FinanceScheduleHandler
             return;
         }
 
-        /* @see строку :194 */
+        /* @note удаляется в конце обработчика */
         $DeduplicatorExec->save();
 
 
@@ -98,6 +98,7 @@ final class FinanceScheduleHandler
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
+            $DeduplicatorExec->delete();
             return;
         }
 
@@ -114,6 +115,8 @@ final class FinanceScheduleHandler
                 sprintf('ozon-orders: Пользователь по идентификатору %s профиля не найден', $message->getProfile()),
                 [self::class.':'.__LINE__],
             );
+
+            $DeduplicatorExec->delete();
 
             return;
         }
@@ -162,7 +165,9 @@ final class FinanceScheduleHandler
                 }
 
                 $NewEditFinancesDTO = new NewEditFinancesDTO();
-                $NewEditFinancesDTO->setPrice($OzonOrderAccrualDayResponse->getTotal());
+                $NewEditFinancesDTO
+                    ->setPrice($OzonOrderAccrualDayResponse->getTotal())
+                    ->setComment($OzonOrderAccrualDayResponse->getComment());
 
                 $NewEditFinancesInvariableDTO = $NewEditFinancesDTO->getInvariable();
                 $NewEditFinancesInvariableDTO->setUsr($User);
@@ -212,5 +217,7 @@ final class FinanceScheduleHandler
                 }
             }
         }
+
+        $DeduplicatorExec->delete();
     }
 }

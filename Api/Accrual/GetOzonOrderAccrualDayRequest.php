@@ -118,7 +118,6 @@ final class GetOzonOrderAccrualDayRequest extends Ozon
 
             foreach($content['accruals'] as $accrual)
             {
-
                 $article = null;
 
                 /** Если начисление по товару */

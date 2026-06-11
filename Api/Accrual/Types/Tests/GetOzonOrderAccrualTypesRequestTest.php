@@ -1,17 +1,17 @@
 <?php
 /*
- *  Copyright 2026.  Baks.dev <admin@baks.dev>
- *
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,123 +23,86 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Api\Accrual;
+namespace BaksDev\Ozon\Orders\Api\Accrual\Types\Tests;
 
-use BaksDev\Reference\Money\Type\Money;
-use DateTimeImmutable;
-use Symfony\Component\Validator\Constraints as Assert;
+use BaksDev\Orders\Order\UseCase\Admin\Edit\Tests\OrderNewTest;
+use BaksDev\Ozon\Orders\Api\Accrual\Types\GetOzonOrderAccrualTypesRequest;
+use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFbsOzon;
+use BaksDev\Ozon\Type\Authorization\OzonAuthorizationToken;
+use BaksDev\Products\Stocks\UseCase\Admin\Package\Tests\PackageProductStockTest;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
+use BaksDev\Users\Profile\UserProfile\UseCase\User\NewEdit\Tests\UserNewUserProfileHandleTest;
+use PHPUnit\Framework\Attributes\Group;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\DependencyInjection\Attribute\When;
 
-/** @see OzonOrderAccrualDayResponse */
-final class OzonOrderAccrualDayResponse
+#[Group('ozon-orders')]
+#[When(env: 'test')]
+class GetOzonOrderAccrualTypesRequestTest extends KernelTestCase
 {
-    /**
-     * Идентификатор начисления.
-     */
-    private string $id;
+    private static OzonAuthorizationToken $Authorization;
 
-    /**
-     * Тип начисления:
-     *
-     * UNSPECIFIED — не определён;
-     * POSTING — начисления по отправлению;
-     * ITEM — начисления по товару;
-     * NON_ITEM — начисление по продавцу без привязки к товару.
-     */
-    private string $type;
-
-    /**
-     * Дата начисления
-     */
-    private DateTimeImmutable $date;
-
-    /**
-     * Общая сумма начислений.
-     */
-    private Money $total;
-
-    /**
-     * Идентификатор заказа или услуги. Например, номер отправления или номер рекламного договора.
-     */
-    private string $number;
-
-    /** Идентификатор товара при "Начисления по товарам" */
-    private ?string $article;
-
-    /** Комментарий */
-    private ?string $comment = null;
-
-    public function __construct(array $item, string|null|false $article = null)
+    public static function setUpBeforeClass(): void
     {
-        $this->id = (string) $item['accrual_id'];
-        $this->date = new DateTimeImmutable($item['date']);
-        $this->total = new Money($item['total_amount']['amount']);
-        $this->number = (string) $item['unit_number'];
-        $this->type = (string) $item['accrued_category'];
-        $this->article = $article ?: null;
+        OrderNewTest::setUpBeforeClass();
+        PackageProductStockTest::setUpBeforeClass();
+        UserNewUserProfileHandleTest::setUpBeforeClass();
 
-        $comments = null;
+        self::$Authorization = new OzonAuthorizationToken(
+            new UserProfileUid('018d464d-c67a-7285-8192-7235b0510924'),
+            $_SERVER['TEST_OZON_TOKEN'],
+            TypeProfileFbsOzon::TYPE,
+            $_SERVER['TEST_OZON_CLIENT'],
+            $_SERVER['TEST_OZON_WAREHOUSE'],
+            '10',
+            0,
+            false,
+            false,
+        );
+    }
 
-        if(isset($item['non_item_fee']['type_id']))
+    public function testUseCase(): void
+    {
+        /** @var GetOzonOrderAccrualTypesRequest $GetOzonOrderAccrualTypesRequest */
+        $GetOzonOrderAccrualTypesRequest = self::getContainer()->get(GetOzonOrderAccrualTypesRequest::class);
+        $GetOzonOrderAccrualTypesRequest->TokenHttpClient(self::$Authorization);
+
+        $types = $GetOzonOrderAccrualTypesRequest->findAll();
+
+        self::assertNotFalse($types);
+
+        // Собираем из актуальных данных ассоциативный массив [id => description]
+        $actualMap = [];
+        foreach($types as $item)
         {
-            $comments[] = $this->getCommentType($item['non_item_fee']['type_id']);
+            $actualMap[$item['id']] = $item['description'];
         }
 
-        if(isset($item['item_fees']))
+        // Проверяем, что для каждого id из actual match возвращает то же описание
+        foreach($actualMap as $id => $expectedDescription)
         {
-            foreach($item['item_fees'] as $fees)
-            {
-                foreach($fees as $fee)
-                {
-                    foreach($fee['fees'] as $fee_fees)
-                    {
-                        $comments[] = $this->getCommentType($fee_fees['type_id']);
-                    }
-                }
+            $actualDescription = $this->getDescriptionFromMatch($id);
+            $this->assertNotNull($actualDescription, "ID {$id} отсутствует в match, но присутствует в актуальных данных");
+            $this->assertEquals($expectedDescription, $actualDescription, "Несоответствие описания для ID {$id}");
+        }
 
-                $comments[] = $this->getCommentType($fees['type_id']);
+        // Проверяем, что в match нет лишних id, которых нет в actual
+        $maxPossibleId = 200; // указываем заведомо большое число
+        for($id = 1; $id <= $maxPossibleId; $id++)
+        {
+            $description = $this->getDescriptionFromMatch($id);
+
+            if($description !== null)
+            {
+                $this->assertArrayHasKey($id, $actualMap, "ID {$id} присутствует в match, но отсутствует в актуальных данных");
             }
         }
-
-        $this->comment = empty($comments) ?: implode(', ', $comments);
-
     }
 
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    public function getDate(): DateTimeImmutable
-    {
-        return $this->date;
-    }
-
-    public function getTotal(): Money
-    {
-        return $this->total;
-    }
-
-    public function getNumber(): string
-    {
-        return 'O-'.$this->number;
-    }
-
-    public function getArticle(): ?string
-    {
-        return $this->article;
-    }
-
-    public function getComment(): ?string
-    {
-        return $this->comment;
-    }
-
-    private function getCommentType(int $id)
+    /**
+     * Тестируемая функция, использующая match.
+     */
+    private function getDescriptionFromMatch(int $id): ?string
     {
         return match ($id)
         {
@@ -244,7 +207,7 @@ final class OzonOrderAccrualDayResponse
             99 => "Международная логистика",
             100 => "Транспортно-экспедиционная услуга по организации международной перевозки",
             101 => "Обработка нестандартного товара",
-            default => "Не определённый тип начисления",
+            default => null,
         };
     }
 }

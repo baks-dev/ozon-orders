@@ -120,7 +120,7 @@ class UpdateFinancesCommand extends Command
             {
                 $this->update(
                     profile: $profile,
-                    date: $input->getOption('article'),
+                    date: $input->getOption('date'),
                     async: $key === '+',
                 );
             }
@@ -151,7 +151,7 @@ class UpdateFinancesCommand extends Command
         {
             $this->update(
                 profile: $UserProfileUid,
-                date: $input->getOption('article'),
+                date: $input->getOption('date'),
             );
 
             $this->io->success('Заказы успешно обновлены');
