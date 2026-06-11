@@ -170,7 +170,9 @@ final class FinanceScheduleHandler
                     ->setComment($OzonOrderAccrualDayResponse->getComment());
 
                 $NewEditFinancesInvariableDTO = $NewEditFinancesDTO->getInvariable();
-                $NewEditFinancesInvariableDTO->setUsr($User);
+                $NewEditFinancesInvariableDTO
+                    ->setCreate($OzonOrderAccrualDayResponse->getDate())
+                    ->setUsr($User);
 
                 $NewEditFinancesMarketplaceDTO = $NewEditFinancesDTO->getMarketpace();
                 $NewEditFinancesMarketplaceDTO
