@@ -73,9 +73,9 @@ final class OzonOrderAccrualDayResponse
         $this->id = (string) $item['accrual_id'];
         $this->date = new DateTimeImmutable($item['date']);
         $this->total = new Money($item['total_amount']['amount']);
-        $this->number = (string) $item['unit_number'];
         $this->type = (string) $item['accrued_category'];
         $this->article = $article ?: null;
+        $this->number = isset($item['unit_number']) ? (string) $item['unit_number'] : $item['date']; // Если нет номера - присваиваем дату
 
         $comments = null;
 
@@ -95,12 +95,10 @@ final class OzonOrderAccrualDayResponse
                         $comments[] = $this->getCommentType($fee_fees['type_id']);
                     }
                 }
-
-                $comments[] = $this->getCommentType($fees['type_id']);
             }
         }
 
-        $this->comment = empty($comments) ?: implode(', ', $comments);
+        $this->comment = empty($comments) ? null : implode(', ', $comments);
 
     }
 
@@ -126,7 +124,7 @@ final class OzonOrderAccrualDayResponse
 
     public function getNumber(): string
     {
-        return 'O-'.$this->number;
+        return $this->number;
     }
 
     public function getArticle(): ?string

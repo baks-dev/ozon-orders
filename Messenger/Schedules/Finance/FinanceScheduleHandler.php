@@ -179,12 +179,12 @@ final class FinanceScheduleHandler
                     ->setIdentifier($OzonOrderAccrualDayResponse->getId())
                     ->setPayment(new PaymentUid(TypePaymentFbsOzon::TYPE));
 
-                $OrderUid = $this->OrderByPostingRepository->find($OzonOrderAccrualDayResponse->getNumber());
+                $OrderUid = $this->OrderByPostingRepository->find('O-'.$OzonOrderAccrualDayResponse->getNumber());
 
                 /** Присваиваем идентификатор заказа если найден */
                 if($OrderUid instanceof OrderUid)
                 {
-                    $NewEditFinancesOrderDTO = $NewEditFinancesDTO->getOrders();
+                    $NewEditFinancesOrderDTO = $NewEditFinancesDTO->getOrd();
                     $NewEditFinancesOrderDTO->setValue($OrderUid);
                 }
 
