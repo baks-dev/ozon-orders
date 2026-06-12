@@ -31,6 +31,7 @@ use BaksDev\Finances\Entity\Finances;
 use BaksDev\Finances\Repository\ExistFinance\ExistFinanceInterface;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesDTO;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesHandler;
+use BaksDev\Finances\UseCase\NewEdit\Payment\NewEditPaymentDTO;
 use BaksDev\Orders\Order\Repository\OrderByPosting\OrderByPostingInterface;
 use BaksDev\Orders\Order\Type\Id\OrderUid;
 use BaksDev\Ozon\Orders\Api\Accrual\GetOzonOrderAccrualDayRequest;
@@ -135,6 +136,7 @@ final class FinanceScheduleHandler
 
             $finances = $this->GetOzonOrderAccrualDayRequest
                 ->forTokenIdentifier($OzonTokenUid)
+                ->setDate($message->getDay())
                 ->findAll();
 
             if(false === $finances || false === $finances->valid())
@@ -178,8 +180,11 @@ final class FinanceScheduleHandler
                 $NewEditFinancesMarketplaceDTO
                     ->setToken($OzonTokenUid->getValue())
                     ->setNumber($OzonOrderAccrualDayResponse->getNumber())
-                    ->setIdentifier($OzonOrderAccrualDayResponse->getId())
-                    ->setPayment(new PaymentUid(TypePaymentFbsOzon::TYPE));
+                    ->setIdentifier($OzonOrderAccrualDayResponse->getId());
+
+                $NewEditPaymentDTO = $NewEditFinancesDTO->getPayment();
+                $NewEditPaymentDTO->setValue(new PaymentUid(TypePaymentFbsOzon::TYPE));
+
 
                 $OrderUid = $this->OrderByPostingRepository->find('O-'.$OzonOrderAccrualDayResponse->getNumber());
 

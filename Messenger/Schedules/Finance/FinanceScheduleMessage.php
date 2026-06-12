@@ -52,12 +52,11 @@ final class FinanceScheduleMessage
         return new UserProfileUid($this->profile);
     }
 
-    public function getDay(): string
+    public function getDay(): DateTimeImmutable
     {
-        return $this->day ?:
-            new DateTimeImmutable('')
-                ->sub(DateInterval::createFromDateString('1 day'))
-                ->format('Y-m-d');
+        return $this->day
+            ? new DateTimeImmutable($this->day)
+            : new DateTimeImmutable('')->sub(DateInterval::createFromDateString('1 day'));
     }
 
     public function setDay(?string $day): self
