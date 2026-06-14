@@ -41,6 +41,7 @@ use BaksDev\Ozon\Orders\Messenger\Dashboard\CacheOthers\DashboardCacheOthersDayM
 use BaksDev\Ozon\Orders\Messenger\Dashboard\HoldAll\DashboardHoldAllDayMessage;
 use BaksDev\Ozon\Orders\Messenger\Dashboard\HoldOrders\DashboardHoldOrdersDayMessage;
 use BaksDev\Ozon\Orders\Messenger\Dashboard\HoldOthers\DashboardHoldOthersDayMessage;
+use BaksDev\Ozon\Orders\Messenger\Dashboard\OrderFinance\DashboardOthersFinancesMessage;
 use BaksDev\Users\User\Type\Id\UserUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
@@ -57,7 +58,6 @@ final class DashboardDispatcher
         private readonly CurrentFinancesEventInterface $CurrentFinancesEventRepository,
         private readonly MessageDispatchInterface $dispatch,
         private readonly DeduplicatorInterface $Deduplicator,
-        private readonly StatisticsOrdersInterface $StatisticsOrdersRepository,
     ) {}
 
     public function __invoke(FinancesMessage $message): void
@@ -116,7 +116,7 @@ final class DashboardDispatcher
             $this->dispatch->dispatch(
                 message: $DashboardCacheOrdersDayMessage,
                 stamps: [new MessageDelay('30 minutes')],
-                transport: 'ozon-orders',
+                transport: 'finances',
             );
 
 
@@ -132,7 +132,24 @@ final class DashboardDispatcher
             $this->dispatch->dispatch(
                 message: $DashboardHoldOrdersDayMessage,
                 stamps: [new MessageDelay('31 minutes')],
-                transport: 'ozon-orders',
+                transport: 'finances',
+            );
+
+
+            /**
+             * Создаем доску финансовой выгоды по заказам
+             */
+
+            $DashboardOthersFinancesMessage = new DashboardOthersFinancesMessage(
+                payment: $FinancesEvent->getPayment(),
+                user: $UserUid,
+                date: $FinancesEvent->getDateCreated(),
+            );
+
+            $this->dispatch->dispatch(
+                message: $DashboardOthersFinancesMessage,
+                stamps: [new MessageDelay('32 minutes')],
+                transport: 'finances',
             );
         }
 
@@ -150,7 +167,7 @@ final class DashboardDispatcher
             $this->dispatch->dispatch(
                 message: $DashboardCacheOthersDayMessage,
                 stamps: [new MessageDelay('35 minutes')],
-                transport: 'ozon-orders',
+                transport: 'finances',
             );
 
             /**
@@ -165,7 +182,7 @@ final class DashboardDispatcher
             $this->dispatch->dispatch(
                 message: $DashboardHoldOthersDayMessage,
                 stamps: [new MessageDelay('36 minutes')],
-                transport: 'ozon-orders',
+                transport: 'finances',
             );
         }
 
@@ -182,7 +199,7 @@ final class DashboardDispatcher
         $this->dispatch->dispatch(
             message: $DashboardCacheAllDayMessage,
             stamps: [new MessageDelay('40 minutes')],
-            transport: 'ozon-orders',
+            transport: 'finances',
         );
 
 
@@ -198,7 +215,7 @@ final class DashboardDispatcher
         $this->dispatch->dispatch(
             message: $DashboardHoldAllDayMessage,
             stamps: [new MessageDelay('41 minutes')],
-            transport: 'ozon-orders',
+            transport: 'finances',
         );
     }
 }

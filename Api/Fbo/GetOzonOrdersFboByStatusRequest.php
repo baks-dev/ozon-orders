@@ -42,6 +42,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 #[Autoconfigure(public: true, shared: false)]
 final class GetOzonOrdersFboByStatusRequest extends Ozon
 {
+    private ?string $cursor = null;
+
     private ?DateTimeImmutable $fromDate = null;
 
     private string|false $status = false;
@@ -106,7 +108,7 @@ final class GetOzonOrdersFboByStatusRequest extends Ozon
      * @see https://docs.ozon.ru/api/seller/#operation/PostingFboList
      *
      */
-    private function findAll(): array|bool
+    private function findAll(): Generator|bool
     {
         if(false === $this->status)
         {
@@ -145,30 +147,52 @@ final class GetOzonOrdersFboByStatusRequest extends Ozon
         $data['filter']['since'] = $sinceDate->format(DateTimeInterface::W3C);
         $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);
 
-        $response = $this->TokenHttpClient()
-            ->request(
-                'POST',
-                '/v3/posting/fbo/list',
-                ['json' => $data],
-            );
-
-        $content = $response->toArray(false);
-
-        $this->status = false;
-
-        if($response->getStatusCode() !== 200)
+        while(true)
         {
-            $this->logger->critical(
-                sprintf('ozon-orders: Ошибка при получении заказов со статусом %s', $this->status),
-                [
-                    'content' => $content,
-                    self::class.':'.__LINE__],
-            );
+            $data['cursor'] = $this->cursor;
 
-            return false;
+            $response = $this->TokenHttpClient()
+                ->request(
+                    'POST',
+                    '/v3/posting/fbo/list',
+                    ['json' => $data],
+                );
+
+            $content = $response->toArray(false);
+
+            $this->status = false;
+
+            if($response->getStatusCode() !== 200)
+            {
+                $this->logger->critical(
+                    sprintf('ozon-orders: Ошибка при получении заказов со статусом %s', $this->status),
+                    [
+                        'content' => $content,
+                        self::class.':'.__LINE__],
+                );
+
+                return false;
+            }
+
+            if(empty($content['postings']))
+            {
+                break;
+            }
+
+            $this->cursor = $content['cursor'];
+
+            yield $content['postings'];
+
+            if(count($content['postings']) < 100)
+            {
+                break;
+            }
+
+            if(empty($content['has_next']))
+            {
+                break;
+            }
         }
-
-        return $content['postings'];
     }
 
     /**
@@ -181,14 +205,17 @@ final class GetOzonOrdersFboByStatusRequest extends Ozon
         $orders = $this->findAll();
 
 
-        if(false === $orders)
+        if(false === $orders || false === $orders->valid())
         {
             return false;
         }
 
-        foreach($orders as $order)
+        foreach($orders as $all)
         {
-            yield new DeliveredOzonOrderFboDTO($order, $this->getIdentifier());
+            foreach($all as $order)
+            {
+                yield new DeliveredOzonOrderFboDTO($order, $this->getIdentifier());
+            }
         }
     }
 
