@@ -74,6 +74,7 @@ final class DeliveredOzonOrderFboHandler extends AbstractHandler
             return $this->validatorCollection->getErrorUniqid();
         }
 
+
         /** Добавляем только выполненные заказы */
         if(false === $command->getStatusEquals(OrderStatusCompleted::class))
         {
@@ -97,34 +98,34 @@ final class DeliveredOzonOrderFboHandler extends AbstractHandler
         $command->getInvariable()->setUsr(new UserUid($this->projectUser));
 
 
-        //        /**
-        //         * Создаем профиль пользователя
-        //         */
-        //
-        //        $OrderUserDTO = $command->getUsr();
-        //
-        //        if($OrderUserDTO->getProfile() === null)
-        //        {
-        //            $UserProfileDTO = $OrderUserDTO->getUserProfile();
-        //            $this->validatorCollection->add($UserProfileDTO);
-        //
-        //            if($UserProfileDTO === null)
-        //            {
-        //                return $this->validatorCollection->getErrorUniqid();
-        //            }
-        //
-        //            /* Присваиваем новому профилю идентификатор пользователя */
-        //            $UserProfileDTO->getInfo()->setUsr($OrderUserDTO->getUsr());
-        //            $UserProfile = $this->profileHandler->handle($UserProfileDTO);
-        //
-        //            if(!$UserProfile instanceof UserProfile)
-        //            {
-        //                return $UserProfile;
-        //            }
-        //
-        //            $UserProfileEvent = $UserProfile->getEvent();
-        //            $OrderUserDTO->setProfile($UserProfileEvent);
-        //        }
+        /**
+         * Создаем профиль пользователя
+         */
+
+        $OrderUserDTO = $command->getUsr();
+
+        if($OrderUserDTO->getProfile() === null)
+        {
+            $UserProfileDTO = $OrderUserDTO->getUserProfile();
+            $this->validatorCollection->add($UserProfileDTO);
+
+            if($UserProfileDTO === null)
+            {
+                return $this->validatorCollection->getErrorUniqid();
+            }
+
+            /* Присваиваем новому профилю идентификатор пользователя */
+            $UserProfileDTO->getInfo()->setUsr($OrderUserDTO->getUsr());
+            $UserProfile = $this->profileHandler->handle($UserProfileDTO);
+
+            if(!$UserProfile instanceof UserProfile)
+            {
+                return $UserProfile;
+            }
+
+            $UserProfileEvent = $UserProfile->getEvent();
+            $OrderUserDTO->setProfile($UserProfileEvent);
+        }
 
         $this
             ->setCommand($command)

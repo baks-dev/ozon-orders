@@ -25,7 +25,9 @@ declare(strict_types=1);
 
 namespace BaksDev\Ozon\Orders\UseCase\Fbo;
 
+use BaksDev\Core\Type\UidType\Uid;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
+use BaksDev\Orders\Order\Entity\Event\OrderEventInterface;
 use BaksDev\Orders\Order\Type\Event\OrderEventUid;
 use BaksDev\Orders\Order\Type\Status\OrderStatus;
 use BaksDev\Orders\Order\Type\Status\OrderStatus\Collection\OrderStatusCompleted;
@@ -47,7 +49,7 @@ use DateTimeZone;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class DeliveredOzonOrderFboDTO
+final class DeliveredOzonOrderFboDTO implements OrderEventInterface
 {
     /** Дата заказа */
     #[Assert\NotBlank]
@@ -112,6 +114,7 @@ final class DeliveredOzonOrderFboDTO
         $OrderProfileDTO = $this->usr->getUserProfile();
 
         $deliveryDate = new DateTimeImmutable($order['created_at']);
+        $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
 
         /** Тип профиля FBS Озон */
         $Profile = new TypeProfileUid(TypeProfileFboOzon::class);
@@ -155,6 +158,18 @@ final class DeliveredOzonOrderFboDTO
         }
     }
 
+    /** @see OrderEvent */
+    public function getEvent(): ?OrderEventUid
+    {
+        return $this->id;
+    }
+
+    public function setId(?OrderEventUid $id): self
+    {
+        $this->id = $id;
+        return $this;
+    }
+
     public function addProduct(DeliveredOzonOrderFboProductDTO $product): void
     {
         $filter = $this->product->filter(function(DeliveredOzonOrderFboProductDTO $element) use ($product) {
@@ -183,7 +198,7 @@ final class DeliveredOzonOrderFboDTO
     }
 
     /** @return ArrayCollection<DeliveredOzonOrderFboProductDTO> */
-    public function getProducts(): ArrayCollection
+    public function getProduct(): ArrayCollection
     {
         return $this->product;
     }

@@ -38,11 +38,10 @@ use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\Fbo\GetOzonOrdersFboByStatusRequest;
 use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
-use BaksDev\Ozon\Orders\Api\GetOzonOrdersByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboDTO;
+use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboHandler;
 use BaksDev\Ozon\Orders\UseCase\Fbo\Products\DeliveredOzonOrderFboProductDTO;
-use BaksDev\Ozon\Orders\UseCase\New\NewOzonOrderHandler;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
@@ -73,8 +72,8 @@ final readonly class NewOzonOrderFboScheduleHandler
 
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private DeduplicatorInterface $Deduplicator,
-        private GeocodeAddressParser $GeocodeAddressParser,
-        private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
+        //private GeocodeAddressParser $GeocodeAddressParser,
+        ///private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
         private GetOzonOrdersFboByStatusRequest $GetOzonOrdersFboByStatusRequest,
 
 
@@ -83,7 +82,7 @@ final readonly class NewOzonOrderFboScheduleHandler
         private CurrentDeliveryEventInterface $CurrentDeliveryEventRepository,
         private UserByUserProfileInterface $UserByUserProfileRepository,
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
-        private NewOzonOrderHandler $NewOzonOrderHandler,
+
         private DeliveredOzonOrderFboHandler $DeliveredOzonOrderFboHandler,
         private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
         private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
@@ -209,7 +208,7 @@ final readonly class NewOzonOrderFboScheduleHandler
                  *
                  * @var DeliveredOzonOrderFboProductDTO $product
                  */
-                foreach($DeliveredOzonOrderFboDTO->getProducts() as $product)
+                foreach($DeliveredOzonOrderFboDTO->getProduct() as $product)
                 {
                     $ProductData = $this->ProductConstByArticleRepository->find($product->getArticle());
 
@@ -227,7 +226,6 @@ final readonly class NewOzonOrderFboScheduleHandler
                         ->setVariation($ProductData->getVariation())
                         ->setModification($ProductData->getModification());
                 }
-
 
                 $Order = $this->DeliveredOzonOrderFboHandler->handle($DeliveredOzonOrderFboDTO);
 

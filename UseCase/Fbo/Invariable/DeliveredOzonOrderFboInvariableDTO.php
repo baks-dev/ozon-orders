@@ -60,8 +60,8 @@ final class DeliveredOzonOrderFboInvariableDTO implements OrderInvariableInterfa
     /**
      * ID профиля заказа
      */
-    #[Assert\NotBlank]
-    #[Assert\Uuid]
+    //    #[Assert\NotBlank]
+    //    #[Assert\Uuid]
     private readonly null $profile;
 
     /**

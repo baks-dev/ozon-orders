@@ -44,7 +44,7 @@ final class DeliveredOzonOrderFboDeliveryDTO implements OrderDeliveryInterface
     private DeliveryUid $delivery;
 
     /** Адрес клиента */
-    #[Assert\NotBlank]
+    //#[Assert\NotBlank]
     private ?string $address = null;
 
 
@@ -53,19 +53,19 @@ final class DeliveredOzonOrderFboDeliveryDTO implements OrderDeliveryInterface
     private DeliveryEventUid $event;
 
     /** Пользовательские поля */
-    #[Assert\Valid]
-    private ArrayCollection $field;
+    //#[Assert\Valid]
+    //private ArrayCollection $field;
 
     /**
      * GPS широта.
      */
-    #[Assert\NotBlank]
+    //#[Assert\NotBlank]
     private ?GpsLatitude $latitude = null;
 
     /**
      * GPS долгота.
      */
-    #[Assert\NotBlank]
+    //#[Assert\NotBlank]
     private ?GpsLongitude $longitude = null;
 
 
@@ -79,7 +79,7 @@ final class DeliveredOzonOrderFboDeliveryDTO implements OrderDeliveryInterface
 
     public function __construct()
     {
-        $this->field = new ArrayCollection();
+        //$this->field = new ArrayCollection();
 
         $now = (new DateTimeImmutable())->setTime(0, 0, 0);
         $this->deliveryDate = $now->add(new DateInterval('P1D'));
@@ -110,30 +110,30 @@ final class DeliveredOzonOrderFboDeliveryDTO implements OrderDeliveryInterface
         return $this;
     }
 
-    /** Пользовательские поля */
-    public function getField(): ArrayCollection
-    {
-        return $this->field;
-    }
-
-    public function setField(ArrayCollection $field): self
-    {
-        $this->field = $field;
-        return $this;
-    }
-
-    public function addField(Field\DeliveredOzonOrderFboDeliveryFieldDTO $field): void
-    {
-        if(!$this->field->contains($field))
-        {
-            $this->field->add($field);
-        }
-    }
-
-    public function removeField(Field\DeliveredOzonOrderFboDeliveryFieldDTO $field): void
-    {
-        $this->field->removeElement($field);
-    }
+    //    /** Пользовательские поля */
+    //    public function getField(): ArrayCollection
+    //    {
+    //        return $this->field;
+    //    }
+    //
+    //    public function setField(ArrayCollection $field): self
+    //    {
+    //        $this->field = $field;
+    //        return $this;
+    //    }
+    //
+    //    public function addField(Field\DeliveredOzonOrderFboDeliveryFieldDTO $field): void
+    //    {
+    //        if(!$this->field->contains($field))
+    //        {
+    //            $this->field->add($field);
+    //        }
+    //    }
+    //
+    //    public function removeField(Field\DeliveredOzonOrderFboDeliveryFieldDTO $field): void
+    //    {
+    //        $this->field->removeElement($field);
+    //    }
 
     /** Координаты доставки на карте */
     public function getGeocode(): ?GeocodeAddressUid
