@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Commands;
 
 use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Messenger\Schedules\CancelOrders\CancelOzonOrdersScheduleMessage;
+use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use DateInterval;
@@ -38,10 +38,10 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'baks:ozon-orders:cancel:fbs',
-    description: 'Получает отмененные заказы FBS/DBS Оzon'
+    name: 'baks:ozon-orders:new:fbs',
+    description: 'Получает новые заказы FBS/DBS Оzon'
 )]
-class UpdateCancelOrdersCommand extends Command
+class UpdateNewOrdersFbsCommand extends Command
 {
     private SymfonyStyle $io;
 
@@ -132,6 +132,7 @@ class UpdateCancelOrdersCommand extends Command
             }
         }
 
+
         if($UserProfileUid)
         {
             $this->update($UserProfileUid);
@@ -142,18 +143,20 @@ class UpdateCancelOrdersCommand extends Command
 
         $this->io->success('Профиль пользователя не найден');
         return Command::SUCCESS;
+
     }
 
     public function update(UserProfileUid $profile, bool $async = false): void
     {
-        $this->io->note(sprintf('Обновляем отмененные заказы профиля %s', $profile->getAttr()));
+        $this->io->note(sprintf('Обновляем новые заказы профиля %s', $profile->getAttr()));
 
-        $NewOzonOrdersScheduleMessage = new CancelOzonOrdersScheduleMessage($profile);
+        $NewOzonOrdersScheduleMessage = new NewOzonOrdersScheduleMessage($profile);
         $NewOzonOrdersScheduleMessage->setInterval(DateInterval::createFromDateString('1 day'));
 
-        $this->messageDispatch->dispatch(
-            message: $NewOzonOrdersScheduleMessage,
-            transport: $async === true ? (string) $profile : null,
-        );
+        $this->messageDispatch
+            ->dispatch(
+                message: $NewOzonOrdersScheduleMessage,
+                transport: $async === true ? (string) $profile : null,
+            );
     }
 }

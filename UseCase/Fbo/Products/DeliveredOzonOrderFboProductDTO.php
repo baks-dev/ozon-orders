@@ -1,17 +1,17 @@
 <?php
 /*
  *  Copyright 2026.  Baks.dev <admin@baks.dev>
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,13 +23,11 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\UseCase\New\Products;
+namespace BaksDev\Ozon\Orders\UseCase\Fbo\Products;
 
-use BaksDev\Orders\Order\Entity\Products\OrderProduct;
 use BaksDev\Orders\Order\Entity\Products\OrderProductInterface;
 use BaksDev\Orders\Order\UseCase\Admin\Edit\Products\Posting\OrderProductPostingDTO;
-use BaksDev\Ozon\Orders\UseCase\New\Products\Items\NewOzonOrderProductItemDTO;
-use BaksDev\Ozon\Orders\UseCase\New\Products\Price\NewOzonOrderPriceDTO;
+use BaksDev\Ozon\Orders\UseCase\Fbo\Products\Price\DeliveredOzonOrderFboProductPriceDTO;
 use BaksDev\Products\Product\Type\Event\ProductEventUid;
 use BaksDev\Products\Product\Type\Offers\Id\ProductOfferUid;
 use BaksDev\Products\Product\Type\Offers\Variation\Id\ProductVariationUid;
@@ -37,19 +35,16 @@ use BaksDev\Products\Product\Type\Offers\Variation\Modification\Id\ProductModifi
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/** @see OrderProduct */
-final class NewOzonOrderProductDTO implements OrderProductInterface
+/** @see DeliveredOzonOrderFboProduct */
+final class DeliveredOzonOrderFboProductDTO implements OrderProductInterface
 {
-    /** Артикул продукта */
+    /**
+     * Артикул продукта
+     *
+     * @note Используется для получения картоски товара
+     */
     #[Assert\NotBlank]
     private string $article;
-
-    /** SKU продукта */
-    #[Assert\NotBlank]
-    private int $sku;
-
-    /** Идентификатор экземпляра. */
-    private ?int $exemplar = null;
 
     /** Событие продукта */
     #[Assert\NotBlank]
@@ -70,30 +65,12 @@ final class NewOzonOrderProductDTO implements OrderProductInterface
 
     /** Стоимость и количество */
     #[Assert\Valid]
-    private NewOzonOrderPriceDTO $price;
-
-    /**
-     * Количество разделенных отправлений одного заказа
-     *
-     * @var ArrayCollection<int, OrderProductPostingDTO> $posting
-     */
-    #[Assert\Valid]
-    private ArrayCollection $posting;
-
-    /**
-     * Коллекция единиц товара
-     *
-     * @var ArrayCollection<int, NewOzonOrderProductItemDTO> $item
-     */
-    #[Assert\Valid]
-    private ArrayCollection $item;
+    private DeliveredOzonOrderFboProductPriceDTO $price;
 
     public function __construct(string $article)
     {
         $this->article = $article;
-        $this->price = new Price\NewOzonOrderPriceDTO();
-        $this->posting = new ArrayCollection();
-        $this->item = new ArrayCollection();
+        $this->price = new DeliveredOzonOrderFboProductPriceDTO();
     }
 
     /** Артикул продукта */
@@ -174,87 +151,13 @@ final class NewOzonOrderProductDTO implements OrderProductInterface
     }
 
     /** Стоимость и количество */
-    public function getPrice(): NewOzonOrderPriceDTO
+    public function getPrice(): DeliveredOzonOrderFboProductPriceDTO
     {
         return $this->price;
     }
 
-    public function setPrice(NewOzonOrderPriceDTO $price): void
+    public function setPrice(DeliveredOzonOrderFboProductPriceDTO $price): void
     {
         $this->price = $price;
-    }
-
-    /**
-     * Sku
-     */
-    public function getSku(): int
-    {
-        return $this->sku;
-    }
-
-    public function setSku(int $sku): self
-    {
-        $this->sku = $sku;
-        return $this;
-    }
-
-    public function getExemplar(): ?int
-    {
-        return $this->exemplar;
-    }
-
-    public function setExemplar(?int $exemplar): self
-    {
-        $this->exemplar = $exemplar;
-        return $this;
-    }
-
-    /**
-     * Количество разделенных отправлений одного заказа
-     *
-     * @return ArrayCollection<int, OrderProductPostingDTO>
-     */
-    public function getPosting(): ArrayCollection
-    {
-        return $this->posting;
-    }
-
-    public function addPosting(OrderProductPostingDTO $posting): self
-    {
-        $this->posting->add($posting);
-        return $this;
-    }
-
-    public function removePosting(OrderProductPostingDTO $posting): void
-    {
-        $this->posting->removeElement($posting);
-    }
-
-    /**
-     * Коллекция разделенных отправлений одного заказа
-     *
-     * @return ArrayCollection<int, NewOzonOrderProductItemDTO>
-     */
-    public function getItem(): ArrayCollection
-    {
-        return $this->item;
-    }
-
-    public function addItem(NewOzonOrderProductItemDTO $item): void
-    {
-        $exist = $this->item->exists(function(int $k, NewOzonOrderProductItemDTO $value) use ($item) {
-            /** @var NewOzonOrderProductItemDTO $item */
-            return $value->getConst()->equals($item->getConst());
-        });
-
-        if(false === $exist)
-        {
-            $this->item->add($item);
-        }
-    }
-
-    public function removeItem(NewOzonOrderProductItemDTO $item): void
-    {
-        $this->item->removeElement($item);
     }
 }

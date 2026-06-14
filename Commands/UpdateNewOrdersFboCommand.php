@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Commands;
 
 use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
+use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrdersFbo\NewOzonOrdersFboScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use DateInterval;
@@ -38,10 +38,10 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'baks:ozon-orders:new',
-    description: 'Получает новые заказы Оzon'
+    name: 'baks:ozon-orders:new:fbo',
+    description: 'Получает новые заказы FBO Оzon'
 )]
-class UpdateNewOrdersCommand extends Command
+class UpdateNewOrdersFboCommand extends Command
 {
     private SymfonyStyle $io;
 
@@ -150,12 +150,12 @@ class UpdateNewOrdersCommand extends Command
     {
         $this->io->note(sprintf('Обновляем новые заказы профиля %s', $profile->getAttr()));
 
-        $NewOzonOrdersScheduleMessage = new NewOzonOrdersScheduleMessage($profile);
-        $NewOzonOrdersScheduleMessage->setInterval(DateInterval::createFromDateString('1 day'));
+        $NewOzonOrdersFboScheduleMessage = new NewOzonOrdersFboScheduleMessage($profile);
+        $NewOzonOrdersFboScheduleMessage->setInterval(DateInterval::createFromDateString('1 day'));
 
         $this->messageDispatch
             ->dispatch(
-                message: $NewOzonOrdersScheduleMessage,
+                message: $NewOzonOrdersFboScheduleMessage,
                 transport: $async === true ? (string) $profile : null,
             );
     }
