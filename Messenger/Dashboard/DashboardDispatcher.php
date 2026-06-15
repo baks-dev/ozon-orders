@@ -55,13 +55,17 @@ final class DashboardDispatcher
 {
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
-        private readonly CurrentFinancesEventInterface $CurrentFinancesEventRepository,
         private readonly MessageDispatchInterface $dispatch,
         private readonly DeduplicatorInterface $Deduplicator,
+        private readonly ?CurrentFinancesEventInterface $CurrentFinancesEventRepository = null,
     ) {}
 
     public function __invoke(FinancesMessage $message): void
     {
+        if(false === $this->CurrentFinancesEventRepository instanceof CurrentFinancesEventInterface)
+        {
+            return;
+        }
 
         /** Получаем информацию о платеже */
 
@@ -84,6 +88,15 @@ final class DashboardDispatcher
             || false === $FinancesEvent->isPayment()
         )
         {
+            $this->logger->critical(
+                'finances: Ошибка при получении финансовой выплаты',
+                [
+                    self::class.':'.__LINE__,
+                    'invariable' => $FinancesEvent->isInvariable(),
+                    'payment' => $FinancesEvent->isPayment(),
+                ],
+            );
+
             return;
         }
 
@@ -91,9 +104,11 @@ final class DashboardDispatcher
 
         /** Дедубликатор по идентификатору заказа */
         $Deduplicator = $this->Deduplicator
-            ->namespace('orders-order')
+            ->namespace('finances')
+            ->expiresAfter('1 hour')
             ->deduplication([
                 (string) $UserUid,
+                $FinancesEvent->isOrders(),
                 self::class,
             ]);
 
