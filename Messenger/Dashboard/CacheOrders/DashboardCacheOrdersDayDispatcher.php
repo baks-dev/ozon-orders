@@ -122,7 +122,7 @@ final class DashboardCacheOrdersDayDispatcher
         {
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
-                ->setName('Выплаты по заказам')
+                ->setName('Выплат по заказам')
                 ->setPeriod($dayFrom, $dayTo)
                 ->setPriority(100);
 

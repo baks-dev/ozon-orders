@@ -125,7 +125,7 @@ final class DashboardHoldOthersDayDispatcher
             $DashboardInvariableDTO
                 ->setName('Прочих удержаний')
                 ->setPeriod($dayFrom, $dayTo)
-                ->setPriority(80);
+                ->setPriority(85);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('hold_others_day');

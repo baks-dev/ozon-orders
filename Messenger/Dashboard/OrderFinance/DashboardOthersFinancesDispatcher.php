@@ -117,7 +117,7 @@ final class DashboardOthersFinancesDispatcher
             $DashboardInvariableDTO
                 ->setName('Резервный фонд')
                 ->setPeriod($dayFrom, $dayTo)
-                ->setPriority(90);
+                ->setPriority(80);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('order_finance_day');
