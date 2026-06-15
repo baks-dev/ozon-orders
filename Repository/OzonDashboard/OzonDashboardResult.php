@@ -33,7 +33,8 @@ final class OzonDashboardResult
 {
     public function __construct(
         private string $name,
-        private string $total,
+        private string $type,
+        private int|string $total,
     ) {}
 
     public function getName(): string
@@ -44,5 +45,10 @@ final class OzonDashboardResult
     public function getTotal(): Money
     {
         return new Money($this->total, true);
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
     }
 }

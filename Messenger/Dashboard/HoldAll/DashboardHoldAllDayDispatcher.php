@@ -122,7 +122,8 @@ final class DashboardHoldAllDayDispatcher
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
                 ->setName('Всего удержано')
-                ->setPeriod($dayFrom, $dayTo);
+                ->setPeriod($dayFrom, $dayTo)
+                ->setPriority(75);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('hold_all_day');

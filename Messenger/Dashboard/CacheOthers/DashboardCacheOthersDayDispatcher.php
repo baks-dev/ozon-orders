@@ -121,7 +121,8 @@ final class DashboardCacheOthersDayDispatcher
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
                 ->setName('Прочие выплаты')
-                ->setPeriod($dayFrom, $dayTo);
+                ->setPeriod($dayFrom, $dayTo)
+                ->setPriority(85);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('cache_others_day');

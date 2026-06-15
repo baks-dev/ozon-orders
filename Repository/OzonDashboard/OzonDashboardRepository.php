@@ -30,9 +30,10 @@ use BaksDev\Dashboard\Entity\Dashboard;
 use BaksDev\Dashboard\Entity\Event\DashboardEvent;
 use BaksDev\Dashboard\Entity\Event\Invariable\DashboardInvariable;
 use BaksDev\Dashboard\Entity\Event\Payment\DashboardPayment;
+use BaksDev\Dashboard\Entity\Event\Type\DashboardType;
 use BaksDev\Dashboard\Entity\Event\User\DashboardUser;
 use BaksDev\Finances\Entity\Event\Invariable\FinancesInvariable;
-use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFboOzon;
+use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Users\Profile\UserProfile\Repository\UserProfileTokenStorage\UserProfileTokenStorageInterface;
 use BaksDev\Users\User\Repository\UserTokenStorage\UserTokenStorageInterface;
@@ -80,7 +81,7 @@ final class OzonDashboardRepository implements OzonDashboardInterface
         $dbal
             ->addSelect('dashboard_invariable.name')
             ->join(
-                'dashboard_payment',
+                'dashboard',
                 DashboardInvariable::class,
                 'dashboard_invariable',
                 '
@@ -118,7 +119,7 @@ final class OzonDashboardRepository implements OzonDashboardInterface
         )
             ->setParameter(
                 key: 'payment',
-                value: new PaymentUid(TypePaymentFboOzon::TYPE),
+                value: new PaymentUid(TypePaymentFbsOzon::TYPE),
                 type: PaymentUid::TYPE,
             );
 
@@ -131,8 +132,24 @@ final class OzonDashboardRepository implements OzonDashboardInterface
                 'dashboard_event',
                 'dashboard_event.id = dashboard.event');
 
-        return $dbal
+
+        $dbal
+            ->addSelect('dashboard_type.value AS type')
+            ->leftJoin(
+                'dashboard',
+                DashboardType::class,
+                'dashboard_type',
+                'dashboard_type.main = dashboard.id',
+            );
+
+
+        $dbal->orderBy('dashboard_invariable.priority', 'DESC');
+
+        $result = $dbal
             ->enableCache('dashboard', '1 day')
             ->fetchAllHydrate(OzonDashboardResult::class);
+
+
+        return $result->valid() ? $result : false;
     }
 }

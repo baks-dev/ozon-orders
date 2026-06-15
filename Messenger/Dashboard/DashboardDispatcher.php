@@ -108,7 +108,7 @@ final class DashboardDispatcher
             ->expiresAfter('1 hour')
             ->deduplication([
                 (string) $UserUid,
-                $FinancesEvent->isOrders(),
+                (int) $FinancesEvent->isOrders(),
                 self::class,
             ]);
 
@@ -232,5 +232,7 @@ final class DashboardDispatcher
             stamps: [new MessageDelay('41 minutes')],
             transport: 'finances',
         );
+
+        $Deduplicator->save();
     }
 }

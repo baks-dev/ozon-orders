@@ -124,7 +124,8 @@ final class DashboardHoldOrdersDayDispatcher
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
                 ->setName('Удержано по заказам')
-                ->setPeriod($dayFrom, $dayTo);
+                ->setPeriod($dayFrom, $dayTo)
+                ->setPriority(95);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('hold_orders_day');

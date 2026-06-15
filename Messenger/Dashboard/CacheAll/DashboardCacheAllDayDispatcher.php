@@ -118,7 +118,8 @@ final class DashboardCacheAllDayDispatcher
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
                 ->setName('Итого выплат')
-                ->setPeriod($dayFrom, $dayTo);
+                ->setPeriod($dayFrom, $dayTo)
+                ->setPriority(70);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue('cache_all_day');
