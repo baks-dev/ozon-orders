@@ -106,7 +106,7 @@ final class GetOzonOrderAccrualDayRequest extends Ozon
                     [self::class.':'.__LINE__, $data, $content],
                 );
 
-                return false;
+                break;
             }
 
             if(empty($content['accruals']))
