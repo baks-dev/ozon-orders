@@ -1,0 +1,230 @@
+<?php
+/*
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is furnished
+ *  to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ */
+
+declare(strict_types=1);
+
+namespace BaksDev\Ozon\Orders\Messenger\Schedules\Finance;
+
+
+use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Finances\Entity\Finances;
+use BaksDev\Finances\Repository\ExistFinance\ExistFinanceInterface;
+use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesDTO;
+use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesHandler;
+use BaksDev\Finances\UseCase\NewEdit\Payment\NewEditPaymentDTO;
+use BaksDev\Orders\Order\Repository\OrderByPosting\OrderByPostingInterface;
+use BaksDev\Orders\Order\Type\Id\OrderUid;
+use BaksDev\Ozon\Orders\Api\Accrual\GetOzonOrderAccrualDayRequest;
+use BaksDev\Ozon\Orders\Schedule\Finance\FinanceSchedule;
+use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
+use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
+use BaksDev\Payment\Type\Id\PaymentUid;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
+use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
+use BaksDev\Products\Product\Type\Invariable\ProductInvariableUid;
+use BaksDev\Reference\Money\Type\Money;
+use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
+use BaksDev\Users\User\Entity\User;
+use BaksDev\Users\User\Type\Id\UserUid;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Uid\Uuid;
+
+#[Autoconfigure(shared: false)]
+#[AsMessageHandler(priority: 0)]
+final class FinanceOzonOrdersScheduleDispatcher
+{
+    public function __construct(
+        #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
+        private DeduplicatorInterface $Deduplicator,
+        private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
+        private GetOzonOrderAccrualDayRequest $GetOzonOrderAccrualDayRequest,
+        private OrderByPostingInterface $OrderByPostingRepository,
+        private ExistFinanceInterface $ExistFinanceRepository,
+        private NewEditFinancesHandler $NewEditFinancesHandler,
+        private UserByUserProfileInterface $UserByUserProfileRepository,
+        private ProductConstByArticleInterface $ProductConstByArticleRepository,
+    ) {}
+
+    public function __invoke(FinanceOzonOrdersScheduleMessage $message): void
+    {
+
+        /**
+         * Ограничиваем периодичность запросов
+         */
+
+        $DeduplicatorExec = $this->Deduplicator
+            ->namespace('ozon-orders')
+            ->expiresAfter(FinanceSchedule::INTERVAL)
+            ->deduplication([
+                (string) $message->getProfile(),
+                self::class,
+            ]);
+
+        if($DeduplicatorExec->isExecuted())
+        {
+            return;
+        }
+
+        /* @note удаляется в конце обработчика */
+        $DeduplicatorExec->save();
+
+
+        /** Получаем все токены профиля */
+        $tokensByProfile = $this->OzonTokensByProfileRepository
+            ->forProfile($message->getProfile())
+            ->findAll();
+
+        if(false === $tokensByProfile || false === $tokensByProfile->valid())
+        {
+            $DeduplicatorExec->delete();
+            return;
+        }
+
+        /** Получаем идентификатор пользователя по профилю */
+
+        // Получаем идентификатор пользователя по профилю
+        $User = $this->UserByUserProfileRepository
+            ->forProfile($message->getProfile())
+            ->find();
+
+        if(false === ($User instanceof User))
+        {
+            $this->logger->info(
+                sprintf('ozon-orders: Пользователь по идентификатору %s профиля не найден', $message->getProfile()),
+                [self::class.':'.__LINE__],
+            );
+
+            $DeduplicatorExec->delete();
+
+            return;
+        }
+
+        foreach($tokensByProfile as $OzonTokenUid)
+        {
+            $this->logger->info(
+                sprintf('%s: Получаем список платежей за вчерашний день', $OzonTokenUid),
+                [self::class.':'.__LINE__],
+            );
+
+            /**
+             * Получаем список НОВЫХ сборочных заданий токена
+             * по умолчанию за вчерашний день
+             */
+
+            $finances = $this->GetOzonOrderAccrualDayRequest
+                ->forTokenIdentifier($OzonTokenUid)
+                ->setDate($message->getDay())
+                ->findAll();
+
+            if(false === $finances || false === $finances->valid())
+            {
+                continue;
+            }
+
+            /** Получаем заказ по номеру отправления */
+            foreach($finances as $OzonOrderAccrualDayResponse)
+            {
+                $Deduplicator = $this->Deduplicator
+                    ->namespace('ozon-orders')
+                    ->expiresAfter(FinanceSchedule::INTERVAL)
+                    ->deduplication([$OzonOrderAccrualDayResponse->getId(), self::class]);
+
+                if($Deduplicator->isExecuted())
+                {
+                    continue;
+                }
+
+                /** Проверяем имеется ли такой платеж */
+                $isExist = $this->ExistFinanceRepository->exist($OzonOrderAccrualDayResponse->getId());
+
+                if(true === $isExist)
+                {
+                    $Deduplicator->save();
+                    continue;
+                }
+
+                $NewEditFinancesDTO = new NewEditFinancesDTO();
+                $NewEditFinancesDTO
+                    ->setPrice($OzonOrderAccrualDayResponse->getTotal())
+                    ->setComment($OzonOrderAccrualDayResponse->getComment());
+
+                $NewEditFinancesInvariableDTO = $NewEditFinancesDTO->getInvariable();
+                $NewEditFinancesInvariableDTO
+                    ->setCreated($OzonOrderAccrualDayResponse->getDate())
+                    ->setUsr($User);
+
+                $NewEditFinancesMarketplaceDTO = $NewEditFinancesDTO->getMarketpace();
+                $NewEditFinancesMarketplaceDTO
+                    ->setToken($OzonTokenUid->getValue())
+                    ->setNumber($OzonOrderAccrualDayResponse->getNumber())
+                    ->setIdentifier($OzonOrderAccrualDayResponse->getId());
+
+                $NewEditPaymentDTO = $NewEditFinancesDTO->getPayment();
+                $NewEditPaymentDTO->setValue(new PaymentUid(TypePaymentFbsOzon::TYPE));
+
+
+                $OrderUid = $this->OrderByPostingRepository->find('O-'.$OzonOrderAccrualDayResponse->getNumber());
+
+                /** Присваиваем идентификатор заказа если найден */
+                if($OrderUid instanceof OrderUid)
+                {
+                    $NewEditFinancesOrderDTO = $NewEditFinancesDTO->getOrd();
+                    $NewEditFinancesOrderDTO->setValue($OrderUid);
+                }
+
+                /** Если нет идентификатора заказа, но есть артикул продукта */
+                if(false === ($OrderUid instanceof OrderUid) && $OzonOrderAccrualDayResponse->getArticle())
+                {
+                    $CurrentProductByBarcodeResult = $this->ProductConstByArticleRepository
+                        ->find($OzonOrderAccrualDayResponse->getArticle());
+
+                    if($CurrentProductByBarcodeResult instanceof CurrentProductByBarcodeResult)
+                    {
+                        $ProductInvariableUid = $CurrentProductByBarcodeResult->getInvariable();
+
+                        if($ProductInvariableUid instanceof ProductInvariableUid)
+                        {
+                            $NewEditFinancesProductDTO = $NewEditFinancesDTO->getProduct();
+                            $NewEditFinancesProductDTO->setValue($ProductInvariableUid);
+                        }
+                    }
+                }
+
+                /** @var NewEditFinancesHandler $NewEditFinancesHandler */
+                $Finances = $this->NewEditFinancesHandler->handle($NewEditFinancesDTO);
+
+                if(false === ($Finances instanceof Finances))
+                {
+                    $this->logger->critical(
+                        sprintf('ozon-orders: Ошибка %s при добавлении платежа', $Finances),
+                    );
+                }
+            }
+        }
+
+        $DeduplicatorExec->delete();
+    }
+}
