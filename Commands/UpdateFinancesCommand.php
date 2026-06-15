@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Commands;
 
 use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Messenger\Schedules\Finance\FinanceScheduleMessage;
+use BaksDev\Ozon\Orders\Messenger\Schedules\Finance\FinanceOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -167,7 +167,7 @@ class UpdateFinancesCommand extends Command
     {
         $this->io->note(sprintf('Обновляем финансы профиля %s', $profile->getAttr()));
 
-        $NewOzonOrdersScheduleMessage = new FinanceScheduleMessage($profile);
+        $NewOzonOrdersScheduleMessage = new FinanceOzonOrdersScheduleMessage($profile);
         $NewOzonOrdersScheduleMessage->setDay($date);
 
         $this->messageDispatch

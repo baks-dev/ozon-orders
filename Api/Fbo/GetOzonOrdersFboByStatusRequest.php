@@ -143,7 +143,7 @@ final class GetOzonOrdersFboByStatusRequest extends Ozon
          * Дата начала периода, за который нужно получить список отправлений.
          * Период по умолчанию - 1 неделя
          */
-        $sinceDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 week'));
+        $sinceDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 day'));
         $data['filter']['since'] = $sinceDate->format(DateTimeInterface::W3C);
         $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);
 

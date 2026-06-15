@@ -52,7 +52,7 @@ final readonly class NewOrdersFboScheduleHandler
             {
                 $this->messageDispatch->dispatch(
                     message: new NewOzonOrdersFboScheduleMessage($profile),
-                    stamps: [new MessageDelay('45 seconds')],
+                    stamps: [new MessageDelay('30 minutes')],
                     transport: 'finances',
                 );
             }

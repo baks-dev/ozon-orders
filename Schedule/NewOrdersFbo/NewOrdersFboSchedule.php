@@ -35,7 +35,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 #[AutoconfigureTag('baks.schedule')]
 final class NewOrdersFboSchedule implements ScheduleInterface
 {
-    public const string INTERVAL = '1 minutes';
+    public const string INTERVAL = '1 hour';
 
     /**
      * Возвращает класс сообщение

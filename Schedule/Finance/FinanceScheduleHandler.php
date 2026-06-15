@@ -27,7 +27,7 @@ namespace BaksDev\Ozon\Orders\Schedule\Finance;
 
 use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrders\NewOzonOrdersScheduleMessage;
+use BaksDev\Ozon\Orders\Messenger\Schedules\Finance\FinanceOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -51,8 +51,8 @@ final readonly class FinanceScheduleHandler
             foreach($profiles as $profile)
             {
                 $this->messageDispatch->dispatch(
-                    message: new NewOzonOrdersScheduleMessage($profile),
-                    stamps: [new MessageDelay('5 seconds')],
+                    message: new FinanceOzonOrdersScheduleMessage($profile),
+                    stamps: [new MessageDelay('30 minutes')],
                     transport: 'finances',
                 );
             }

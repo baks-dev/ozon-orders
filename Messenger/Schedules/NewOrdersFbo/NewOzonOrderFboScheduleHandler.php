@@ -37,7 +37,6 @@ use BaksDev\Field\Pack\Phone\Type\PhoneField;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\Fbo\GetOzonOrdersFboByStatusRequest;
-use BaksDev\Ozon\Orders\Api\GetOzonOrderInfoRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboDTO;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboHandler;
@@ -69,25 +68,13 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class NewOzonOrderFboScheduleHandler
 {
     public function __construct(
-
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private DeduplicatorInterface $Deduplicator,
-        //private GeocodeAddressParser $GeocodeAddressParser,
-        ///private GetOzonOrdersByStatusRequest $getOzonOrdersNewRequest,
         private GetOzonOrdersFboByStatusRequest $GetOzonOrdersFboByStatusRequest,
-
-
-        private UserProfileGpsInterface $UserProfileGpsInterfaceRepository,
         private ProductConstByArticleInterface $ProductConstByArticleRepository,
         private CurrentDeliveryEventInterface $CurrentDeliveryEventRepository,
-        private UserByUserProfileInterface $UserByUserProfileRepository,
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
-
         private DeliveredOzonOrderFboHandler $DeliveredOzonOrderFboHandler,
-        private FieldByDeliveryChoiceInterface $FieldByDeliveryChoice,
-        private GetOzonOrderInfoRequest $GetOzonOrderInfoRequest,
-        private FieldValueFormInterface $fieldValue,
-        private MessageDispatchInterface $MessageDispatch,
         #[Autowire(env: 'PROJECT_USER')] private string|null $projectUser = null,
     ) {}
 
@@ -126,6 +113,8 @@ final readonly class NewOzonOrderFboScheduleHandler
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
+            $DeduplicatorExec->delete();
+
             return;
         }
 
@@ -247,9 +236,8 @@ final readonly class NewOzonOrderFboScheduleHandler
 
                 $Deduplicator->save();
             }
+
+            return;
         }
-
-        $DeduplicatorExec->delete();
-
     }
 }
