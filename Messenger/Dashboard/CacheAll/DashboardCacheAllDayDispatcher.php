@@ -39,8 +39,6 @@ use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\User\Type\Id\UserUid;
-use DateInterval;
-use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -50,6 +48,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler(priority: 0)]
 final class DashboardCacheAllDayDispatcher
 {
+    private const string KEY = 'cache_all_day';
+
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private readonly DeduplicatorInterface $Deduplicator,
@@ -77,8 +77,8 @@ final class DashboardCacheAllDayDispatcher
 
         /** Получаем положительные транзакции по заказу за сутки */
 
-        $dayFrom = new DateTimeImmutable('now')->sub(DateInterval::createFromDateString('1 day'));
-        $dayTo = new DateTimeImmutable('now')->sub(DateInterval::createFromDateString('1 day'));
+        $dayFrom = $message->getDate(); // начало дня
+        $dayTo = $message->getDate(); // окончание дня
 
         $StatisticsOrdersResult = $this
             ->StatisticsOrdersRepository

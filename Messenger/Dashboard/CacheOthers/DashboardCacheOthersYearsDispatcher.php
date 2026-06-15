@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\Dashboard\HoldOrders;
+namespace BaksDev\Ozon\Orders\Messenger\Dashboard\CacheOthers;
 
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
@@ -33,13 +33,13 @@ use BaksDev\Dashboard\Entity\Event\DashboardEvent;
 use BaksDev\Dashboard\Repository\DashboardCurrentEventByPeriod\DashboardCurrentEventByPeriodInterface;
 use BaksDev\Dashboard\UseCase\NewEdit\NewEditDashboardDTO;
 use BaksDev\Dashboard\UseCase\NewEdit\NewEditDashboardHandler;
-use BaksDev\Dashboard\UseCase\NewEdit\Type\NewEditDashboardTypeDTO;
 use BaksDev\Finances\Repository\CurrentFinancesEvent\CurrentFinancesEventInterface;
 use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersInterface;
 use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\User\Type\Id\UserUid;
+use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -47,9 +47,9 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
-final class DashboardHoldOrdersDayDispatcher
+final class DashboardCacheOthersYearsDispatcher
 {
-    private const string KEY = 'hold_orders_day';
+    private const string KEY = 'cache_others_years';
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
@@ -59,9 +59,8 @@ final class DashboardHoldOrdersDayDispatcher
         private readonly DashboardCurrentEventByPeriodInterface $DashboardCurrentEventByPeriodRepository,
     ) {}
 
-    public function __invoke(DashboardHoldOrdersDayMessage $message): void
+    public function __invoke(DashboardCacheOthersDayMessage $message): void
     {
-
         /** Дедубликатор по идентификатору заказа */
         $Deduplicator = $this->Deduplicator
             ->namespace('ozon-orders')
@@ -78,16 +77,15 @@ final class DashboardHoldOrdersDayDispatcher
 
         /** Получаем положительные транзакции по заказу за сутки */
 
-        $dayFrom = $message->getDate(); // начало дня
+        $dayFrom = $message->getDate()->sub(DateInterval::createFromDateString('1 year')); // начало дня
         $dayTo = $message->getDate(); // окончание дня
 
         $StatisticsOrdersResult = $this
             ->StatisticsOrdersRepository
             ->forUser($message->getUser())
             ->forPayment($message->getPayment())
-            ->onlyOrders() // только транзакции по заказу
-            //->onlyNotOrders() // только транзакции не имеющие заказы
-            ->onlyHold() // только отрицательный баланс
+            ->onlyNotOrders() // только по транзакциям не имеющих заказов
+            ->onlyCache() // только положительный баланс
             ->dayFrom($dayFrom)
             ->dayTo($dayTo)
             ->find();
@@ -123,9 +121,9 @@ final class DashboardHoldOrdersDayDispatcher
         {
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
-                ->setName('Удержаний по заказам')
+                ->setName('Прочих выплат')
                 ->setPeriod($dayFrom, $dayTo)
-                ->setPriority(95);
+                ->setPriority(90);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue(self::KEY);
@@ -144,7 +142,7 @@ final class DashboardHoldOrdersDayDispatcher
         if(false === ($Dashboard instanceof Dashboard))
         {
             $this->logger->critical(
-                'finances: Ошибка при создании Dashboard "Выплаты по заказам"',
+                'finances: Ошибка при создании Dashboard "Прочие выплаты"',
                 [self::class.':'.__LINE__],
             );
 

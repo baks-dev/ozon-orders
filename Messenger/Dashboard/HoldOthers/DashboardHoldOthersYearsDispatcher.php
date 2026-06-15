@@ -23,19 +23,24 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\Dashboard\OrderFinance;
+namespace BaksDev\Ozon\Orders\Messenger\Dashboard\HoldOthers;
 
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Dashboard\Entity\Dashboard;
 use BaksDev\Dashboard\Entity\Event\DashboardEvent;
 use BaksDev\Dashboard\Repository\DashboardCurrentEventByPeriod\DashboardCurrentEventByPeriodInterface;
 use BaksDev\Dashboard\UseCase\NewEdit\NewEditDashboardDTO;
 use BaksDev\Dashboard\UseCase\NewEdit\NewEditDashboardHandler;
-use BaksDev\Finances\Repository\Statistics\Finance\OrderFinanceInterface;
-use BaksDev\Finances\Repository\Statistics\Finance\OrderFinanceResult;
+use BaksDev\Dashboard\UseCase\NewEdit\Type\NewEditDashboardTypeDTO;
+use BaksDev\Finances\Repository\CurrentFinancesEvent\CurrentFinancesEventInterface;
 use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersInterface;
+use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
+use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
+use BaksDev\Users\User\Type\Id\UserUid;
+use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -43,19 +48,21 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
-final class DashboardOthersFinancesDispatcher
+final class DashboardHoldOthersYearsDispatcher
 {
+    private const string KEY = 'hold_others_years';
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private readonly DeduplicatorInterface $Deduplicator,
-        private readonly OrderFinanceInterface $OrderFinanceInterface,
+        private readonly StatisticsOrdersInterface $StatisticsOrdersRepository,
         private readonly NewEditDashboardHandler $NewEditDashboardHandler,
         private readonly DashboardCurrentEventByPeriodInterface $DashboardCurrentEventByPeriodRepository,
     ) {}
 
-    public function __invoke(DashboardOthersFinancesMessage $message): void
+    public function __invoke(DashboardHoldOthersDayMessage $message): void
     {
+
         /** Дедубликатор по идентификатору заказа */
         $Deduplicator = $this->Deduplicator
             ->namespace('ozon-orders')
@@ -70,30 +77,32 @@ final class DashboardOthersFinancesDispatcher
             return;
         }
 
-        $dayFrom = $message->getDate(); // начало дня
+        /** Получаем положительные транзакции по заказу за сутки */
+
+        $dayFrom = $message->getDate()->sub(DateInterval::createFromDateString('1 year')); // начало дня
         $dayTo = $message->getDate(); // окончание дня
 
-        $orders = $this->OrderFinanceInterface
+        $StatisticsOrdersResult = $this
+            ->StatisticsOrdersRepository
             ->forUser($message->getUser())
             ->forPayment($message->getPayment())
-            ->dayFrom($dayFrom) // присвоит начало дня
-            ->dayTo($dayTo) // присвоит окончание дня
-            ->findAll();
+            //->onlyOrders() // только транзакции по заказу
+            ->onlyNotOrders() // только транзакции не имеющие заказы
+            ->onlyHold() // только отрицательный баланс
+            ->dayFrom($dayFrom)
+            ->dayTo($dayTo)
+            ->find();
 
-        if(false === $orders || false === $orders->valid())
+        if(false === ($StatisticsOrdersResult instanceof StatisticsOrdersResult))
         {
             return;
         }
 
-        $total = 0;
-
-        foreach($orders as $OrderFinanceResult)
-        {
-            $total += $OrderFinanceResult->getOrderPrice();
-            $total -= $OrderFinanceResult->getOrderFinance();
-        }
 
         /** Создаем Dashboard на вчерашний день, чтобы отобразить сегодня */
+
+        // получаем имеющийся Dashboard
+
 
         /** @see DashboardDTO */
         $NewEditDashboardDTO = new NewEditDashboardDTO();
@@ -102,7 +111,7 @@ final class DashboardOthersFinancesDispatcher
             ->user($message->getUser())
             ->payment($message->getPayment())
             ->period($dayFrom, $dayTo)
-            ->type('order_finance_day')
+            ->type(self::KEY)
             ->find();
 
         if(true === $DashboardEvent instanceof DashboardEvent)
@@ -115,12 +124,12 @@ final class DashboardOthersFinancesDispatcher
         {
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
-                ->setName('Резервный фонд')
+                ->setName('Прочих удержаний')
                 ->setPeriod($dayFrom, $dayTo)
-                ->setPriority(80);
+                ->setPriority(85);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
-            $NewEditDashboardTypeDTO->setValue('order_finance_day');
+            $NewEditDashboardTypeDTO->setValue(self::KEY);
 
             $DashboardPaymentDTO = $NewEditDashboardDTO->getPayment();
             $DashboardPaymentDTO->setValue($message->getPayment());
@@ -129,14 +138,14 @@ final class DashboardOthersFinancesDispatcher
             $DashboardUserDTO->setValue($message->getUser());
         }
 
-        $NewEditDashboardDTO->setTotal(new Money($total, true));
+        $NewEditDashboardDTO->setTotal($StatisticsOrdersResult->getTotal());
 
         $Dashboard = $this->NewEditDashboardHandler->handle($NewEditDashboardDTO);
 
         if(false === ($Dashboard instanceof Dashboard))
         {
             $this->logger->critical(
-                'finances: Ошибка при создании Dashboard "Финансовая выгода"',
+                'finances: Ошибка при создании Dashboard "Выплаты по заказам"',
                 [self::class.':'.__LINE__],
             );
 

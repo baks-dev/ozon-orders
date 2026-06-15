@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace BaksDev\Ozon\Orders\Messenger\Dashboard\HoldOrders;
+namespace BaksDev\Ozon\Orders\Messenger\Dashboard\CacheOrders;
 
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
@@ -40,6 +40,7 @@ use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\User\Type\Id\UserUid;
+use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -47,9 +48,9 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
-final class DashboardHoldOrdersDayDispatcher
+final class DashboardCacheOrdersYearsDispatcher
 {
-    private const string KEY = 'hold_orders_day';
+    private const string KEY = 'cache_orders_years';
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
@@ -59,7 +60,7 @@ final class DashboardHoldOrdersDayDispatcher
         private readonly DashboardCurrentEventByPeriodInterface $DashboardCurrentEventByPeriodRepository,
     ) {}
 
-    public function __invoke(DashboardHoldOrdersDayMessage $message): void
+    public function __invoke(DashboardCacheOrdersDayMessage $message): void
     {
 
         /** Дедубликатор по идентификатору заказа */
@@ -78,7 +79,7 @@ final class DashboardHoldOrdersDayDispatcher
 
         /** Получаем положительные транзакции по заказу за сутки */
 
-        $dayFrom = $message->getDate(); // начало дня
+        $dayFrom = $message->getDate()->sub(DateInterval::createFromDateString('1 year')); // начало дня
         $dayTo = $message->getDate(); // окончание дня
 
         $StatisticsOrdersResult = $this
@@ -86,8 +87,7 @@ final class DashboardHoldOrdersDayDispatcher
             ->forUser($message->getUser())
             ->forPayment($message->getPayment())
             ->onlyOrders() // только транзакции по заказу
-            //->onlyNotOrders() // только транзакции не имеющие заказы
-            ->onlyHold() // только отрицательный баланс
+            ->onlyCache() // только положительный баланс
             ->dayFrom($dayFrom)
             ->dayTo($dayTo)
             ->find();
@@ -123,9 +123,9 @@ final class DashboardHoldOrdersDayDispatcher
         {
             $DashboardInvariableDTO = $NewEditDashboardDTO->getInvariable();
             $DashboardInvariableDTO
-                ->setName('Удержаний по заказам')
+                ->setName('Выплат по заказам')
                 ->setPeriod($dayFrom, $dayTo)
-                ->setPriority(95);
+                ->setPriority(100);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
             $NewEditDashboardTypeDTO->setValue(self::KEY);

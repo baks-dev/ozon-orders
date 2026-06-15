@@ -29,6 +29,9 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Messenger\Schedules\Finance\FinanceOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
+use DateInterval;
+use DatePeriod;
+use DateTime;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -167,13 +170,37 @@ class UpdateFinancesCommand extends Command
     {
         $this->io->note(sprintf('Обновляем финансы профиля %s', $profile->getAttr()));
 
-        $NewOzonOrdersScheduleMessage = new FinanceOzonOrdersScheduleMessage($profile);
-        $NewOzonOrdersScheduleMessage->setDay($date);
+        $startDate = new DateTime('yesterday');
+        $endDate = new DateTime('yesterday'); // вчерашний день относительно сегодня
 
-        $this->messageDispatch
-            ->dispatch(
-                message: $NewOzonOrdersScheduleMessage,
-                transport: $async === true ? (string) $profile : null,
-            );
+        if($date)
+        {
+            $startDate = new DateTime($date);
+
+            if($startDate > $endDate)
+            {
+                $startDate = new DateTime('yesterday');
+            }
+        }
+
+        $period = new DatePeriod(
+            $startDate,
+            DateInterval::createFromDateString('1 day'),
+            $endDate->modify('+1 day'),
+        );
+
+        foreach($period as $dates)
+        {
+            $NewOzonOrdersScheduleMessage = new FinanceOzonOrdersScheduleMessage($profile);
+            $NewOzonOrdersScheduleMessage->setDay($dates->format('Y-m-d'));
+
+            $this->messageDispatch
+                ->dispatch(
+                    message: $NewOzonOrdersScheduleMessage,
+                    transport: $async === true ? 'finances' : null,
+                );
+
+            $this->io->text(sprintf('Обновили дату %s', $dates->format('Y-m-d')));
+        }
     }
 }

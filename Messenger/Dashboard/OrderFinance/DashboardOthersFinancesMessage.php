@@ -42,6 +42,9 @@ final class DashboardOthersFinancesMessage
      */
     private string $user;
 
+    /**
+     * Дата окончания периода
+     */
     private string $date;
 
 

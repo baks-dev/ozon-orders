@@ -28,6 +28,7 @@ namespace BaksDev\Ozon\Orders\Messenger\Dashboard\CacheOthers;
 
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Users\User\Type\Id\UserUid;
+use DateTimeImmutable;
 
 final class DashboardCacheOthersDayMessage
 {
@@ -41,14 +42,21 @@ final class DashboardCacheOthersDayMessage
      */
     private string $user;
 
+    /**
+     * Дата окончания периода
+     */
+    private string $date;
+
 
     public function __construct(
         PaymentUid|string $payment,
         UserUid|string $user,
+        DateTimeImmutable $date,
     )
     {
         $this->payment = (string) $payment;
         $this->user = (string) $user;
+        $this->date = $date->format('Y-m-d');
     }
 
 
@@ -66,5 +74,13 @@ final class DashboardCacheOthersDayMessage
     public function getUser(): UserUid
     {
         return new UserUid($this->user);
+    }
+
+    /**
+     * Начальная окончания
+     */
+    public function getDate(): DateTimeImmutable
+    {
+        return new DateTimeImmutable($this->date);
     }
 }

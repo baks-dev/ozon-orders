@@ -126,6 +126,7 @@ final class DashboardDispatcher
             $DashboardCacheOrdersDayMessage = new DashboardCacheOrdersDayMessage(
                 payment: $FinancesEvent->getPayment(),
                 user: $UserUid,
+                date: $FinancesEvent->getDateCreated(),
             );
 
             $this->dispatch->dispatch(
@@ -142,6 +143,7 @@ final class DashboardDispatcher
             $DashboardHoldOrdersDayMessage = new DashboardHoldOrdersDayMessage(
                 payment: $FinancesEvent->getPayment(),
                 user: $UserUid,
+                date: $FinancesEvent->getDateCreated(),
             );
 
             $this->dispatch->dispatch(
@@ -177,6 +179,7 @@ final class DashboardDispatcher
             $DashboardCacheOthersDayMessage = new DashboardCacheOthersDayMessage(
                 payment: $FinancesEvent->getPayment(),
                 user: $UserUid,
+                date: $FinancesEvent->getDateCreated(),
             );
 
             $this->dispatch->dispatch(
@@ -192,6 +195,7 @@ final class DashboardDispatcher
             $DashboardHoldOthersDayMessage = new DashboardHoldOthersDayMessage(
                 payment: $FinancesEvent->getPayment(),
                 user: $UserUid,
+                date: $FinancesEvent->getDateCreated(),
             );
 
             $this->dispatch->dispatch(
@@ -209,6 +213,7 @@ final class DashboardDispatcher
         $DashboardCacheAllDayMessage = new DashboardCacheAllDayMessage(
             payment: $FinancesEvent->getPayment(),
             user: $UserUid,
+            date: $FinancesEvent->getDateCreated(),
         );
 
         $this->dispatch->dispatch(
@@ -225,6 +230,7 @@ final class DashboardDispatcher
         $DashboardHoldAllDayMessage = new DashboardHoldAllDayMessage(
             payment: $FinancesEvent->getPayment(),
             user: $UserUid,
+            date: $FinancesEvent->getDateCreated(),
         );
 
         $this->dispatch->dispatch(

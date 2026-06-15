@@ -40,8 +40,6 @@ use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\User\Type\Id\UserUid;
-use DateInterval;
-use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -51,6 +49,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler(priority: 0)]
 final class DashboardHoldOthersDayDispatcher
 {
+    private const string KEY = 'hold_others_day';
+
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private readonly DeduplicatorInterface $Deduplicator,
@@ -78,8 +78,8 @@ final class DashboardHoldOthersDayDispatcher
 
         /** Получаем положительные транзакции по заказу за сутки */
 
-        $dayFrom = new DateTimeImmutable('now')->sub(DateInterval::createFromDateString('1 day'));
-        $dayTo = new DateTimeImmutable('now')->sub(DateInterval::createFromDateString('1 day'));
+        $dayFrom = $message->getDate(); // начало дня
+        $dayTo = $message->getDate(); // окончание дня
 
         $StatisticsOrdersResult = $this
             ->StatisticsOrdersRepository
@@ -110,7 +110,7 @@ final class DashboardHoldOthersDayDispatcher
             ->user($message->getUser())
             ->payment($message->getPayment())
             ->period($dayFrom, $dayTo)
-            ->type('hold_others_day')
+            ->type(self::KEY)
             ->find();
 
         if(true === $DashboardEvent instanceof DashboardEvent)
@@ -128,7 +128,7 @@ final class DashboardHoldOthersDayDispatcher
                 ->setPriority(85);
 
             $NewEditDashboardTypeDTO = $NewEditDashboardDTO->getType();
-            $NewEditDashboardTypeDTO->setValue('hold_others_day');
+            $NewEditDashboardTypeDTO->setValue(self::KEY);
 
             $DashboardPaymentDTO = $NewEditDashboardDTO->getPayment();
             $DashboardPaymentDTO->setValue($message->getPayment());

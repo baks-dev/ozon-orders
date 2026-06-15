@@ -40,6 +40,7 @@ use BaksDev\Finances\Repository\Statistics\Orders\StatisticsOrdersResult;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\User\Type\Id\UserUid;
+use DateInterval;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -47,9 +48,9 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
-final class DashboardHoldOrdersDayDispatcher
+final class DashboardHoldOrdersYearsDispatcher
 {
-    private const string KEY = 'hold_orders_day';
+    private const string KEY = 'hold_orders_years';
 
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
@@ -78,7 +79,7 @@ final class DashboardHoldOrdersDayDispatcher
 
         /** Получаем положительные транзакции по заказу за сутки */
 
-        $dayFrom = $message->getDate(); // начало дня
+        $dayFrom = $message->getDate()->sub(DateInterval::createFromDateString('1 year')); // начало дня
         $dayTo = $message->getDate(); // окончание дня
 
         $StatisticsOrdersResult = $this
