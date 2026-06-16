@@ -39,6 +39,8 @@ final class FinanceOzonOrdersScheduleMessage
 
     private ?string $day = null;
 
+    private bool $force = false;
+
     public function __construct(UserProfileUid $profile)
     {
         $this->profile = (string) $profile;
@@ -62,6 +64,17 @@ final class FinanceOzonOrdersScheduleMessage
     public function setDay(?string $day): self
     {
         $this->day = $day;
+        return $this;
+    }
+
+    public function isForce(): bool
+    {
+        return $this->force;
+    }
+
+    public function force(): self
+    {
+        $this->force = true;
         return $this;
     }
 }

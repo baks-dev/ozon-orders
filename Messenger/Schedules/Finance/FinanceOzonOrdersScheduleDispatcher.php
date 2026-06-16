@@ -27,7 +27,11 @@ namespace BaksDev\Ozon\Orders\Messenger\Schedules\Finance;
 
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
+use BaksDev\Finances\Entity\Event\FinancesEvent;
 use BaksDev\Finances\Entity\Finances;
+use BaksDev\Finances\Messenger\Default\FinancesMessage;
+use BaksDev\Finances\Repository\CurrentFinancesEventByIdentifier\CurrentFinancesEventByIdentifierInterface;
 use BaksDev\Finances\Repository\ExistFinance\ExistFinanceInterface;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesDTO;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesHandler;
@@ -54,6 +58,7 @@ final class FinanceOzonOrdersScheduleDispatcher
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private DeduplicatorInterface $Deduplicator,
+        private MessageDispatchInterface $messageDispatch,
         private OzonTokensByProfileInterface $OzonTokensByProfileRepository,
         private GetOzonOrderAccrualDayRequest $GetOzonOrderAccrualDayRequest,
         private OrderByPostingInterface $OrderByPostingRepository,
@@ -61,6 +66,7 @@ final class FinanceOzonOrdersScheduleDispatcher
         private NewEditFinancesHandler $NewEditFinancesHandler,
         private UserByUserProfileInterface $UserByUserProfileRepository,
         private ProductConstByArticleInterface $ProductConstByArticleRepository,
+        private CurrentFinancesEventByIdentifierInterface $CurrentFinancesEventByIdentifierRepository
     ) {}
 
     public function __invoke(FinanceOzonOrdersScheduleMessage $message): void
@@ -78,7 +84,7 @@ final class FinanceOzonOrdersScheduleDispatcher
                 self::class,
             ]);
 
-        if($DeduplicatorExec->isExecuted())
+        if($DeduplicatorExec->isExecuted() && $message->isForce() === false)
         {
             return;
         }
@@ -147,19 +153,48 @@ final class FinanceOzonOrdersScheduleDispatcher
                     ->expiresAfter('1 hour')
                     ->deduplication([$OzonOrderAccrualDayResponse->getId(), self::class]);
 
-                if($Deduplicator->isExecuted())
+                if($Deduplicator->isExecuted() && $message->isForce() === false)
                 {
                     continue;
                 }
 
-                /** Проверяем имеется ли такой платеж */
-                $isExist = $this->ExistFinanceRepository->exist($OzonOrderAccrualDayResponse->getId());
-
-                if(true === $isExist)
+                /** Пробуем получить объект */
+                if(true === $message->isForce())
                 {
-                    $Deduplicator->save();
-                    continue;
+                    $FinancesEvent = $this->CurrentFinancesEventByIdentifierRepository
+                        ->find($OzonOrderAccrualDayResponse->getId());
+
+                    /** Бросаем сообщение для перерасчета */
+                    if(true === $FinancesEvent instanceof FinancesEvent)
+                    {
+                        $FinancesMessage = new FinancesMessage(
+                            $FinancesEvent->getMain(),
+                            $FinancesEvent->getId(),
+                        )->force();
+
+                        $this->messageDispatch->dispatch(
+                            $FinancesMessage,
+                            transport: 'finances',
+                        );
+
+                        $Deduplicator->save();
+                        continue;
+                    }
                 }
+
+                /** Проверяем наличие платежа */
+                if(false === $message->isForce())
+                {
+                    /** Проверяем имеется ли такой платеж */
+                    $isExist = $this->ExistFinanceRepository->exist($OzonOrderAccrualDayResponse->getId());
+
+                    if(true === $isExist)
+                    {
+                        $Deduplicator->save();
+                        continue;
+                    }
+                }
+
 
                 $NewEditFinancesDTO = new NewEditFinancesDTO();
                 $NewEditFinancesDTO

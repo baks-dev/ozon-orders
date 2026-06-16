@@ -112,7 +112,7 @@ final class DashboardDispatcher
                 self::class,
             ]);
 
-        if($Deduplicator->isExecuted() === true)
+        if($Deduplicator->isExecuted() === true && $message->isForce() === false)
         {
             return;
         }
