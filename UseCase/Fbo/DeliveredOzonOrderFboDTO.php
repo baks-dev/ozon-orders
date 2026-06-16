@@ -35,6 +35,7 @@ use BaksDev\Ozon\Orders\Type\DeliveryType\TypeDeliveryFboOzon;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFboOzon;
 use BaksDev\Ozon\Orders\Type\ProfileType\TypeProfileFboOzon;
 use BaksDev\Ozon\Orders\UseCase\Fbo\Invariable\DeliveredOzonOrderFboInvariableDTO;
+use BaksDev\Ozon\Orders\UseCase\Fbo\Modify\DeliveryOzonOrdersModifyDTO;
 use BaksDev\Ozon\Orders\UseCase\Fbo\Posting\DeliveredOzonOrderFboPostingDTO;
 use BaksDev\Ozon\Orders\UseCase\Fbo\Products\DeliveredOzonOrderFboProductDTO;
 use BaksDev\Ozon\Orders\UseCase\Fbo\User\DeliveredOzonOrderFboUserDTO;
@@ -69,7 +70,6 @@ final class DeliveredOzonOrderFboDTO implements OrderEventInterface
     /** Статус заказа */
     private OrderStatus $status;
 
-
     /**
      * Коллекция продукции в заказе
      *
@@ -82,12 +82,17 @@ final class DeliveredOzonOrderFboDTO implements OrderEventInterface
     #[Assert\Valid]
     private DeliveredOzonOrderFboUserDTO $usr;
 
+    private DeliveryOzonOrdersModifyDTO $modify;
+
     public function __construct(array $order, OzonTokenUid|false $identifier = false)
     {
         // Дата и время начала обработки отправления.
         $timezone = new DateTimeZone(date_default_timezone_get());
         $this->created = (new DateTimeImmutable($order['created_at']))->setTimezone($timezone);
 
+        /** Указываем дату модификации - дату создания */
+        $this->modify = new DeliveryOzonOrdersModifyDTO()
+            ->setModDate($this->created);
 
         /**
          * Постоянная величина
@@ -113,7 +118,7 @@ final class DeliveredOzonOrderFboDTO implements OrderEventInterface
         $OrderPaymentDTO = $this->usr->getPayment();
         $OrderProfileDTO = $this->usr->getUserProfile();
 
-        $deliveryDate = new DateTimeImmutable($order['created_at']);
+        $deliveryDate = new DateTimeImmutable('now'); // дата получения заказа
         $OrderDeliveryDTO->setDeliveryDate($deliveryDate);
 
         /** Тип профиля FBS Озон */
@@ -219,5 +224,10 @@ final class DeliveredOzonOrderFboDTO implements OrderEventInterface
     public function getUsr(): DeliveredOzonOrderFboUserDTO
     {
         return $this->usr;
+    }
+
+    public function getModify(): DeliveryOzonOrdersModifyDTO
+    {
+        return $this->modify;
     }
 }

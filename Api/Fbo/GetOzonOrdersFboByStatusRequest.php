@@ -144,8 +144,8 @@ final class GetOzonOrdersFboByStatusRequest extends Ozon
          * Период по умолчанию - 1 неделя
          */
         $sinceDate = $dateTimeNow->sub(DateInterval::createFromDateString('1 day'));
-        $data['filter']['since'] = $sinceDate->format(DateTimeInterface::W3C);
-        $data['filter']['to'] = $dateTimeNow->format(DateTimeInterface::W3C);
+        $data['filter']['since'] = $sinceDate->setTime(0, 0, 0)->format(DateTimeInterface::W3C);
+        $data['filter']['to'] = $dateTimeNow->setTime(23, 59, 59)->format(DateTimeInterface::W3C);
 
         while(true)
         {

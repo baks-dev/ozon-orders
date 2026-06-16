@@ -26,16 +26,9 @@ declare(strict_types=1);
 namespace BaksDev\Ozon\Orders\Messenger\Schedules\NewOrdersFbo;
 
 use BaksDev\Core\Deduplicator\DeduplicatorInterface;
-use BaksDev\Core\Messenger\MessageDispatchInterface;
-use BaksDev\Core\Type\Field\InputField;
-use BaksDev\Core\Type\Gps\GpsLatitude;
-use BaksDev\Core\Type\Gps\GpsLongitude;
 use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterface;
 use BaksDev\Delivery\Type\Id\DeliveryUid;
-use BaksDev\Field\Pack\Contact\Type\ContactField;
-use BaksDev\Field\Pack\Phone\Type\PhoneField;
 use BaksDev\Orders\Order\Entity\Order;
-use BaksDev\Orders\Order\Repository\FieldByDeliveryChoice\FieldByDeliveryChoiceInterface;
 use BaksDev\Ozon\Orders\Api\Fbo\GetOzonOrdersFboByStatusRequest;
 use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboDTO;
@@ -44,14 +37,6 @@ use BaksDev\Ozon\Orders\UseCase\Fbo\Products\DeliveredOzonOrderFboProductDTO;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
-use BaksDev\Users\Address\Services\GeocodeAddressParser;
-use BaksDev\Users\Address\Type\AddressField\AddressField;
-use BaksDev\Users\Profile\TypeProfile\Type\Id\TypeProfileUid;
-use BaksDev\Users\Profile\UserProfile\Repository\FieldValueForm\FieldValueFormDTO;
-use BaksDev\Users\Profile\UserProfile\Repository\FieldValueForm\FieldValueFormInterface;
-use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
-use BaksDev\Users\Profile\UserProfile\Repository\UserProfileGps\UserProfileGpsInterface;
-use BaksDev\Users\User\Entity\User;
 use BaksDev\Users\User\Type\Id\UserUid;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -149,7 +134,6 @@ final readonly class NewOzonOrderFboScheduleHandler
             {
                 /** Идентификатор заказа (для дедубликатора) */
 
-                // $number = $OzonMarketOrderDTO->getOrderNumber();
                 $number = $DeliveredOzonOrderFboDTO->getPostingNumber();
 
                 $Deduplicator = $this->Deduplicator

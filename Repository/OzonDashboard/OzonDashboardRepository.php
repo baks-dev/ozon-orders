@@ -146,7 +146,7 @@ final class OzonDashboardRepository implements OzonDashboardInterface
         $dbal->orderBy('dashboard_invariable.priority', 'DESC');
 
         $result = $dbal
-            ->enableCache('dashboard', '1 day')
+            ->enableCache('dashboard', '1 hour')
             ->fetchAllHydrate(OzonDashboardResult::class);
 
 

@@ -201,6 +201,8 @@ class UpdateFinancesCommand extends Command
                 );
 
             $this->io->text(sprintf('Обновили дату %s', $dates->format('Y-m-d')));
+
+            sleep(1);
         }
     }
 }

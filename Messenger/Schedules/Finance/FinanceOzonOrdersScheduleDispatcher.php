@@ -31,26 +31,21 @@ use BaksDev\Finances\Entity\Finances;
 use BaksDev\Finances\Repository\ExistFinance\ExistFinanceInterface;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesDTO;
 use BaksDev\Finances\UseCase\NewEdit\NewEditFinancesHandler;
-use BaksDev\Finances\UseCase\NewEdit\Payment\NewEditPaymentDTO;
 use BaksDev\Orders\Order\Repository\OrderByPosting\OrderByPostingInterface;
 use BaksDev\Orders\Order\Type\Id\OrderUid;
 use BaksDev\Ozon\Orders\Api\Accrual\GetOzonOrderAccrualDayRequest;
-use BaksDev\Ozon\Orders\Schedule\Finance\FinanceSchedule;
 use BaksDev\Ozon\Orders\Type\PaymentType\TypePaymentFbsOzon;
 use BaksDev\Ozon\Repository\OzonTokensByProfile\OzonTokensByProfileInterface;
 use BaksDev\Payment\Type\Id\PaymentUid;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\CurrentProductByBarcodeResult;
 use BaksDev\Products\Product\Repository\CurrentProductByArticle\ProductConstByArticleInterface;
 use BaksDev\Products\Product\Type\Invariable\ProductInvariableUid;
-use BaksDev\Reference\Money\Type\Money;
 use BaksDev\Users\Profile\UserProfile\Repository\UserByUserProfile\UserByUserProfileInterface;
 use BaksDev\Users\User\Entity\User;
-use BaksDev\Users\User\Type\Id\UserUid;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Uuid;
 
 #[Autoconfigure(shared: false)]
 #[AsMessageHandler(priority: 0)]
@@ -77,7 +72,7 @@ final class FinanceOzonOrdersScheduleDispatcher
 
         $DeduplicatorExec = $this->Deduplicator
             ->namespace('ozon-orders')
-            ->expiresAfter(FinanceSchedule::INTERVAL)
+            ->expiresAfter('1 hour')
             ->deduplication([
                 (string) $message->getProfile(),
                 self::class,
@@ -130,7 +125,7 @@ final class FinanceOzonOrdersScheduleDispatcher
             );
 
             /**
-             * Получаем список НОВЫХ сборочных заданий токена
+             * Получаем список НОВЫХ финансовых выплат
              * по умолчанию за вчерашний день
              */
 
@@ -149,7 +144,7 @@ final class FinanceOzonOrdersScheduleDispatcher
             {
                 $Deduplicator = $this->Deduplicator
                     ->namespace('ozon-orders')
-                    ->expiresAfter(FinanceSchedule::INTERVAL)
+                    ->expiresAfter('1 hour')
                     ->deduplication([$OzonOrderAccrualDayResponse->getId(), self::class]);
 
                 if($Deduplicator->isExecuted())
@@ -223,6 +218,9 @@ final class FinanceOzonOrdersScheduleDispatcher
                     );
                 }
             }
+
+            // Завершаем цикл предполагая что все токены у пользователя к одному кабинету
+            break;
         }
 
         $DeduplicatorExec->delete();
