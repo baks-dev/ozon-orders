@@ -64,6 +64,7 @@ final class GetOzonOrderAccrualDayRequest extends Ozon
 
     public function setDate(?DateTimeImmutable $date): self
     {
+        $this->last = null;
         $this->date = $date;
         return $this;
     }
@@ -106,11 +107,15 @@ final class GetOzonOrderAccrualDayRequest extends Ozon
                     [self::class.':'.__LINE__, $data, $content],
                 );
 
+                $this->last = null;
+
                 break;
             }
 
             if(empty($content['accruals']))
             {
+                $this->last = null;
+
                 break;
             }
 
@@ -142,6 +147,7 @@ final class GetOzonOrderAccrualDayRequest extends Ozon
 
             if(count($content['accruals']) < 1000)
             {
+                $this->last = null;
                 break;
             }
         }

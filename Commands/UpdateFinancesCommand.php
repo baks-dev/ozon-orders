@@ -191,6 +191,8 @@ class UpdateFinancesCommand extends Command
 
         foreach($period as $dates)
         {
+            $this->io->text(sprintf('Обновляем дату %s', $dates->format('Y-m-d')));
+
             $NewOzonOrdersScheduleMessage = new FinanceOzonOrdersScheduleMessage($profile);
             $NewOzonOrdersScheduleMessage
                 ->setDay($dates->format('Y-m-d'))

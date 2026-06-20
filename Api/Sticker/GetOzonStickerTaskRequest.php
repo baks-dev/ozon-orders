@@ -118,7 +118,7 @@ final class GetOzonStickerTaskRequest extends Ozon
                 $ozonSticker = $response->getContent(false);
 
                 /** Кешируем этикетку на 1 неделю */
-                $item->expiresAfter(DateInterval::createFromDateString('1 week'));
+                $item->expiresAfter(DateInterval::createFromDateString('1 month'));
 
                 Imagick::setResourceLimit(Imagick::RESOURCETYPE_TIME, 3600);
                 Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, (1024 * 1024 * 256));

@@ -222,7 +222,9 @@ final class FinanceOzonOrdersScheduleDispatcher
                 if($OrderUid instanceof OrderUid)
                 {
                     $NewEditFinancesOrderDTO = $NewEditFinancesDTO->getOrd();
-                    $NewEditFinancesOrderDTO->setValue($OrderUid);
+                    $NewEditFinancesOrderDTO
+                        ->setValue($OrderUid)
+                        ->setFirst($OzonOrderAccrualDayResponse->getDate());
                 }
 
                 /** Если нет идентификатора заказа, но есть артикул продукта */

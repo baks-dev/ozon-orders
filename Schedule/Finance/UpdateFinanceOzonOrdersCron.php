@@ -61,7 +61,7 @@ final readonly class UpdateFinanceOzonOrdersCron
         if(false === $profiles || false === $profiles->valid())
         {
             $this->logger->warning(
-                'Профили с активными токенами Ozon не найдены',
+                'Профили с активными токенами Ozon не найдены для получения финансовых выплат',
                 [__FILE__.':'.__LINE__],
             );
 
@@ -70,6 +70,11 @@ final readonly class UpdateFinanceOzonOrdersCron
 
         foreach($profiles as $profile)
         {
+            $this->logger->warning(
+                sprintf('%s: Получаем финансовые выплаты', $profile),
+                [__FILE__.':'.__LINE__],
+            );
+
             $this->messageDispatch->dispatch(
                 message: new FinanceOzonOrdersScheduleMessage($profile),
                 stamps: [new MessageDelay('30 minutes')],

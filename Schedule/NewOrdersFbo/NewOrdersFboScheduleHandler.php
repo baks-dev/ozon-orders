@@ -46,16 +46,18 @@ final readonly class NewOrdersFboScheduleHandler
             ->onlyActiveToken()
             ->findAll();
 
-        if($profiles->valid())
+        if(false === $profiles || false === $profiles->valid())
         {
-            foreach($profiles as $profile)
-            {
-                $this->messageDispatch->dispatch(
-                    message: new NewOzonOrdersFboScheduleMessage($profile),
-                    stamps: [new MessageDelay('30 minutes')],
-                    transport: 'finances',
-                );
-            }
+            return;
+        }
+
+        foreach($profiles as $profile)
+        {
+            $this->messageDispatch->dispatch(
+                message: new NewOzonOrdersFboScheduleMessage($profile),
+                stamps: [new MessageDelay('30 minutes')],
+                transport: 'finances',
+            );
         }
     }
 }
