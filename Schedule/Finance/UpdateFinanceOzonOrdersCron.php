@@ -30,7 +30,9 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Messenger\Schedules\Finance\FinanceOzonOrdersScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
 use BaksDev\Products\Product\Repository\AllProductsIdentifier\AllProductsIdentifierInterface;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Scheduler\Attribute\AsCronTask;
 
@@ -48,38 +50,26 @@ final readonly class UpdateFinanceOzonOrdersCron
     public function __construct(
         #[Target('ozonProductsLogger')] private LoggerInterface $logger,
         private MessageDispatchInterface $messageDispatch,
-        private AllProfileOzonTokenInterface $allProfileToken,
+        #[Autowire(env: 'PROJECT_PROFILE')] private string|null $profile = null,
     ) {}
 
     public function __invoke(): void
     {
-        /** Получаем активные токены авторизации профилей */
-        $profiles = $this->allProfileToken
-            ->onlyActiveToken()
-            ->findAll();
-
-        if(false === $profiles || false === $profiles->valid())
+        if(empty($this->profile))
         {
-            $this->logger->warning(
-                'Профили с активными токенами Ozon не найдены для получения финансовых выплат',
-                [__FILE__.':'.__LINE__],
-            );
-
             return;
         }
 
-        foreach($profiles as $profile)
-        {
-            $this->logger->warning(
-                sprintf('%s: Получаем финансовые выплаты', $profile),
-                [__FILE__.':'.__LINE__],
-            );
+        $this->logger->warning(
+            sprintf('%s: Получаем финансовые выплаты', $this->profile),
+            [__FILE__.':'.__LINE__],
+        );
 
-            $this->messageDispatch->dispatch(
-                message: new FinanceOzonOrdersScheduleMessage($profile),
-                stamps: [new MessageDelay('30 minutes')],
-                transport: 'finances',
-            );
-        }
+        $this->messageDispatch->dispatch(
+            message: new FinanceOzonOrdersScheduleMessage(new UserProfileUid($this->profile)),
+            stamps: [new MessageDelay('30 minutes')],
+            transport: 'finances',
+        );
+
     }
 }

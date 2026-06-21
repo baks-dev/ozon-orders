@@ -30,7 +30,7 @@ use BaksDev\Delivery\Repository\CurrentDeliveryEvent\CurrentDeliveryEventInterfa
 use BaksDev\Delivery\Type\Id\DeliveryUid;
 use BaksDev\Orders\Order\Entity\Order;
 use BaksDev\Ozon\Orders\Api\Fbo\GetOzonOrdersFboByStatusRequest;
-use BaksDev\Ozon\Orders\Schedule\NewOrders\NewOrdersSchedule;
+use BaksDev\Ozon\Orders\Schedule\NewOrdersFbo\NewOrdersFboSchedule;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboDTO;
 use BaksDev\Ozon\Orders\UseCase\Fbo\DeliveredOzonOrderFboHandler;
 use BaksDev\Ozon\Orders\UseCase\Fbo\Products\DeliveredOzonOrderFboProductDTO;
@@ -76,7 +76,7 @@ final readonly class NewOzonOrderFboScheduleHandler
 
         $DeduplicatorExec = $this->Deduplicator
             ->namespace('ozon-orders')
-            ->expiresAfter(NewOrdersSchedule::INTERVAL)
+            ->expiresAfter(NewOrdersFboSchedule::INTERVAL)
             ->deduplication([
                 (string) $message->getProfile(),
                 self::class,
@@ -87,10 +87,6 @@ final readonly class NewOzonOrderFboScheduleHandler
             return;
         }
 
-        /* @see строку :194 */
-        $DeduplicatorExec->save();
-
-
         /** Получаем все токены профиля */
         $tokensByProfile = $this->OzonTokensByProfileRepository
             ->forProfile($message->getProfile())
@@ -98,8 +94,6 @@ final readonly class NewOzonOrderFboScheduleHandler
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
-            $DeduplicatorExec->delete();
-
             return;
         }
 
@@ -136,12 +130,12 @@ final readonly class NewOzonOrderFboScheduleHandler
 
                 $number = $DeliveredOzonOrderFboDTO->getPostingNumber();
 
-                $Deduplicator = $this->Deduplicator
+                $OrderDeduplicator = $this->Deduplicator
                     ->namespace('ozon-orders')
                     ->expiresAfter('1 week')
                     ->deduplication([$number, self::class]);
 
-                if($Deduplicator->isExecuted())
+                if($OrderDeduplicator->isExecuted())
                 {
                     continue;
                 }
@@ -218,10 +212,10 @@ final readonly class NewOzonOrderFboScheduleHandler
                     [$message, self::class.':'.__LINE__],
                 );
 
-                $Deduplicator->save();
+                $OrderDeduplicator->save();
             }
-
-            return;
         }
+
+        $DeduplicatorExec->save();
     }
 }

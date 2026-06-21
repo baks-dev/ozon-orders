@@ -29,35 +29,29 @@ use BaksDev\Core\Messenger\MessageDelay;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Ozon\Orders\Messenger\Schedules\NewOrdersFbo\NewOzonOrdersFboScheduleMessage;
 use BaksDev\Ozon\Repository\AllProfileToken\AllProfileOzonTokenInterface;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(priority: 0)]
 final readonly class NewOrdersFboScheduleHandler
 {
     public function __construct(
-        private AllProfileOzonTokenInterface $allProfileToken,
         private MessageDispatchInterface $messageDispatch,
+        #[Autowire(env: 'PROJECT_PROFILE')] private string|null $profile = null,
     ) {}
 
     public function __invoke(NewOrdersFboScheduleMessage $message): void
     {
-        /** Получаем активные токены авторизации профилей */
-        $profiles = $this->allProfileToken
-            ->onlyActiveToken()
-            ->findAll();
-
-        if(false === $profiles || false === $profiles->valid())
+        if(empty($this->profile))
         {
             return;
         }
 
-        foreach($profiles as $profile)
-        {
-            $this->messageDispatch->dispatch(
-                message: new NewOzonOrdersFboScheduleMessage($profile),
-                stamps: [new MessageDelay('30 minutes')],
-                transport: 'finances',
-            );
-        }
+        $this->messageDispatch->dispatch(
+            message: new NewOzonOrdersFboScheduleMessage(new UserProfileUid($this->profile)),
+            stamps: [new MessageDelay('30 minutes')],
+            transport: 'finances',
+        );
     }
 }

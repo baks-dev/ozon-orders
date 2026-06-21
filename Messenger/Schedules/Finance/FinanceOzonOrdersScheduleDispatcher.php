@@ -71,7 +71,6 @@ final class FinanceOzonOrdersScheduleDispatcher
 
     public function __invoke(FinanceOzonOrdersScheduleMessage $message): void
     {
-
         /**
          * Ограничиваем периодичность запросов
          */
@@ -89,10 +88,6 @@ final class FinanceOzonOrdersScheduleDispatcher
             return;
         }
 
-        /* @note удаляется в конце обработчика */
-        $DeduplicatorExec->save();
-
-
         /** Получаем все токены профиля */
         $tokensByProfile = $this->OzonTokensByProfileRepository
             ->forProfile($message->getProfile())
@@ -100,7 +95,6 @@ final class FinanceOzonOrdersScheduleDispatcher
 
         if(false === $tokensByProfile || false === $tokensByProfile->valid())
         {
-            $DeduplicatorExec->delete();
             return;
         }
 
@@ -117,8 +111,6 @@ final class FinanceOzonOrdersScheduleDispatcher
                 sprintf('ozon-orders: Пользователь по идентификатору %s профиля не найден', $message->getProfile()),
                 [self::class.':'.__LINE__],
             );
-
-            $DeduplicatorExec->delete();
 
             return;
         }
@@ -195,7 +187,6 @@ final class FinanceOzonOrdersScheduleDispatcher
                     }
                 }
 
-
                 $NewEditFinancesDTO = new NewEditFinancesDTO();
                 $NewEditFinancesDTO
                     ->setPrice($OzonOrderAccrualDayResponse->getTotal())
@@ -253,13 +244,17 @@ final class FinanceOzonOrdersScheduleDispatcher
                     $this->logger->critical(
                         sprintf('ozon-orders: Ошибка %s при добавлении платежа', $Finances),
                     );
-                }
-            }
 
-            // Завершаем цикл предполагая что все токены у пользователя к одному кабинету
-            break;
+                    continue;
+                }
+
+                $this->logger->info(
+                    sprintf('%s: Добавили финансовую выплату', $Finances->getId()),
+                    [self::class.':'.__LINE__],
+                );
+            }
         }
 
-        $DeduplicatorExec->delete();
+        $DeduplicatorExec->save();
     }
 }

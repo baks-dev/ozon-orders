@@ -89,7 +89,7 @@ final class DashboardDispatcher
         )
         {
             $this->logger->critical(
-                'finances: Ошибка при получении финансовой выплаты',
+                'finances: Невозможно определить необходимую информацию о финансовой выплате',
                 [
                     self::class.':'.__LINE__,
                     'invariable' => $FinancesEvent->isInvariable(),
@@ -102,7 +102,7 @@ final class DashboardDispatcher
 
         $UserUid = $FinancesEvent->getInvariable()->getUserFinance();
 
-        /** Дедубликатор по идентификатору заказа */
+        /** Дедубликатор по типу финансовой выплаты */
         $Deduplicator = $this->Deduplicator
             ->namespace('finances')
             ->expiresAfter('1 hour')
@@ -117,9 +117,14 @@ final class DashboardDispatcher
             return;
         }
 
+
+        /**
+         * Создаем доску заказам
+         */
+
         if(true === $FinancesEvent->isOrders())
         {
-            /**
+            /*
              * Создаем доску "Выплаты по заказам"
              */
 
@@ -135,8 +140,7 @@ final class DashboardDispatcher
                 transport: 'finances',
             );
 
-
-            /**
+            /*
              * Создаем доску "Удержано по заказам"
              */
 
@@ -153,7 +157,7 @@ final class DashboardDispatcher
             );
 
 
-            /**
+            /*
              * Создаем доску финансовой выгоды по заказам
              */
 
@@ -170,9 +174,13 @@ final class DashboardDispatcher
             );
         }
 
+        /**
+         * Создаем доску "Прочие"
+         */
+
         if(false === $FinancesEvent->isOrders())
         {
-            /**
+            /*
              * Создаем доску "Прочие выплаты"
              */
 
@@ -188,7 +196,7 @@ final class DashboardDispatcher
                 transport: 'finances',
             );
 
-            /**
+            /*
              * Создаем доску "Прочих удержаний"
              */
 
@@ -207,6 +215,11 @@ final class DashboardDispatcher
 
 
         /**
+         * Создаем доску "Итого"
+         */
+
+
+        /*
          * Создаем доску "Итого выплат"
          */
 
@@ -223,7 +236,7 @@ final class DashboardDispatcher
         );
 
 
-        /**
+        /*
          * Создаем доску "Всего удержано"
          */
 
