@@ -43,7 +43,7 @@ use Symfony\Component\Scheduler\Attribute\AsCronTask;
  * @see FinanceOzonOrdersScheduleDispatcher
  */
 #[AsCronTask('#hourly', jitter: 60)]
-final readonly class NewOrdersFboCron
+final readonly class NewOzonOrdersFboCron
 {
     public function __construct(
         #[Target('ozonProductsLogger')] private LoggerInterface $logger,
