@@ -76,7 +76,7 @@ final readonly class NewOzonOrderFboScheduleHandler
 
         $DeduplicatorExec = $this->Deduplicator
             ->namespace('ozon-orders')
-            ->expiresAfter(NewOrdersFboSchedule::INTERVAL)
+            ->expiresAfter('30 minutes')
             ->deduplication([
                 (string) $message->getProfile(),
                 self::class,
