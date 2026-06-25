@@ -29,7 +29,7 @@ use BaksDev\Payment\Type\Id\Choice\Collection\TypePaymentInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 #[AutoconfigureTag('baks.payment.type')]
-class TypePaymentFboOzon implements TypePaymentInterface
+final class TypePaymentFboOzon implements TypePaymentInterface
 {
     public const string TYPE = '019dc99f-ffbe-79d5-896c-d4e14dd3d72d';
 
