@@ -47,7 +47,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 final class DeliveredOzonOrderFboHandler extends AbstractHandler
 {
     public function __construct(
-        #[Autowire(env: 'PROJECT_USER')] private string|null $projectUser = null,
+
         private readonly UserProfileHandler $profileHandler,
         private readonly ExistsOrderNumberInterface $existsOrderNumber,
 
@@ -56,6 +56,8 @@ final class DeliveredOzonOrderFboHandler extends AbstractHandler
         ValidatorCollectionInterface $validatorCollection,
         ImageUploadInterface $imageUpload,
         FileUploadInterface $fileUpload,
+
+        #[Autowire(env: 'PROJECT_USER')] private string|null $projectUser = null,
     )
     {
         parent::__construct($entityManager, $messageDispatch, $validatorCollection, $imageUpload, $fileUpload);
