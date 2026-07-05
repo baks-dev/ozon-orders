@@ -29,6 +29,7 @@ use BaksDev\Orders\Order\Entity\User\Payment\Field\OrderPaymentFieldInterface;
 use BaksDev\Payment\Type\Field\PaymentFieldUid;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/** @see OrderPaymentField */
 final class DeliveredOzonOrderFboPaymentFieldDTO implements OrderPaymentFieldInterface
 {
     /** Идентификатор пользовательского поля в способе оплаты */
@@ -36,8 +37,7 @@ final class DeliveredOzonOrderFboPaymentFieldDTO implements OrderPaymentFieldInt
     private PaymentFieldUid $field;
 
     /** Заполненное значение */
-    #[Assert\Valid]
-    private string $value;
+    private ?string $value;
 
 
     /** Идентификатор пользовательского поля в способе оплаты */
@@ -56,12 +56,12 @@ final class DeliveredOzonOrderFboPaymentFieldDTO implements OrderPaymentFieldInt
 
     /** Заполненное значение */
 
-    public function getValue(): string
+    public function getValue(): ?string
     {
         return $this->value;
     }
 
-    public function setValue(string $value): void
+    public function setValue(?string $value): void
     {
         $this->value = $value;
     }

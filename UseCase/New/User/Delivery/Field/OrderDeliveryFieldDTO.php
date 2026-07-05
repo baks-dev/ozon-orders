@@ -29,6 +29,7 @@ use BaksDev\Delivery\Type\Field\DeliveryFieldUid;
 use BaksDev\Orders\Order\Entity\User\Delivery\Field\OrderDeliveryFieldInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/** @see OrderDeliveryField */
 final class OrderDeliveryFieldDTO implements OrderDeliveryFieldInterface
 {
     /** Идентификатор пользовательского поля в способе доставки */
@@ -36,7 +37,6 @@ final class OrderDeliveryFieldDTO implements OrderDeliveryFieldInterface
     private DeliveryFieldUid $field;
 
     /** Заполненное значение */
-    #[Assert\Valid]
     private ?string $value;
 
     /** Идентификатор пользовательского поля в способе оплаты */
