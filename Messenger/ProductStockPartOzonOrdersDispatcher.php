@@ -30,6 +30,7 @@ use BaksDev\Barcode\Writer\BarcodeFormat;
 use BaksDev\Barcode\Writer\BarcodeType;
 use BaksDev\Barcode\Writer\BarcodeWrite;
 use BaksDev\Core\Cache\AppCacheInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Orders\Order\Messenger\Sticker\OrderStickerMessage;
 use BaksDev\Products\Sign\Repository\ProductSignByOrder\ProductSignByOrderInterface;
 use BaksDev\Products\Stocks\Messenger\Part\ProductStockPartMessage;
@@ -46,6 +47,7 @@ final readonly class ProductStockPartOzonOrdersDispatcher
     public function __construct(
         #[Target('ozonOrdersLogger')] private LoggerInterface $logger,
         private AppCacheInterface $Cache,
+        private MessageDispatchInterface $MessageDispatch,
     ) {}
 
     public function __invoke(ProductStockPartMessage $message): void
@@ -64,6 +66,16 @@ final readonly class ProductStockPartOzonOrdersDispatcher
             $number = str_replace('O-', '', (string) $order->number);
 
             $ozonSticker = $cache->getItem($number)->get();
+
+            /** Пробуем запросить стикер повторно */
+            if(empty($ozonSticker))
+            {
+                $this->MessageDispatch->dispatch(
+                    message: new OrderStickerMessage($order->id),
+                );
+
+                $ozonSticker = $cache->getItem($number)->get();
+            }
 
             if(false === empty($ozonSticker))
             {
