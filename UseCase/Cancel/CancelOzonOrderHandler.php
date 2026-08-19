@@ -61,6 +61,13 @@ final class CancelOzonOrderHandler // extends AbstractHandler
 
         foreach($results as $OrderEvent)
         {
+
+            /** Отменяем только искомое отправление */
+            if($OrderEvent->getPostingNumber() !== $command->getPostingNumber())
+            {
+                continue;
+            }
+
             //$EditOrderDTO = new EditOrderDTO();
             //$OrderEvent->getDto($EditOrderDTO);
 
